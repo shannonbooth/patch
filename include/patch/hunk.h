@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+
+#pragma once
+
+#include <patch/system.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace Patch {
+
+using LineNumber = int64_t;
+
+struct Range {
+    LineNumber start_line { 0 };
+    LineNumber number_of_lines { 0 };
+};
+
+enum class Format {
+    Context,
+    Unified,
+    Ed,
+    Normal,
+    Unknown,
+};
+
+struct Line {
+    Line() = default;
+
+    Line(const std::string& content, NewLine newline)
+        : content(content)
+        , newline(newline)
+    {
+    }
+
+    Line(std::string&& content, NewLine newline)
+        : content(std::move(content))
+        , newline(newline)
+    {
+    }
+
+    std::string content;
+    NewLine newline { NewLine::LF };
+};
+
+struct PatchLine {
+    PatchLine(char op, const Line& l)
+        : operation(op)
+        , line(l)
+    {
+    }
+
+    PatchLine(char op, Line&& l)
+        : operation(op)
+        , line(std::move(l))
+    {
+    }
+
+    PatchLine(char op, const std::string& l)
+        : operation(op)
+        , line(l, NewLine::LF)
+    {
+    }
+
+    PatchLine(char op, std::string&& l)
+        : operation(op)
+        , line(std::move(l), NewLine::LF)
+    {
+    }
+
+    char operation;
+    Line line;
+};
+
+inline bool operator==(const PatchLine& lhs, const std::string& rhs)
+{
+    return lhs.operation + lhs.line.content == rhs;
+}
+
+inline bool operator==(const std::string& lhs, const PatchLine& rhs)
+{
+    return lhs == rhs.operation + rhs.line.content;
+}
+
+struct Hunk {
+    Range old_file_range;
+    Range new_file_range;
+    std::vector<PatchLine> lines;
+};
+
+struct Patch {
+    Patch() = default;
+
+    explicit Patch(Format format_)
+        : format(format_)
+    {
+    }
+
+    Format format { Format::Unknown };
+
+    std::string index_file_path;
+
+    std::string old_file_path;
+    std::string new_file_path;
+
+    // NOTE: We currently do not do anything with this timestamp (yet). However,
+    //       we still keep this information for use in reject file output. In
+    //       the future we should parse this information as a proper timestamp.
+    std::string old_file_time;
+    std::string new_file_time;
+
+    std::vector<Hunk> hunks;
+};
+
+} // namespace Patch

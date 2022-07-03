@@ -37,7 +37,6 @@ The text leading up to this was:
 
 TEST(DetermineFormat, Git)
 {
-
     std::stringstream patch_file(R"(diff --git a/b.cpp b/b.cpp
 index 5047a34..a46866d 100644
 --- a/b.cpp

@@ -83,10 +83,38 @@ void parse_file_line(const std::string& input, int strip, std::string& path, std
         // In most patches, a \t is used to separate the path from
         // the timestamp. However, POSIX does not seem to specify one
         // way or another.
-        it = std::find_if(it, input.end(), [](char c) {
-            return c == '\t' || c == ' ';
-        });
-        path = std::string(input.begin(), it);
+        //
+        // GNU diff seems to always quote paths with whitespace in them,
+        // however git does not. To implement this, if we find any tab
+        // that is considered the end of the path. Otherwise if no tab
+        // is found, we fall back on using a space.
+        while (true) {
+            if (it == input.end()) {
+                path = input;
+                break;
+            }
+
+            // Must have reached the end of the path.
+            if (*it == '\t') {
+                path = std::string(input.begin(), it);
+                break;
+            }
+
+            // May have reached end of the path, but it also could be
+            // a path with spaces. Look for a tab to find out.
+            if (*it == ' ') {
+                auto new_it = std::find(it, input.end(), '\t');
+                if (new_it == input.end()) {
+                    path = std::string(input.begin(), it);
+                } else {
+                    it = new_it;
+                    path = std::string(input.begin(), new_it);
+                }
+                break;
+            }
+
+            ++it;
+        }
     }
 
     // Anything after the path is considered the timestamp.

@@ -105,6 +105,19 @@ TEST(Strip, StandardPath)
     EXPECT_EQ(path, "file.txt");
     EXPECT_EQ(timestamp, "2022-06-10 19:28:11.018017172 +1200");
 
+    // Space with no timestamp
+    path.clear();
+    timestamp.clear();
+    Patch::parse_file_line("b/a file name\t", -1, path, &timestamp);
+    EXPECT_EQ(path, "a file name");
+    EXPECT_EQ(timestamp, "");
+
+    // Space with timestamp
+    path.clear();
+    Patch::parse_file_line("b/a file name\t2022-06-10 19:28:11.018017172 +1200", -1, path, &timestamp);
+    EXPECT_EQ(path, "a file name");
+    EXPECT_EQ(timestamp, "2022-06-10 19:28:11.018017172 +1200");
+
     // Empty path
     Patch::parse_file_line("", -1, path, &timestamp);
     EXPECT_EQ(path, "");

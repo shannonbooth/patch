@@ -22,4 +22,6 @@ std::string read_tty_until_enter();
 
 void chdir(const std::string& path);
 
+bool remove_empty_directory(const std::string& path);
+
 } // namespace Patch

@@ -98,6 +98,19 @@ std::string read_tty_until_enter()
     }
 }
 
+bool remove_empty_directory(const std::string& path)
+{
+    int ret = ::rmdir(path.c_str());
+    if (ret == 0)
+        return true;
+
+    // POSIX allows for either ENOTEMPTY or EEXIST.
+    if (errno != ENOTEMPTY && errno != EEXIST)
+        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path);
+
+    return false;
+}
+
 void chdir(const std::string& path)
 {
 #ifdef _WIN32

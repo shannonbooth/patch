@@ -182,6 +182,16 @@ static void write_to_file(const std::string& path, std::ios::openmode mode, std:
         throw std::system_error(errno, std::generic_category(), "Failed writing to file " + path);
 }
 
+static void remove_file_and_empty_parent_folders(std::filesystem::path path)
+{
+    std::filesystem::remove(path);
+    while (path.has_parent_path()) {
+        path = path.parent_path();
+        if (!remove_empty_directory(path.string()))
+            break;
+    }
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -332,8 +342,8 @@ int process_patch(const Options& options)
                 // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
                 if (patch.new_file_path == "/dev/null") {
                     if (std::filesystem::file_size(output_file) == 0) {
-                        if (!options.dry_run && std::remove(output_file.c_str()) != 0)
-                            throw std::system_error(errno, std::generic_category(), "Failed removing " + output_file);
+                        if (!options.dry_run)
+                            remove_file_and_empty_parent_folders(output_file);
                     } else {
                         std::cout << "Not deleting file " << output_file << " as content differs from patch\n";
                     }

@@ -337,6 +337,37 @@ Hunk #1 FAILED at 1.
 }
 ''')
 
+    def test_remove_file_in_folders(self):
+        ''' test a patch removing a file removes all containing empty folders '''
+        patch = '''
+--- a/b/c/d/e	2022-07-03 14:32:47.081054897 +1200
++++ /dev/null	2022-06-30 20:33:13.470250591 +1200
+@@ -1 +0,0 @@
+-1
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        path = os.path.join('a', 'b', 'c', 'd')
+        os.makedirs(path)
+        to_patch = '1\n'
+        with open(os.path.join(path, 'e'), 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        with open(os.path.join('a', '1'), 'w') as another_file:
+            another_file.write('some stuff!\n')
+
+        # Test that the file and empty directory are removed, but the
+        # non empty directory is not removed.
+        ret = run_patch('patch -i diff.patch -p0')
+        self.assertEqual(ret.stdout, 'patching file a/b/c/d/e\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFalse(os.path.exists(os.path.join('a', 'b', 'c', 'd')))
+        self.assertFalse(os.path.exists(os.path.join('a', 'b', 'c')))
+        self.assertFalse(os.path.exists(os.path.join('a', 'b')))
+        self.assertFileEqual(os.path.join('a', '1'), 'some stuff!\n')
+
     def test_remove_file_successfully(self):
         ''' test removal patch that has some garbage not found in patch file does not clean file '''
         patch = '''

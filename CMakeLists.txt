@@ -56,7 +56,7 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include/patch/
 
 add_subdirectory(app)
 
-option(BUILD_TESTING "Build the tests" ON)
+option(BUILD_TESTING "Build the tests" OFF)
 if(BUILD_TESTING)
   enable_testing()
   add_subdirectory(tests)

@@ -68,6 +68,82 @@ The text leading up to this was:
 )");
 }
 
+TEST(DetermineFormat, GitExtendedRenameNoHunk)
+{
+    std::stringstream patch_file(R"(diff --git a/new_file b/another_new
+similarity index 100%
+rename from new_file
+rename to another_new
+)");
+
+    Patch::Patch patch;
+    Patch::PatchHeaderInfo info;
+    Patch::parse_patch_header(patch, patch_file, info, -1);
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.operation, Patch::Operation::Rename);
+    EXPECT_EQ(patch.old_file_path, "new_file");
+    EXPECT_EQ(patch.new_file_path, "another_new");
+
+    std::stringstream output;
+    Patch::print_header_info(patch_file, info, output);
+
+    EXPECT_EQ(output.str(),
+        R"(Hmm...  Looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|diff --git a/new_file b/another_new
+|similarity index 100%
+|rename from new_file
+|rename to another_new
+--------------------------
+)");
+}
+
+TEST(DetermineFormat, GitExtendedRenameWithHunk)
+{
+    std::stringstream patch_file(R"(diff --git a/file b/test
+similarity index 87%
+rename from a/b/c/d/thing
+rename to a/b/c/d/e/test
+index 71ac1b5..fc3102f 100644
+--- a/thing
++++ b/test
+@@ -2,7 +2,6 @@ a
+ b
+ c
+ d
+-e
+ f
+ g
+ h
+)");
+
+    Patch::Patch patch;
+    Patch::PatchHeaderInfo info;
+    Patch::parse_patch_header(patch, patch_file, info, -1);
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.operation, Patch::Operation::Rename);
+    EXPECT_EQ(patch.old_file_path, "thing");
+    EXPECT_EQ(patch.new_file_path, "test");
+
+    std::stringstream output;
+    Patch::print_header_info(patch_file, info, output);
+
+    EXPECT_EQ(output.str(),
+        R"(Hmm...  Looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|diff --git a/file b/test
+|similarity index 87%
+|rename from a/b/c/d/thing
+|rename to a/b/c/d/e/test
+|index 71ac1b5..fc3102f 100644
+|--- a/thing
+|+++ b/test
+--------------------------
+)");
+}
+
 TEST(DetermineFormat, Context)
 {
     std::stringstream patch_file(R"(*** a.cpp	2022-04-03 18:41:54.611014944 +1200

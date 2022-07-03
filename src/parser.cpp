@@ -322,6 +322,49 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
     return parser.is_eof();
 }
 
+static bool parse_git_extended_info(Patch& patch, const std::string& line, int strip)
+{
+    // NOTE: we do 'strip - 1' here as the extended headers do not come with a leading
+    // "a/" or "b/" prefix - so we strip the filename as if this part is already stripped.
+    --strip;
+
+    if (starts_with(line, "rename from ")) {
+        patch.operation = Operation::Rename;
+        patch.old_file_path = strip_path(line.substr(12, line.size() - 12), strip);
+        return true;
+    }
+
+    if (starts_with(line, "rename to ")) {
+        patch.operation = Operation::Rename;
+        patch.new_file_path = strip_path(line.substr(10, line.size() - 10), strip);
+        return true;
+    }
+
+    if (starts_with(line, "copy to ")) {
+        patch.operation = Operation::Copy;
+        patch.new_file_path = strip_path(line.substr(8, line.size() - 8), strip);
+        return true;
+    }
+
+    if (starts_with(line, "copy from ")) {
+        patch.operation = Operation::Copy;
+        patch.old_file_path = strip_path(line.substr(10, line.size() - 10), strip);
+        return true;
+    }
+
+    if (starts_with(line, "deleted file mode ")) {
+        patch.operation = Operation::Delete;
+        return true;
+    }
+
+    if (starts_with(line, "new file mode ")) {
+        patch.operation = Operation::Add;
+        return true;
+    }
+
+    return false;
+}
+
 void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip)
 {
     header_info.patch_start = file.tellg();
@@ -331,6 +374,7 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
     std::string line;
 
     size_t lines = 0;
+    bool is_git_patch = false;
     Hunk hunk;
 
     // Iterate through the input file looking for lines that look like a context, normal or unified diff.
@@ -360,6 +404,22 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
 
         if (starts_with(line, "Index: ")) {
             parse_file_line(line.substr(7, line.size() - 7), strip, patch.index_file_path);
+            continue;
+        }
+
+        // Git diffs sometimes have some extended information in them which can express some
+        // operations in a more terse manner. If we recognise a git diff, try and look for
+        // these extensions lines in the patch.
+        if (!is_git_patch && starts_with(line, "diff --git ")) {
+            is_git_patch = true;
+            patch.format = Format::Unified;
+            continue;
+        }
+
+        // Consider any extended info line as part of the hunk as renames and copies may not
+        // have any hunk - and we need to advance parsing past this informational section.
+        if (is_git_patch && parse_git_extended_info(patch, line, strip)) {
+            header_info.lines_till_first_hunk = lines + 1;
             continue;
         }
 
@@ -419,6 +479,7 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
         }
     }
 
+    file.clear();
     file.seekg(header_info.patch_start);
 
     header_info.format = patch.format;
@@ -427,6 +488,13 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
         --my_lines;
         if (!get_line(file, line))
             throw std::runtime_error("Failure reading line from file parsing patch header");
+    }
+
+    if (patch.operation == Operation::Change) {
+        if (patch.new_file_path == "/dev/null")
+            patch.operation = Operation::Delete;
+        else if (patch.old_file_path == "/dev/null")
+            patch.operation = Operation::Add;
     }
 }
 
@@ -719,6 +787,14 @@ Patch parse_unified_patch(Patch& patch, std::istream& file)
         }
     }
 
+    // It is okay to not find any hunks for certain extended format hunks, as the
+    // extended format may be the only operation that is being undertaken for this
+    // patch.
+    if (state == State::InitialHunkContext && patch.hunks.empty()
+        && (patch.operation == Operation::Rename || patch.operation == Operation::Copy)) {
+        return patch;
+    }
+
     if (to_lines_expected != 0)
         throw std::invalid_argument("Expected 0 lines left in 'to', got " + std::to_string(to_lines_expected));
     if (old_lines_expected != 0)
@@ -782,7 +858,7 @@ Patch parse_patch(std::istream& file, Format format, int strip)
 
 std::string strip_path(const std::string& path, int amount)
 {
-    // A strip count of -1 (the default) indicates that we use the basename of the filepath.
+    // A negative strip count (the default) indicates that we use the basename of the filepath.
     const bool strip_leading = amount < 0;
     if (strip_leading)
         return path.substr(path.find_last_of("/\\") + 1);

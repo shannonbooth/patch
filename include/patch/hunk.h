@@ -90,6 +90,14 @@ struct Hunk {
     std::vector<PatchLine> lines;
 };
 
+enum class Operation {
+    Change,
+    Rename,
+    Copy,
+    Delete,
+    Add,
+};
+
 struct Patch {
     Patch() = default;
 
@@ -99,6 +107,7 @@ struct Patch {
     }
 
     Format format { Format::Unknown };
+    Operation operation { Operation::Change };
 
     std::string index_file_path;
 

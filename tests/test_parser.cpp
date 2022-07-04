@@ -390,6 +390,24 @@ index 5047a34..905869d 100644
     EXPECT_EQ(patch.new_file_path, "main.cpp");
 }
 
+TEST(Parser, GitRenameWithQuotedFilename)
+{
+    std::stringstream patch_file(R"(
+diff --git a/a.txt "b/b\nc"
+similarity index 100%
+rename from a.txt
+rename to "b\nc"
+)");
+
+    auto patch = Patch::parse_patch(patch_file);
+    EXPECT_EQ(patch.old_file_path, "a.txt");
+    EXPECT_EQ(patch.new_file_path, "b\nc");
+    EXPECT_EQ(patch.operation, Patch::Operation::Rename);
+    EXPECT_EQ(patch.hunks.size(), 0);
+    EXPECT_EQ(patch.index_file_path, "");
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+}
+
 TEST(Parser, TestWithTabInTimestampHeader)
 {
     std::stringstream patch_file(R"(

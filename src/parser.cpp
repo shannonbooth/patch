@@ -331,27 +331,36 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
     // "a/" or "b/" prefix - so we strip the filename as if this part is already stripped.
     --strip;
 
+    auto parse_filename = [&](std::string& output, const std::string& name) {
+        if (!name.empty() && name[0] == '"') {
+            parse_quoted_string(name, output);
+            output = strip_path(output, strip);
+        } else {
+            output = strip_path(name, strip);
+        }
+    };
+
     if (starts_with(line, "rename from ")) {
         patch.operation = Operation::Rename;
-        patch.old_file_path = strip_path(line.substr(12, line.size() - 12), strip);
+        parse_filename(patch.old_file_path, line.substr(12, line.size() - 12));
         return true;
     }
 
     if (starts_with(line, "rename to ")) {
         patch.operation = Operation::Rename;
-        patch.new_file_path = strip_path(line.substr(10, line.size() - 10), strip);
+        parse_filename(patch.new_file_path, line.substr(10, line.size() - 10));
         return true;
     }
 
     if (starts_with(line, "copy to ")) {
         patch.operation = Operation::Copy;
-        patch.new_file_path = strip_path(line.substr(8, line.size() - 8), strip);
+        parse_filename(patch.new_file_path, line.substr(8, line.size() - 8));
         return true;
     }
 
     if (starts_with(line, "copy from ")) {
         patch.operation = Operation::Copy;
-        patch.old_file_path = strip_path(line.substr(10, line.size() - 10), strip);
+        parse_filename(patch.old_file_path, line.substr(10, line.size() - 10));
         return true;
     }
 

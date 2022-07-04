@@ -54,6 +54,9 @@ static std::string::const_iterator parse_quoted_string(const std::string& input,
             case '"':
                 output += '"';
                 break;
+            case 'n':
+                output += '\n';
+                break;
             default:
                 throw std::invalid_argument("Invalid or unsupported escape character in path " + input);
             }

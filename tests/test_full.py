@@ -878,6 +878,136 @@ Hunk #1 succeeded at 1 with fuzz 2.
 }
 '''.encode('utf-8'))
 
+    def test_patch_rename_no_change(self):
+        ''' test that patch correctly and applies a rename '''
+        patch = '''diff --git a/orig_file b/another_new
+similarity index 100%
+rename from orig_file
+rename to another_new
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        with open('orig_file', 'w') as to_patch_file:
+            to_patch_file.write('a\nb\nc\nd\n')
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file another_new (rename from orig_file)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('another_new', 'a\nb\nc\nd\n')
+        self.assertFalse(os.path.exists('orig_file'))
+
+    def test_patch_rename_with_change(self):
+        ''' test that patch correctly and applies a rename with hunk content '''
+        patch = '''diff --git a/file b/test
+similarity index 87%
+rename from thing
+rename to test
+index 71ac1b5..fc3102f 100644
+--- a/thing
++++ b/test
+@@ -2,7 +2,6 @@ a
+ b
+ c
+ d
+-e
+ f
+ g
+ h
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        with open('thing', 'w') as to_patch_file:
+            to_patch_file.write('''a
+b
+c
+d
+e
+f
+g
+h
+''')
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file test (rename from thing)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('test', '''a
+b
+c
+d
+f
+g
+h
+''')
+        self.assertFalse(os.path.exists('thing'))
+
+    def test_patch_copy_no_change(self):
+        ''' test that patch correctly and applies a copy with no hunk content '''
+        patch = '''diff --git a/x b/y
+similarity index 100%
+copy from x
+copy to y
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '''int main()
+{
+    return 0;
+}
+'''
+        with open('x', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.stdout, 'patching file y (copied from x)\n')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('x', to_patch)
+        self.assertFileEqual('y', to_patch)
+
+
+    def test_patch_copy_with_change(self):
+        ''' test that patch correctly and applies a copy with hunk content '''
+        patch = '''diff --git a/x b/y
+similarity index 51%
+copy from x
+copy to y
+index 905869d..2227c3a 100644
+--- a/x
++++ b/y
+@@ -1,4 +1,4 @@
+ int main()
+ {
+-    return 0;
++    return 1;
+ }
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '''int main()
+{
+    return 0;
+}
+'''
+        with open('x', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file y (copied from x)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('x', to_patch)
+        self.assertFileEqual('y', '''int main()
+{
+    return 1;
+}
+''')
+
     def test_error_when_invalid_patch_given(self):
         ''' test proper error is output when an invalid patch file is supplied '''
         patch = '''

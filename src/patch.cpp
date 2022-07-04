@@ -192,6 +192,17 @@ static void remove_file_and_empty_parent_folders(std::filesystem::path path)
     }
 }
 
+static std::string output_path(const Options& options, const Patch& patch, const std::string& file_to_patch)
+{
+    if (!options.out_file_path.empty())
+        return options.out_file_path;
+
+    if (patch.operation == Operation::Rename || patch.operation == Operation::Copy)
+        return patch.new_file_path;
+
+    return file_to_patch;
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -271,14 +282,19 @@ int process_patch(const Options& options)
 
         parse_patch_body(patch, patch_file.istream());
 
-        const auto& output_file = options.out_file_path.empty() ? file_to_patch : options.out_file_path;
+        const auto output_file = output_path(options, patch, file_to_patch);
+
         if (options.dry_run)
             std::cout << "checking";
         else
             std::cout << "patching";
 
         std::cout << " file " << output_file;
-        if (output_file == "-")
+        if (patch.operation == Operation::Rename)
+            std::cout << " (rename from " << file_to_patch << ")";
+        else if (patch.operation == Operation::Copy)
+            std::cout << " (copied from " << file_to_patch << ")";
+        else if (output_file == "-")
             std::cout << " (read from " << file_to_patch << ")";
         std::cout << '\n';
 
@@ -338,6 +354,9 @@ int process_patch(const Options& options)
                 }
                 std::cout << '\n';
             } else {
+                if (!options.dry_run && patch.operation == Operation::Rename)
+                    remove_file_and_empty_parent_folders(file_to_patch);
+
                 // Clean up the file if it looks like it was removed.
                 // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
                 if (patch.new_file_path == "/dev/null") {

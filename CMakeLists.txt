@@ -9,8 +9,8 @@ if(CCACHE_PROGRAM)
 endif()
 
 project(patch
-    DESCRIPTION "Patch library"
-    LANGUAGES CXX
+  DESCRIPTION "Patch library"
+  LANGUAGES CXX
 )
 
 include(GNUInstallDirs)

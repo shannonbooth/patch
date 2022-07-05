@@ -408,6 +408,37 @@ rename to "b\nc"
     EXPECT_EQ(patch.format, Patch::Format::Unified);
 }
 
+TEST(Parser, GitRenameWithStripZero)
+{
+    std::stringstream patch_file(R"(
+From 89629b257f091dd0ff78509ca0ad626089defaa7 Mon Sep 17 00:00:00 2001
+From: Shannon Booth <shannon.ml.booth@gmail.com>
+Date: Tue, 5 Jul 2022 18:53:32 +1200
+Subject: [PATCH] move a to b
+
+---
+ a => b | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename a => b (100%)
+
+diff --git a/a b/b
+similarity index 100%
+rename from a
+rename to b
+--
+2.25.1
+
+)");
+
+    auto patch = Patch::parse_patch(patch_file, Patch::Format::Unknown, 0);
+    EXPECT_EQ(patch.old_file_path, "a/a");
+    EXPECT_EQ(patch.new_file_path, "b/b");
+    EXPECT_EQ(patch.operation, Patch::Operation::Rename);
+    EXPECT_EQ(patch.hunks.size(), 0);
+    EXPECT_EQ(patch.index_file_path, "");
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+}
+
 TEST(Parser, TestWithTabInTimestampHeader)
 {
     std::stringstream patch_file(R"(

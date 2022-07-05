@@ -327,40 +327,42 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
 
 static bool parse_git_extended_info(Patch& patch, const std::string& line, int strip)
 {
-    // NOTE: we do 'strip - 1' here as the extended headers do not come with a leading
-    // "a/" or "b/" prefix - so we strip the filename as if this part is already stripped.
-    --strip;
-
-    auto parse_filename = [&](std::string& output, const std::string& name) {
+    auto parse_filename = [&](std::string& output, const std::string& name, const std::string& prefix) {
+        // NOTE: we do 'strip - 1' here as the extended headers do not come with a leading
+        // "a/" or "b/" prefix - strip the filename as if this part is already stripped.
         if (!name.empty() && name[0] == '"') {
             parse_quoted_string(name, output);
-            output = strip_path(output, strip);
+            output = strip_path(output, strip - 1);
         } else {
-            output = strip_path(name, strip);
+            output = strip_path(name, strip - 1);
         }
+
+        // Special case - we're not stripping at all. So make sure to add on the "a/" or "b/" prefix.
+        if (strip == 0)
+            output = prefix + output;
     };
 
     if (starts_with(line, "rename from ")) {
         patch.operation = Operation::Rename;
-        parse_filename(patch.old_file_path, line.substr(12, line.size() - 12));
+        parse_filename(patch.old_file_path, line.substr(12, line.size() - 12), "a/");
         return true;
     }
 
     if (starts_with(line, "rename to ")) {
         patch.operation = Operation::Rename;
-        parse_filename(patch.new_file_path, line.substr(10, line.size() - 10));
+        parse_filename(patch.new_file_path, line.substr(10, line.size() - 10), "b/");
         return true;
     }
 
     if (starts_with(line, "copy to ")) {
         patch.operation = Operation::Copy;
-        parse_filename(patch.new_file_path, line.substr(8, line.size() - 8));
+        parse_filename(patch.new_file_path, line.substr(8, line.size() - 8), "b/");
         return true;
     }
 
     if (starts_with(line, "copy from ")) {
         patch.operation = Operation::Copy;
-        parse_filename(patch.old_file_path, line.substr(10, line.size() - 10));
+        parse_filename(patch.old_file_path, line.substr(10, line.size() - 10), "a/");
         return true;
     }
 

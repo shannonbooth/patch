@@ -2,6 +2,7 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <gtest/gtest.h>
+#include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
 
@@ -226,5 +227,34 @@ diff -rc a/main2.cpp b/main2.cpp
         EXPECT_EQ(patch2.hunks[0].lines[1], "-// just a main with a comment");
         EXPECT_EQ(patch2.hunks[0].lines[2], "-//");
         EXPECT_EQ(patch2.hunks[0].lines[3], "+// just a main with a changed comment");
+    }
+}
+
+TEST(MultiPatchParse, GitDiffRenameAndCopy)
+{
+    std::stringstream patch_file(R"(
+diff --git a/b b/copy
+similarity index 100%
+copy from b
+copy to copy
+diff --git a/a b/rename
+similarity index 100%
+rename from a
+rename to rename
+)");
+    {
+        auto patch1 = Patch::parse_patch(patch_file);
+        EXPECT_EQ(patch1.hunks.size(), 0);
+        EXPECT_EQ(patch1.operation, Patch::Operation::Copy);
+        EXPECT_EQ(patch1.old_file_path, "b");
+        EXPECT_EQ(patch1.new_file_path, "copy");
+    }
+
+    {
+        auto patch2 = Patch::parse_patch(patch_file);
+        EXPECT_EQ(patch2.hunks.size(), 0);
+        EXPECT_EQ(patch2.operation, Patch::Operation::Rename);
+        EXPECT_EQ(patch2.old_file_path, "a");
+        EXPECT_EQ(patch2.new_file_path, "rename");
     }
 }

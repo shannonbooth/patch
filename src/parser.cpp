@@ -379,7 +379,7 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
     return false;
 }
 
-void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip)
+bool parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip)
 {
     header_info.patch_start = file.tellg();
 
@@ -389,6 +389,7 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
 
     size_t lines = 0;
     bool is_git_patch = false;
+    bool should_parse_body = true;
     Hunk hunk;
 
     // Iterate through the input file looking for lines that look like a context, normal or unified diff.
@@ -424,7 +425,14 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
         // Git diffs sometimes have some extended information in them which can express some
         // operations in a more terse manner. If we recognise a git diff, try and look for
         // these extensions lines in the patch.
-        if (!is_git_patch && starts_with(line, "diff --git ")) {
+        if (starts_with(line, "diff --git ")) {
+            // We have already parsed the patch header but have found the next patch! This
+            // must mean that we have not found any hunk to parse for the patch body.
+            if (is_git_patch) {
+                should_parse_body = false;
+                break;
+            }
+
             is_git_patch = true;
             patch.format = Format::Unified;
             continue;
@@ -510,6 +518,8 @@ void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
         else if (patch.old_file_path == "/dev/null")
             patch.operation = Operation::Add;
     }
+
+    return should_parse_body;
 }
 
 Hunk hunk_from_context_parts(LineNumber old_start_line, const std::vector<PatchLine>& old_lines,
@@ -865,8 +875,9 @@ Patch parse_patch(std::istream& file, Format format, int strip)
 {
     Patch patch(format);
     PatchHeaderInfo info;
-    parse_patch_header(patch, file, info, strip);
-    parse_patch_body(patch, file);
+    bool should_parse_body = parse_patch_header(patch, file, info, strip);
+    if (should_parse_body)
+        parse_patch_body(patch, file);
     return patch;
 }
 

@@ -240,7 +240,7 @@ int process_patch(const Options& options)
 
         Patch patch(format);
         PatchHeaderInfo info;
-        parse_patch_header(patch, patch_file.istream(), info, options.strip_size);
+        bool should_parse_body = parse_patch_header(patch, patch_file.istream(), info, options.strip_size);
 
         if (patch.format == Format::Unknown) {
             if (first_patch)
@@ -280,7 +280,8 @@ int process_patch(const Options& options)
             continue;
         }
 
-        parse_patch_body(patch, patch_file.istream());
+        if (should_parse_body)
+            parse_patch_body(patch, patch_file.istream());
 
         const auto output_file = output_path(options, patch, file_to_patch);
 

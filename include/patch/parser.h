@@ -20,7 +20,7 @@ struct PatchHeaderInfo {
     Format format { Format::Unknown };
 };
 
-void parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip = -1);
+bool parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip = -1);
 
 void parse_patch_body(Patch& patch, std::istream& file);
 

@@ -182,6 +182,9 @@ const Options& CmdLineParser::parse()
         if (parse_string('o', "--output", m_options.out_file_path))
             continue;
 
+        if (parse_string('r', "--reject-file", m_options.reject_file_path))
+            continue;
+
         if (parse_int('p', "--strip", m_options.strip_size))
             continue;
 
@@ -267,6 +270,9 @@ void show_usage(std::ostream& out)
            "\n"
            "    -o, --output <file>\n"
            "                Output what would be the result of patched files to <file>.\n"
+           "\n"
+	   "    -r, --reject-file <file>\n"
+           "                Write the reject file to <file> instead of the default location '<output-file>.rej'.\n"
            "\n"
            "    -D, --ifdef <define>\n"
            "                When applying patch to a file all differences will be marked with a C preprocessor\n"

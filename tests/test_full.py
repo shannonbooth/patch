@@ -337,6 +337,36 @@ Hunk #1 FAILED at 1.
 }
 ''')
 
+    def test_override_reject_file(self):
+        ''' applying a rejected patch with overridden reject file writes to correct location '''
+        patch = '''\
+--- a	2022-07-08 10:34:03.860546761 +1200
++++ b	2022-07-08 10:34:20.096714313 +1200
+@@ -1,3 +1,3 @@
+-a
+-b
+-c
++1
++2
++3
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '1\n2\n3\n'
+        with open('a', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch --force -r override.rej')
+        self.assertEqual(ret.stdout, '''patching file a
+Hunk #1 FAILED at 1.
+1 out of 1 hunks FAILED -- saving rejects to file override.rej
+''')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 1)
+        self.assertFileEqual('override.rej', patch)
+
+
     def test_remove_file_in_folders(self):
         ''' test a patch removing a file removes all containing empty folders '''
         patch = '''

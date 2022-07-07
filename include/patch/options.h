@@ -36,6 +36,7 @@ struct Options {
     int max_fuzz { 2 };
     bool reverse_patch { false };
     std::string file_to_patch;
+    std::string reject_file_path;
 
     // non posix defined
     bool force { false };

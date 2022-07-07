@@ -322,9 +322,6 @@ int process_patch(const Options& options)
 
         input_file.close();
 
-        // Now that the patch has successfully applied - rename the temporary staging file over to the output file.
-        const auto reject_file = output_file + ".rej";
-
         if (output_file == "-") {
             // Nothing else to do other than write to stdout :^)
             if (tmp_out_file.rdbuf()->in_avail() > 0 && !(std::cout << tmp_out_file.rdbuf()))
@@ -355,8 +352,9 @@ int process_patch(const Options& options)
                 const char* reason = result.was_skipped ? "ignored" : "FAILED";
                 std::cout << result.failed_hunks << " out of " << patch.hunks.size() << " hunks " << reason;
                 if (!options.dry_run) {
-                    std::cout << " -- saving rejects to file " << reject_file;
-                    write_to_file(reject_file, mode, tmp_reject_file);
+                    const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
+                    std::cout << " -- saving rejects to file " << reject_path;
+                    write_to_file(reject_path, mode, tmp_reject_file);
                 }
                 std::cout << '\n';
             } else {

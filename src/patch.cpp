@@ -290,12 +290,18 @@ int process_patch(const Options& options)
             std::cout << "patching";
 
         std::cout << " file " << output_file;
-        if (patch.operation == Operation::Rename)
-            std::cout << " (rename from " << file_to_patch << ")";
-        else if (patch.operation == Operation::Copy)
+        if (patch.operation == Operation::Rename) {
+            if (file_to_patch == output_file) {
+                std::cout << " (already renamed from " << patch.old_file_path << ")";
+                patch.operation = Operation::Change;
+            } else {
+                std::cout << " (rename from " << file_to_patch << ")";
+            }
+        } else if (patch.operation == Operation::Copy) {
             std::cout << " (copied from " << file_to_patch << ")";
-        else if (output_file == "-")
+        } else if (output_file == "-") {
             std::cout << " (read from " << file_to_patch << ")";
+        }
         std::cout << '\n';
 
         std::ios::openmode mode = std::ios::out;

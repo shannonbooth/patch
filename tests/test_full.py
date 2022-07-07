@@ -1008,6 +1008,74 @@ index 905869d..2227c3a 100644
 }
 ''')
 
+
+    def test_patch_rename_already_exists_no_content(self):
+        ''' patch is not applied for rename only '''
+        patch = '''
+From 89629b257f091dd0ff78509ca0ad626089defaa7 Mon Sep 17 00:00:00 2001
+From: Shannon Booth <shannon.ml.booth@gmail.com>
+Date: Tue, 5 Jul 2022 18:53:32 +1200
+Subject: [PATCH] move a to b
+
+---
+ a => b | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename a => b (100%)
+
+diff --git a/a b/b
+similarity index 100%
+rename from a
+rename to b
+--
+2.25.1
+
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        existing_b = '1\n2\n3\n'
+        with open('b', 'w') as to_patch_file:
+            to_patch_file.write(existing_b)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file b (already renamed from a)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFalse(os.path.exists('a'))
+        self.assertFileEqual('b', existing_b)
+
+
+    def test_patch_rename_already_exists_with_content(self):
+        ''' test rename patch where rename is made, but content of patch is still applied '''
+        patch = '''
+diff --git a/b b/a
+similarity index 66%
+rename from b
+rename to a
+index de98044..0f673f8 100644
+--- a/b
++++ b/a
+@@ -1,3 +1,3 @@
+ a
+-b
++2
+ c
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        existing_b = 'a\nb\nc\n'
+        with open('a', 'w') as to_patch_file:
+            to_patch_file.write(existing_b)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.stdout, 'patching file a (already renamed from b)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFalse(os.path.exists('b'))
+        self.assertFileEqual('a', 'a\n2\nc\n')
+
+
     def test_error_when_invalid_patch_given(self):
         ''' test proper error is output when an invalid patch file is supplied '''
         patch = '''

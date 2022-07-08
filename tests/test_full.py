@@ -928,6 +928,27 @@ rename to another_new
         self.assertFileEqual('another_new', 'a\nb\nc\nd\n')
         self.assertFalse(os.path.exists('orig_file'))
 
+    def test_patch_reverse_rename_no_change(self):
+        ''' test that patch with reverse option correctly applies a rename '''
+        patch = '''diff --git a/x b/y
+similarity index 100%
+rename from x
+rename to y
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'a\nb\nc\nd\n'
+        with open('y', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch -R')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file x (rename from y)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('x', to_patch)
+        self.assertFalse(os.path.exists('y'))
+
     def test_patch_rename_with_change(self):
         ''' test that patch correctly applies a rename with hunk content '''
         patch = '''diff --git a/file b/test
@@ -1104,6 +1125,37 @@ index de98044..0f673f8 100644
         self.assertEqual(ret.returncode, 0)
         self.assertFalse(os.path.exists('b'))
         self.assertFileEqual('a', 'a\n2\nc\n')
+
+
+    def test_patch_revsered_rename_already_exists_with_content(self):
+        ''' test reversed rename patch where rename is made, but content of patch is still applied '''
+        patch = '''
+diff --git a/a b/b
+similarity index 66%
+rename from a
+rename to b
+index de98044..0f673f8 100644
+--- a/a
++++ b/b
+@@ -1,3 +1,3 @@
+ a
+-b
++2
+ c
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        existing_a = 'a\n2\nc\n'
+        with open('a', 'w') as to_patch_file:
+            to_patch_file.write(existing_a)
+
+        ret = run_patch('patch -i diff.patch --reverse')
+        self.assertEqual(ret.stdout, 'patching file a (already renamed from b)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFalse(os.path.exists('b'))
+        self.assertFileEqual('a', 'a\nb\nc\n')
 
 
     def test_error_when_invalid_patch_given(self):

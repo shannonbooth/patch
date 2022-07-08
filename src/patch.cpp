@@ -198,7 +198,7 @@ static std::string output_path(const Options& options, const Patch& patch, const
         return options.out_file_path;
 
     if (patch.operation == Operation::Rename || patch.operation == Operation::Copy)
-        return patch.new_file_path;
+        return options.reverse_patch ? patch.old_file_path : patch.new_file_path;
 
     return file_to_patch;
 }
@@ -293,7 +293,7 @@ int process_patch(const Options& options)
         std::cout << " file " << output_file;
         if (patch.operation == Operation::Rename) {
             if (file_to_patch == output_file) {
-                std::cout << " (already renamed from " << patch.old_file_path << ")";
+                std::cout << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";
                 patch.operation = Operation::Change;
             } else {
                 std::cout << " (rename from " << file_to_patch << ")";

@@ -1094,9 +1094,9 @@ index de98044..0f673f8 100644
         with open('diff.patch', 'w') as patch_file:
             patch_file.write(patch)
 
-        existing_b = 'a\nb\nc\n'
+        existing_a = 'a\nb\nc\n'
         with open('a', 'w') as to_patch_file:
-            to_patch_file.write(existing_b)
+            to_patch_file.write(existing_a)
 
         ret = run_patch('patch -i diff.patch')
         self.assertEqual(ret.stdout, 'patching file a (already renamed from b)\n')

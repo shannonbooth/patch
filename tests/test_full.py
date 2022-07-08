@@ -909,7 +909,7 @@ Hunk #1 succeeded at 1 with fuzz 2.
 '''.encode('utf-8'))
 
     def test_patch_rename_no_change(self):
-        ''' test that patch correctly and applies a rename '''
+        ''' test that patch correctly applies a rename '''
         patch = '''diff --git a/orig_file b/another_new
 similarity index 100%
 rename from orig_file
@@ -929,7 +929,7 @@ rename to another_new
         self.assertFalse(os.path.exists('orig_file'))
 
     def test_patch_rename_with_change(self):
-        ''' test that patch correctly and applies a rename with hunk content '''
+        ''' test that patch correctly applies a rename with hunk content '''
         patch = '''diff --git a/file b/test
 similarity index 87%
 rename from thing
@@ -975,7 +975,7 @@ h
         self.assertFalse(os.path.exists('thing'))
 
     def test_patch_copy_no_change(self):
-        ''' test that patch correctly and applies a copy with no hunk content '''
+        ''' test that patch correctly applies a copy with no hunk content '''
         patch = '''diff --git a/x b/y
 similarity index 100%
 copy from x
@@ -1001,7 +1001,7 @@ copy to y
 
 
     def test_patch_copy_with_change(self):
-        ''' test that patch correctly and applies a copy with hunk content '''
+        ''' test that patch correctly applies a copy with hunk content '''
         patch = '''diff --git a/x b/y
 similarity index 51%
 copy from x

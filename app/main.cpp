@@ -13,7 +13,7 @@ int main(int argc, const char* const* argv)
     try {
         Patch::CmdLineParser cmdline(argc, argv);
         return Patch::process_patch(cmdline.parse());
-    } catch (const std::bad_alloc& e) {
+    } catch (const std::bad_alloc&) {
         std::cerr << "patch: **** out of memory\n";
         return 2;
     } catch (const Patch::cmdline_parse_error& e) {

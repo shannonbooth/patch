@@ -814,10 +814,8 @@ Patch parse_unified_patch(Patch& patch, std::istream& file)
     // It is okay to not find any hunks for certain extended format hunks, as the
     // extended format may be the only operation that is being undertaken for this
     // patch.
-    if (state == State::InitialHunkContext && patch.hunks.empty()
-        && (patch.operation == Operation::Rename || patch.operation == Operation::Copy)) {
+    if (state == State::InitialHunkContext && patch.hunks.empty())
         return patch;
-    }
 
     if (to_lines_expected != 0)
         throw std::invalid_argument("Expected 0 lines left in 'to', got " + std::to_string(to_lines_expected));

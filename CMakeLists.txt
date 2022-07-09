@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
+cmake_policy(VERSION 3.15)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)

@@ -439,6 +439,75 @@ rename to b
     EXPECT_EQ(patch.format, Patch::Format::Unified);
 }
 
+TEST(Parser, GitChangeMode)
+{
+    std::stringstream patch_file(R"(
+From e8e9fc10f0915e2dfa02db34cce97aa7e66b4d61 Mon Sep 17 00:00:00 2001
+From: Shannon Booth <shannon.ml.booth@gmail.com>
+Date: Sun, 10 Jul 2022 09:50:24 +1200
+Subject: [PATCH] add executable bit
+
+---
+ a | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ mode change 100644 => 100755 a
+
+diff --git a/a b/a
+old mode 100644
+new mode 100755
+--
+2.25.1
+)");
+
+    auto patch = Patch::parse_patch(patch_file, Patch::Format::Unknown);
+    EXPECT_EQ(patch.old_file_path, "a");
+    EXPECT_EQ(patch.new_file_path, "a");
+    EXPECT_EQ(patch.operation, Patch::Operation::Change);
+    EXPECT_EQ(patch.hunks.size(), 0);
+    EXPECT_EQ(patch.index_file_path, "");
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.new_file_mode, 0100755);
+    EXPECT_EQ(patch.old_file_mode, 0100644);
+}
+
+TEST(Parser, GitChangeModeWithTabbedFilename)
+{
+    std::stringstream patch_file(R"(
+diff --git "a/some\tname" "b/some\tname"
+old mode 100644
+new mode 100755
+)");
+
+    auto patch = Patch::parse_patch(patch_file, Patch::Format::Unknown);
+    EXPECT_EQ(patch.old_file_path, "some\tname");
+    EXPECT_EQ(patch.new_file_path, "some\tname");
+    EXPECT_EQ(patch.operation, Patch::Operation::Change);
+    EXPECT_EQ(patch.hunks.size(), 0);
+    EXPECT_EQ(patch.index_file_path, "");
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.new_file_mode, 0100755);
+    EXPECT_EQ(patch.old_file_mode, 0100644);
+}
+
+TEST(Parser, GitChangeModeWithSpacedFilename)
+{
+    std::stringstream patch_file(R"(
+diff --git a/with space b/with space
+old mode 100755
+new mode 100644
+)");
+
+    auto patch = Patch::parse_patch(patch_file, Patch::Format::Unknown);
+    EXPECT_EQ(patch.old_file_path, "with space");
+    EXPECT_EQ(patch.new_file_path, "with space");
+    EXPECT_EQ(patch.operation, Patch::Operation::Change);
+    EXPECT_EQ(patch.hunks.size(), 0);
+    EXPECT_EQ(patch.index_file_path, "");
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.old_file_mode, 0100755);
+    EXPECT_EQ(patch.new_file_mode, 0100644);
+}
+
 TEST(Parser, TestWithTabInTimestampHeader)
 {
     std::stringstream patch_file(R"(

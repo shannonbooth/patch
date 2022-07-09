@@ -120,6 +120,9 @@ struct Patch {
     std::string old_file_time;
     std::string new_file_time;
 
+    uint16_t old_file_mode { 0 };
+    uint16_t new_file_mode { 0 };
+
     std::vector<Hunk> hunks;
 };
 

@@ -352,6 +352,14 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
     return parser.is_eof();
 }
 
+static uint16_t parse_mode(const std::string& mode_str)
+{
+    if (mode_str.size() != 6)
+        throw std::invalid_argument("mode string not of correct size: " + mode_str);
+
+    return std::stoul(mode_str, nullptr, 8);
+}
+
 static bool parse_git_extended_info(Patch& patch, const std::string& line, int strip)
 {
     auto parse_filename = [&](std::string& output, const std::string& name, const std::string& prefix) {
@@ -396,15 +404,49 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
 
     if (starts_with(line, "deleted file mode ")) {
         patch.operation = Operation::Delete;
+        patch.old_file_mode = parse_mode(line.substr(18, line.size() - 18));
         return true;
     }
 
     if (starts_with(line, "new file mode ")) {
         patch.operation = Operation::Add;
+        patch.new_file_mode = parse_mode(line.substr(14, line.size() - 14));
+        return true;
+    }
+
+    if (starts_with(line, "old mode ")) {
+        patch.old_file_mode = parse_mode(line.substr(9, line.size() - 9));
+        return true;
+    }
+
+    if (starts_with(line, "new mode ")) {
+        patch.new_file_mode = parse_mode(line.substr(9, line.size() - 9));
         return true;
     }
 
     return false;
+}
+
+static void parse_git_header_name(const std::string& line, Patch& patch, int strip)
+{
+    Parser parser(line);
+    if (!parser.consume_specific("diff --git "))
+        return;
+
+    std::string name;
+    if (parser.peek() == '"') {
+        name = parser.parse_quoted_string();
+    } else {
+        while (!parser.is_eof()) {
+            if (parser.consume_specific(" b/"))
+                break;
+            name += parser.consume();
+        }
+    }
+
+    name = strip_path(name, strip);
+    patch.old_file_path = name;
+    patch.new_file_path = name;
 }
 
 bool parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip)
@@ -461,6 +503,7 @@ bool parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
                 break;
             }
 
+            parse_git_header_name(line, patch, strip);
             is_git_patch = true;
             patch.format = Format::Unified;
             continue;

@@ -1,0 +1,21 @@
+name: Build and test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: configure
+      run: cmake -DBUILD_TESTING=on -S . -B build
+    - name: compile
+      run: cmake --build build
+    - name: test
+      run: ctest --test-dir build --output-on-failure

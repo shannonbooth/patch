@@ -72,9 +72,12 @@ public:
 
     bool consume_specific(const char* chars)
     {
+        auto current = m_current;
         for (const char* c = chars; *c != '\0'; ++c) {
-            if (!consume_specific(*c))
+            if (!consume_specific(*c)) {
+                m_current = current;
                 return false;
+            }
         }
         return true;
     }

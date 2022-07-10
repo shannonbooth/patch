@@ -31,6 +31,66 @@ constexpr bool is_not_digit(char c)
     return !is_digit(c);
 }
 
+class Parser {
+public:
+    explicit Parser(const std::string& line)
+        : m_current(line.cbegin())
+        , m_end(line.cend())
+    {
+    }
+
+    bool is_eof() const
+    {
+        return m_current == m_end;
+    }
+
+    bool consume_specific(char c)
+    {
+        if (m_current == m_end)
+            return false;
+        if (*m_current != c)
+            return false;
+
+        ++m_current;
+        return true;
+    }
+
+    bool consume_specific(const char* chars)
+    {
+        for (const char* c = chars; *c != '\0'; ++c) {
+            if (!consume_specific(*c))
+                return false;
+        }
+        return true;
+    }
+
+    bool consume_uint()
+    {
+        if (m_current == m_end)
+            return false;
+        if (!is_digit(*m_current))
+            return false;
+
+        // Skip past this digit we just checked, and any remaining parts of the integer.
+        ++m_current;
+        m_current = std::find_if(m_current, m_end, is_not_digit);
+        return true;
+    }
+
+    bool consume_line_number(LineNumber& output)
+    {
+        auto start = m_current;
+        if (!consume_uint())
+            return false;
+
+        return string_to_line_number(std::string(start, m_current), output);
+    }
+
+private:
+    std::string::const_iterator m_current;
+    std::string::const_iterator m_end;
+};
+
 static std::string::const_iterator parse_quoted_string(const std::string& input, std::string& output)
 {
     assert(input.at(0) == '"');
@@ -155,66 +215,6 @@ bool string_to_line_number(const std::string& str, LineNumber& output)
 
     return true;
 }
-
-class Parser {
-public:
-    explicit Parser(const std::string& line)
-        : m_current(line.cbegin())
-        , m_end(line.cend())
-    {
-    }
-
-    bool is_eof() const
-    {
-        return m_current == m_end;
-    }
-
-    bool consume_specific(char c)
-    {
-        if (m_current == m_end)
-            return false;
-        if (*m_current != c)
-            return false;
-
-        ++m_current;
-        return true;
-    }
-
-    bool consume_specific(const char* chars)
-    {
-        for (const char* c = chars; *c != '\0'; ++c) {
-            if (!consume_specific(*c))
-                return false;
-        }
-        return true;
-    }
-
-    bool consume_uint()
-    {
-        if (m_current == m_end)
-            return false;
-        if (!is_digit(*m_current))
-            return false;
-
-        // Skip past this digit we just checked, and any remaining parts of the integer.
-        ++m_current;
-        m_current = std::find_if(m_current, m_end, is_not_digit);
-        return true;
-    }
-
-    bool consume_line_number(LineNumber& output)
-    {
-        auto start = m_current;
-        if (!consume_uint())
-            return false;
-
-        return string_to_line_number(std::string(start, m_current), output);
-    }
-
-private:
-    std::string::const_iterator m_current;
-    std::string::const_iterator m_end;
-};
 
 bool parse_unified_range(Hunk& hunk, const std::string& line)
 {

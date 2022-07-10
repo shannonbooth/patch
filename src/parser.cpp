@@ -36,12 +36,27 @@ public:
     explicit Parser(const std::string& line)
         : m_current(line.cbegin())
         , m_end(line.cend())
+        , m_line(line)
     {
     }
 
     bool is_eof() const
     {
         return m_current == m_end;
+    }
+
+    char peek() const
+    {
+        if (m_current == m_end)
+            return '\0';
+        return *m_current;
+    }
+
+    char consume()
+    {
+        char c = *m_current;
+        ++m_current;
+        return c;
     }
 
     bool consume_specific(char c)
@@ -86,48 +101,52 @@ public:
         return string_to_line_number(std::string(start, m_current), output);
     }
 
+    std::string::const_iterator current() const { return m_current; }
+    std::string::const_iterator end() const { return m_end; }
+
+    std::string parse_quoted_string()
+    {
+        std::string output;
+
+        consume_specific('"');
+
+        while (!is_eof()) {
+            // Reached the end of the string
+            if (peek() == '"')
+                return output;
+
+            // Some escaped character, peek past to determine the intended unescaped character.
+            if (consume_specific('\\')) {
+                if (is_eof())
+                    throw std::invalid_argument("Invalid unterminated \\ in quoted path " + m_line);
+
+                switch (consume()) {
+                case '\\':
+                    output += '\\';
+                    break;
+                case '"':
+                    output += '"';
+                    break;
+                case 'n':
+                    output += '\n';
+                    break;
+                default:
+                    throw std::invalid_argument("Invalid or unsupported escape character in path " + m_line);
+                }
+            } else {
+                // Normal case - a character of the path we can just add to our output.
+                output += consume();
+            }
+        }
+
+        throw std::invalid_argument("Failed to find terminating \" when parsing " + m_line);
+    }
+
 private:
+    const std::string& m_line;
     std::string::const_iterator m_current;
     std::string::const_iterator m_end;
 };
-
-static std::string::const_iterator parse_quoted_string(const std::string& input, std::string& output)
-{
-    assert(input.at(0) == '"');
-
-    for (auto it = input.begin() + 1; it < input.end(); ++it) {
-
-        // Reached the end of the string
-        if (*it == '"')
-            return it;
-
-        // Some escaped character, peek past to determine the intended unescaped character.
-        if (*it == '\\') {
-            ++it;
-            if (it >= input.end())
-                throw std::invalid_argument("Invalid unterminated \\ in quoted path " + input);
-
-            switch (*it) {
-            case '\\':
-                output += '\\';
-                break;
-            case '"':
-                output += '"';
-                break;
-            case 'n':
-                output += '\n';
-                break;
-            default:
-                throw std::invalid_argument("Invalid or unsupported escape character in path " + input);
-            }
-        } else {
-            // Normal case - a character of the path we can just add to our output.
-            output += *it;
-        }
-    }
-
-    throw std::invalid_argument("Failed to find terminating \" when parsing " + input);
-}
 
 void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp)
 {
@@ -141,7 +160,9 @@ void parse_file_line(const std::string& input, int strip, std::string& path, std
     auto it = input.begin();
 
     if (*it == '"') {
-        it = parse_quoted_string(input, path);
+        Parser parser(input);
+        path = parser.parse_quoted_string();
+        it = parser.current();
     } else {
         // In most patches, a \t is used to separate the path from
         // the timestamp. However, POSIX does not seem to specify one
@@ -331,7 +352,8 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
         // NOTE: we do 'strip - 1' here as the extended headers do not come with a leading
         // "a/" or "b/" prefix - strip the filename as if this part is already stripped.
         if (!name.empty() && name[0] == '"') {
-            parse_quoted_string(name, output);
+            Parser parser(name);
+            output = parser.parse_quoted_string();
             output = strip_path(output, strip - 1);
         } else {
             output = strip_path(name, strip - 1);

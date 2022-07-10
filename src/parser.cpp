@@ -133,6 +133,9 @@ public:
                 case 'n':
                     output += '\n';
                     break;
+                case 't':
+                    output += '\t';
+                    break;
                 default:
                     throw std::invalid_argument("Invalid or unsupported escape character in path " + m_line);
                 }

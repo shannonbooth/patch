@@ -357,7 +357,7 @@ static uint16_t parse_mode(const std::string& mode_str)
     if (mode_str.size() != 6)
         throw std::invalid_argument("mode string not of correct size: " + mode_str);
 
-    return std::stoul(mode_str, nullptr, 8);
+    return static_cast<uint16_t>(std::stoul(mode_str, nullptr, 8));
 }
 
 static bool parse_git_extended_info(Patch& patch, const std::string& line, int strip)

@@ -371,6 +371,7 @@ void reverse(Patch& patch)
 {
     std::swap(patch.old_file_path, patch.new_file_path);
     std::swap(patch.old_file_time, patch.new_file_time);
+    std::swap(patch.old_file_mode, patch.new_file_mode);
     for (auto& hunk : patch.hunks)
         reverse(hunk);
 }

@@ -346,6 +346,10 @@ int process_patch(const Options& options)
                 }
 
                 write_to_file(output_file, mode, tmp_out_file);
+                if (patch.new_file_mode != 0) {
+                    auto perms = static_cast<std::filesystem::perms>(patch.new_file_mode) & std::filesystem::perms::mask;
+                    std::filesystem::permissions(output_file, perms);
+                }
             }
 
             if (result.failed_hunks != 0) {

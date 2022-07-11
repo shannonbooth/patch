@@ -1214,6 +1214,29 @@ index de98044..0f673f8 100644
         self.assertEqual(ret.stdout, 'patching file 1\n')
         self.assertEqual(ret.stderr, '')
 
+    def test_add_executable_bit(self):
+        ''' test that a patch changing mode applies '''
+
+        patch = '''
+diff --git a/file b/file
+old mode 100644
+new mode 100755
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '1\n2\n3\n'
+        with open('file', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch')
+
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file file\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('file', to_patch)
+        self.assertTrue(os.access('file', os.X_OK))
+
     def test_error_on_chdir_to_bad_directory(self):
         ''' test that an appropriate error is shown on chdir to a non existent directory '''
         patch = '''

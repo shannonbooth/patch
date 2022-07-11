@@ -593,7 +593,7 @@ bool parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& heade
     return should_parse_body;
 }
 
-Hunk hunk_from_context_parts(LineNumber old_start_line, const std::vector<PatchLine>& old_lines,
+static Hunk hunk_from_context_parts(LineNumber old_start_line, const std::vector<PatchLine>& old_lines,
     LineNumber new_start_line, const std::vector<PatchLine>& new_lines)
 {
     Hunk unified_hunk;

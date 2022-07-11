@@ -35,8 +35,6 @@ void parse_file_line(const std::string& input, int strip, std::string& path, std
 std::string strip_path(const std::string& path, int amount);
 std::string parse_path(const std::string& input, int strip);
 
-Hunk hunk_from_context_parts(LineNumber old_start_line, const std::vector<PatchLine>& old_lines, LineNumber new_start_line, const std::vector<PatchLine>& new_lines);
-
 bool string_to_line_number(const std::string& str, LineNumber& output);
 
 } // namespace Patch

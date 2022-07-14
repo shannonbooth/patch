@@ -219,8 +219,8 @@ int process_patch(const Options& options)
         chdir(options.patch_directory_path);
 
     // When writing the patched file to cout - write any prompts to cerr instead.
-    const bool stdout_to_stderr = options.out_file_path == "-";
-    auto& out = stdout_to_stderr ? std::cerr : std::cout;
+    const bool output_to_stdout = options.out_file_path == "-";
+    auto& out = output_to_stdout ? std::cerr : std::cout;
     auto& err = std::cerr;
 
     PatchFile patch_file(options);
@@ -305,7 +305,7 @@ int process_patch(const Options& options)
             }
         } else if (patch.operation == Operation::Copy) {
             out << " (copied from " << file_to_patch << ")";
-        } else if (output_file == "-") {
+        } else if (output_to_stdout) {
             out << " (read from " << file_to_patch << ")";
         }
         out << '\n';
@@ -328,7 +328,7 @@ int process_patch(const Options& options)
 
         input_file.close();
 
-        if (output_file == "-") {
+        if (output_to_stdout) {
             // Nothing else to do other than write to stdout :^)
             if (tmp_out_file.rdbuf()->in_avail() > 0 && !(std::cout << tmp_out_file.rdbuf()))
                 throw std::system_error(errno, std::generic_category(), "Failure writing to stdout");

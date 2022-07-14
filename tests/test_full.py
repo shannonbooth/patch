@@ -192,6 +192,28 @@ class TestPatch(unittest.TestCase):
         self.assertFileEqual('to_patch', to_patch)
         self.assertFalse(os.path.exists('to_patch.orig'))
 
+
+    def test_patch_dash_filename_patch(self):
+        ''' test that patch still applies a patch to a file named '-' '''
+        patch = '''
+diff --git a/- b/-
+new file mode 100644
+index 0000000..7a1c613
+--- /dev/null
++++ b/-
+@@ -0,0 +1 @@
++some file
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file -\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('-', 'some file\n')
+
+
     def test_basic_patch_with_dryrun_to_stdout(self):
         ''' basic patch applied with dry run to stdout '''
         patch = '''

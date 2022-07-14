@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <istream>
 #include <patch/options.h>
 #include <vector>
@@ -18,7 +19,7 @@ struct Result {
     bool all_hunks_applied_perfectly;
 };
 
-Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostream& input_file, Patch& patch, const Options& options = {});
+Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostream& input_file, Patch& patch, const Options& options = {}, std::ostream& out = std::cout);
 
 void reverse(Patch& patch);
 

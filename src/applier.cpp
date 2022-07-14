@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <iostream>
 #include <istream>
 #include <limits>
 #include <ostream>
@@ -167,30 +166,30 @@ static LineNumber write_hunk(LineWriter& output, const Hunk& hunk, const Locatio
     return line_number;
 }
 
-static void print_hunk_statistics(size_t hunk_num, bool skipped, const Location& location, const Hunk& hunk, LineNumber offset_old_lines_to_new, LineNumber offset_error)
+static void print_hunk_statistics(std::ostream& out, size_t hunk_num, bool skipped, const Location& location, const Hunk& hunk, LineNumber offset_old_lines_to_new, LineNumber offset_error)
 {
-    std::cout << "Hunk #" << hunk_num + 1;
+    out << "Hunk #" << hunk_num + 1;
     if (skipped)
-        std::cout << " skipped";
+        out << " skipped";
     else if (!location.is_found())
-        std::cout << " FAILED";
+        out << " FAILED";
     else
-        std::cout << " succeeded";
+        out << " succeeded";
 
-    std::cout << " at ";
+    out << " at ";
     if (location.is_found()) {
-        std::cout << location.line_number + offset_old_lines_to_new + 1;
+        out << location.line_number + offset_old_lines_to_new + 1;
         if (location.fuzz != 0)
-            std::cout << " with fuzz " << location.fuzz;
+            out << " with fuzz " << location.fuzz;
         if (offset_error != 0) {
-            std::cout << " (offset " << offset_error << " line";
+            out << " (offset " << offset_error << " line";
             if (offset_error > 1)
-                std::cout << "s";
-            std::cout << ")";
+                out << "s";
+            out << ")";
         }
-        std::cout << ".\n";
+        out << ".\n";
     } else {
-        std::cout << hunk.old_file_range.start_line + offset_old_lines_to_new << ".\n";
+        out << hunk.old_file_range.start_line + offset_old_lines_to_new << ".\n";
     }
 }
 
@@ -217,27 +216,27 @@ enum class ReverseHandling {
     ApplyAnyway,
 };
 
-static ReverseHandling check_how_to_handle_reversed_patch(const Options& options)
+static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, const Options& options)
 {
     // We may have a reversed patch, tell the user and determine how to handle it.
     if (options.reverse_patch)
-        std::cout << "Unreversed";
+        out << "Unreversed";
     else
-        std::cout << "Reversed (or previously applied)";
+        out << "Reversed (or previously applied)";
 
-    std::cout << " patch detected!";
+    out << " patch detected!";
 
     // Check whether we've been told to ignore this on the command line.
     if (options.ignore_reversed) {
-        std::cout << " Skipping patch.\n";
+        out << " Skipping patch.\n";
         return ReverseHandling::Ignore;
     }
 
     // Otherwise we need to the user whether we should reverse it.
-    if (check_with_user(" Assume -R?", Default::False))
+    if (check_with_user(" Assume -R?", out, Default::False))
         return ReverseHandling::Reverse;
 
-    if (check_with_user("Apply anyway?", Default::False))
+    if (check_with_user("Apply anyway?", out, Default::False))
         return ReverseHandling::ApplyAnyway;
 
     return ReverseHandling::Ignore;
@@ -283,7 +282,7 @@ private:
     Options::RejectFormat m_reject_format { Options::RejectFormat::Default };
 };
 
-Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostream& input_file, Patch& patch, const Options& options)
+Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostream& input_file, Patch& patch, const Options& options, std::ostream& out)
 {
     if (options.reverse_patch)
         reverse(patch);
@@ -313,7 +312,7 @@ Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostr
             // If the reversed hunk applied perfectly, the patch may have been reversed. Check with the user how to handle this.
             auto reverse_handling = ReverseHandling::ApplyAnyway;
             if (reversed_location.offset == 0 && reversed_location.fuzz == 0)
-                reverse_handling = check_how_to_handle_reversed_patch(options);
+                reverse_handling = check_how_to_handle_reversed_patch(out, options);
 
             switch (reverse_handling) {
             case ReverseHandling::Reverse:
@@ -354,7 +353,7 @@ Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostr
             all_hunks_applied_perfectly = false;
 
         if (options.verbose || location.fuzz != 0 || offset_error != 0)
-            print_hunk_statistics(hunk_num, skip_remaining_hunks, location, hunk, offset_old_lines_to_new, offset_error);
+            print_hunk_statistics(out, hunk_num, skip_remaining_hunks, location, hunk, offset_old_lines_to_new, offset_error);
 
         if (location.is_found())
             offset_old_lines_to_new += hunk.new_file_range.number_of_lines - hunk.old_file_range.number_of_lines;

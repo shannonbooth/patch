@@ -215,13 +215,13 @@ class TestPatch(unittest.TestCase):
 
         ret = run_patch('patch -i diff.patch --dry-run -o -')
         self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, '''checking file - (read from to_patch)
+        self.assertEqual(ret.stderr, 'checking file - (read from to_patch)\n')
+        self.assertEqual(ret.stdout, '''\
 int main()
 {
 	return 0;
 }
 ''')
-        self.assertEqual(ret.stderr, '')
         self.assertFileEqual('to_patch', to_patch)
         self.assertFalse(os.path.exists('to_patch.orig'))
 
@@ -643,9 +643,9 @@ Not deleting file remove as content differs from patch
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -o -')
-        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.stderr, 'patching file - (read from x.cpp)\n')
         self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, '''patching file - (read from x.cpp)
+        self.assertEqual(ret.stdout, '''\
 int main()
 {
 	return 1;
@@ -668,9 +668,9 @@ int main()
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -o -')
-        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.stderr, 'patching file - (read from a)\n')
         self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, 'patching file - (read from a)\n')
+        self.assertEqual(ret.stdout, '')
 
     def test_reverse_option_when_reversed(self):
         ''' test that we still check for reversed when reverse option specified '''

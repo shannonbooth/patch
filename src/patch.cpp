@@ -63,10 +63,10 @@ std::string to_string(Format format)
     throw std::invalid_argument("Unknown diff format");
 }
 
-bool check_with_user(const std::string& question, Default default_response)
+bool check_with_user(const std::string& question, std::ostream& out, Default default_response)
 {
     char default_char = default_response == Default::True ? 'y' : 'n';
-    std::cout << question << " [" << default_char << "] " << std::flush;
+    out << question << " [" << default_char << "] " << std::flush;
 
     auto buffer = read_tty_until_enter();
     bool is_truthy = buffer.empty() || !(buffer[0] != default_char);
@@ -103,10 +103,10 @@ static std::string guess_filepath(const Patch& patch)
     return {};
 }
 
-static std::string prompt_for_filepath()
+static std::string prompt_for_filepath(std::ostream& out)
 {
     while (true) {
-        std::cout << "File to patch: " << std::flush;
+        out << "File to patch: " << std::flush;
 
         auto buffer = read_tty_until_enter();
 
@@ -116,13 +116,13 @@ static std::string prompt_for_filepath()
                 return buffer;
             auto saved_errno = errno;
 
-            std::cout << buffer;
+            out << buffer;
             if (saved_errno != 0)
-                std::cout << ": " << std::strerror(saved_errno);
-            std::cout << '\n';
+                out << ": " << std::strerror(saved_errno);
+            out << '\n';
         }
 
-        if (check_with_user("Skip this patch", Default::True))
+        if (check_with_user("Skip this patch", out, Default::True))
             return "";
     }
 }
@@ -218,6 +218,11 @@ int process_patch(const Options& options)
     if (!options.patch_directory_path.empty())
         chdir(options.patch_directory_path);
 
+    // When writing the patched file to cout - write any prompts to cerr instead.
+    const bool stdout_to_stderr = options.out_file_path == "-";
+    auto& out = stdout_to_stderr ? std::cerr : std::cout;
+    auto& err = std::cerr;
+
     PatchFile patch_file(options);
 
     const auto format = diff_format_from_options(options);
@@ -234,7 +239,7 @@ int process_patch(const Options& options)
     while (true) {
         if (patch_file.istream().eof()) {
             if (options.verbose)
-                std::cout << "done\n";
+                out << "done\n";
             break;
         }
 
@@ -261,8 +266,8 @@ int process_patch(const Options& options)
         if (patch.old_file_path == "/dev/null") {
             // This should only happen if the file has already been patched!
             if (!file_to_patch.empty()) {
-                std::cout << "The next patch would create the file " << file_to_patch << ",\n"
-                          << "which already exists!\n";
+                out << "The next patch would create the file " << file_to_patch << ",\n"
+                    << "which already exists!\n";
             } else {
                 file_to_patch = patch.new_file_path;
                 looks_like_adding_file = true;
@@ -270,13 +275,13 @@ int process_patch(const Options& options)
         }
 
         if (options.verbose || file_to_patch.empty())
-            print_header_info(patch_file.istream(), info, std::cout);
+            print_header_info(patch_file.istream(), info, out);
 
         if (file_to_patch.empty())
-            file_to_patch = prompt_for_filepath();
+            file_to_patch = prompt_for_filepath(out);
 
         if (file_to_patch.empty()) {
-            std::cout << "Skipping patch.\n";
+            out << "Skipping patch.\n";
             continue;
         }
 
@@ -286,24 +291,24 @@ int process_patch(const Options& options)
         const auto output_file = output_path(options, patch, file_to_patch);
 
         if (options.dry_run)
-            std::cout << "checking";
+            out << "checking";
         else
-            std::cout << "patching";
+            out << "patching";
 
-        std::cout << " file " << output_file;
+        out << " file " << output_file;
         if (patch.operation == Operation::Rename) {
             if (file_to_patch == output_file) {
-                std::cout << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";
+                out << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";
                 patch.operation = Operation::Change;
             } else {
-                std::cout << " (rename from " << file_to_patch << ")";
+                out << " (rename from " << file_to_patch << ")";
             }
         } else if (patch.operation == Operation::Copy) {
-            std::cout << " (copied from " << file_to_patch << ")";
+            out << " (copied from " << file_to_patch << ")";
         } else if (output_file == "-") {
-            std::cout << " (read from " << file_to_patch << ")";
+            out << " (read from " << file_to_patch << ")";
         }
-        std::cout << '\n';
+        out << '\n';
 
         std::ios::openmode mode = std::ios::out;
         if (options.newline_output != Options::NewlineOutput::Native)
@@ -319,7 +324,7 @@ int process_patch(const Options& options)
         std::stringstream tmp_out_file;
         std::stringstream tmp_reject_file;
 
-        Result result = apply_patch(tmp_out_file, tmp_reject_file, input_file, patch, options);
+        Result result = apply_patch(tmp_out_file, tmp_reject_file, input_file, patch, options, out);
 
         input_file.close();
 
@@ -355,13 +360,13 @@ int process_patch(const Options& options)
             if (result.failed_hunks != 0) {
                 had_failure = true;
                 const char* reason = result.was_skipped ? "ignored" : "FAILED";
-                std::cout << result.failed_hunks << " out of " << patch.hunks.size() << " hunks " << reason;
+                out << result.failed_hunks << " out of " << patch.hunks.size() << " hunks " << reason;
                 if (!options.dry_run) {
                     const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
-                    std::cout << " -- saving rejects to file " << reject_path;
+                    out << " -- saving rejects to file " << reject_path;
                     write_to_file(reject_path, mode, tmp_reject_file);
                 }
-                std::cout << '\n';
+                out << '\n';
             } else {
                 if (!options.dry_run && patch.operation == Operation::Rename)
                     remove_file_and_empty_parent_folders(file_to_patch);
@@ -373,7 +378,7 @@ int process_patch(const Options& options)
                         if (!options.dry_run)
                             remove_file_and_empty_parent_folders(output_file);
                     } else {
-                        std::cout << "Not deleting file " << output_file << " as content differs from patch\n";
+                        out << "Not deleting file " << output_file << " as content differs from patch\n";
                     }
                 }
             }

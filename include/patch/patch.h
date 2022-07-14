@@ -22,7 +22,7 @@ enum class Default {
     False,
 };
 
-bool check_with_user(const std::string& question, Default default_response);
+bool check_with_user(const std::string& question, std::ostream& out, Default default_response);
 
 int process_patch(const Options& options);
 

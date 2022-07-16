@@ -470,11 +470,11 @@ Hunk #1 FAILED at 1.
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
-        self.assertEqual(ret.returncode, 0)
         self.assertEqual(ret.stdout, '''patching file remove
 Not deleting file remove as content differs from patch
 ''')
         self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
         self.assertFileEqual('remove', '// some trailing garbage\n')
 
 
@@ -630,10 +630,10 @@ Not deleting file remove as content differs from patch
 4
 
 '''
-        for extra_arg in ['-i -', '']:
+        for extra_arg in [' -i -', '']:
             with open('a', 'w') as to_patch_file:
                 to_patch_file.write(to_patch)
-            ret = run_patch('patch ' + extra_arg, input=patch)
+            ret = run_patch('patch' + extra_arg, input=patch)
             self.assertEqual(ret.stderr, '')
             self.assertEqual(ret.stdout, 'patching file a\n')
             self.assertEqual(ret.returncode, 0)

@@ -171,10 +171,7 @@ TEST(CmdLine, WithLongOptSetWithEqualSignAndNoArgument)
         nullptr,
     };
 
-    auto options = parse_cmdline(dummy_args.size() - 1, dummy_args.data());
-
-    EXPECT_FALSE(options.show_help);
-    EXPECT_EQ(options.patch_file_path, "");
+    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
 TEST(CmdLine, WithMultipleShortOptions)

@@ -46,7 +46,7 @@ bool CmdLineParser::parse_string(char short_opt, const char* long_opt, std::stri
     // then the operand must be whatever is after the = in the argument.
     if (!*long_opt && *argument == '=') {
         const char* c = argument + 1;
-        if (!c)
+        if (*c == '\0')
             throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
         option = c;
         ++i;

@@ -25,15 +25,9 @@ bool CmdLineParser::parse_string(char short_opt, const char* long_opt, std::stri
         if (m_argv[i][2] == '\0')
             return parse_value_as_next_arg();
 
-        const char* c = m_argv[i] + 3;
-        if (!c)
-            throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
         option = m_argv[i] + 2;
         return true;
     }
-
-    if (!long_opt)
-        return false;
 
     // Check if the token is equal to the long option.
     const char* argument = m_argv[i];

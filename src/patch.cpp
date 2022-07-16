@@ -301,7 +301,7 @@ int process_patch(const Options& options)
                 out << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";
                 patch.operation = Operation::Change;
             } else {
-                out << " (rename from " << file_to_patch << ")";
+                out << " (renamed from " << file_to_patch << ")";
             }
         } else if (patch.operation == Operation::Copy) {
             out << " (copied from " << file_to_patch << ")";
@@ -359,8 +359,11 @@ int process_patch(const Options& options)
 
             if (result.failed_hunks != 0) {
                 had_failure = true;
-                const char* reason = result.was_skipped ? "ignored" : "FAILED";
-                out << result.failed_hunks << " out of " << patch.hunks.size() << " hunks " << reason;
+                const char* reason = result.was_skipped ? " ignored" : " FAILED";
+                out << result.failed_hunks << " out of " << patch.hunks.size() << " hunk";
+                if (patch.hunks.size() > 1)
+                    out << 's';
+                std::cout << reason;
                 if (!options.dry_run) {
                     const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
                     out << " -- saving rejects to file " << reject_path;

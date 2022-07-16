@@ -272,7 +272,7 @@ c
         self.assertEqual(ret.returncode, 1)
         self.assertEqual(ret.stdout, '''checking file 1
 Hunk #1 FAILED at 1.
-1 out of 1 hunks FAILED
+1 out of 1 hunk FAILED
 ''')
         self.assertEqual(ret.stderr, '')
         self.assertFileEqual('1', to_patch)
@@ -382,7 +382,7 @@ Hunk #1 FAILED at 1.
         ret = run_patch('patch -i diff.patch --force -r override.rej')
         self.assertEqual(ret.stdout, '''patching file a
 Hunk #1 FAILED at 1.
-1 out of 1 hunks FAILED -- saving rejects to file override.rej
+1 out of 1 hunk FAILED -- saving rejects to file override.rej
 ''')
         self.assertEqual(ret.stderr, '')
         self.assertEqual(ret.returncode, 1)
@@ -722,7 +722,7 @@ int main()
         self.assertEqual(ret.stdout, '''patching file main.cpp
 Unreversed patch detected! Skipping patch.
 Hunk #1 skipped at 1 with fuzz 2.
-1 out of 1 hunks ignored -- saving rejects to file main.cpp.rej
+1 out of 1 hunk ignored -- saving rejects to file main.cpp.rej
 ''')
         self.assertFileEqual('main.cpp.orig', '''int main()
 {
@@ -945,7 +945,7 @@ rename to another_new
 
         ret = run_patch('patch -i diff.patch')
         self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, 'patching file another_new (rename from orig_file)\n')
+        self.assertEqual(ret.stdout, 'patching file another_new (renamed from orig_file)\n')
         self.assertEqual(ret.stderr, '')
         self.assertFileEqual('another_new', 'a\nb\nc\nd\n')
         self.assertFalse(os.path.exists('orig_file'))
@@ -966,7 +966,7 @@ rename to y
 
         ret = run_patch('patch -i diff.patch -R')
         self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, 'patching file x (rename from y)\n')
+        self.assertEqual(ret.stdout, 'patching file x (renamed from y)\n')
         self.assertEqual(ret.stderr, '')
         self.assertFileEqual('x', to_patch)
         self.assertFalse(os.path.exists('y'))
@@ -1005,7 +1005,7 @@ h
 
         ret = run_patch('patch -i diff.patch')
         self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, 'patching file test (rename from thing)\n')
+        self.assertEqual(ret.stdout, 'patching file test (renamed from thing)\n')
         self.assertEqual(ret.stderr, '')
         self.assertFileEqual('test', '''a
 b

@@ -29,15 +29,15 @@ enum class Format {
 struct Line {
     Line() = default;
 
-    Line(const std::string& content, NewLine newline)
-        : content(content)
-        , newline(newline)
+    Line(const std::string& content_, NewLine newline_)
+        : content(content_)
+        , newline(newline_)
     {
     }
 
-    Line(std::string&& content, NewLine newline)
-        : content(std::move(content))
-        , newline(newline)
+    Line(std::string&& content_, NewLine newline_)
+        : content(std::move(content_))
+        , newline(newline_)
     {
     }
 

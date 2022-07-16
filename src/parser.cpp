@@ -149,9 +149,9 @@ public:
     }
 
 private:
-    const std::string& m_line;
     std::string::const_iterator m_current;
     std::string::const_iterator m_end;
+    const std::string& m_line;
 };
 
 void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp)
@@ -681,9 +681,8 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
         lines.emplace_back(content[0], Line(content.substr(2, content.size()), newline));
     };
 
-    auto append_content = [&file, append_line](std::vector<PatchLine>& lines, LineNumber start_line, LineNumber end_line) {
+    auto append_content = [&](std::vector<PatchLine>& lines, LineNumber start_line, LineNumber end_line) {
         NewLine newline;
-        std::string line;
         for (LineNumber i = start_line + lines.size(); i <= end_line; ++i) {
             if (!get_line(file, line, &newline))
                 throw std::runtime_error("Invalid context patch, unable to retrieve expected number of lines");

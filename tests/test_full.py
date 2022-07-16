@@ -474,7 +474,7 @@ Hunk #1 FAILED at 1.
 Not deleting file remove as content differs from patch
 ''')
         self.assertEqual(ret.stderr, '')
-        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.returncode, 1)
         self.assertFileEqual('remove', '// some trailing garbage\n')
 
 

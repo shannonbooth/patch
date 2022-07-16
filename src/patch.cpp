@@ -382,6 +382,7 @@ int process_patch(const Options& options)
                             remove_file_and_empty_parent_folders(output_file);
                     } else {
                         out << "Not deleting file " << output_file << " as content differs from patch\n";
+                        had_failure = true;
                     }
                 }
             }

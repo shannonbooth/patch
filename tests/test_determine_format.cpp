@@ -143,6 +143,64 @@ The text leading up to this was:
 )");
 }
 
+TEST(DetermineFormat, GitBinary)
+{
+    std::stringstream patch_file(R"(From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
+From: Shannon Booth <shannon.ml.booth@gmail.com>
+Date: Mon, 18 Jul 2022 10:16:19 +1200
+Subject: [PATCH] add utf16
+
+---
+ a.txt | Bin 0 -> 14 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 a.txt
+
+diff --git a/a.txt b/a.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c193b2437ca5bca3eaee833d9cc40b04875da742
+GIT binary patch
+literal 14
+ScmezWFOh+ZAqj|+ffxWJ!UIA8
+
+literal 0
+HcmV?d00001
+
+--
+2.25.1
+)");
+
+    Patch::Patch patch;
+    Patch::PatchHeaderInfo info;
+    Patch::parse_patch_header(patch, patch_file, info, -1);
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.old_file_path, "a.txt");
+    EXPECT_EQ(patch.new_file_path, "a.txt");
+    EXPECT_EQ(patch.operation, Patch::Operation::Binary);
+
+    std::stringstream output;
+    Patch::print_header_info(patch_file, info, output);
+
+    EXPECT_EQ(output.str(),
+        R"(Hmm...  Looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
+|From: Shannon Booth <shannon.ml.booth@gmail.com>
+|Date: Mon, 18 Jul 2022 10:16:19 +1200
+|Subject: [PATCH] add utf16
+|
+|---
+| a.txt | Bin 0 -> 14 bytes
+| 1 file changed, 0 insertions(+), 0 deletions(-)
+| create mode 100644 a.txt
+|
+|diff --git a/a.txt b/a.txt
+|new file mode 100644
+|index 0000000000000000000000000000000000000000..c193b2437ca5bca3eaee833d9cc40b04875da742
+--------------------------
+)");
+}
+
 TEST(DetermineFormat, Context)
 {
     std::stringstream patch_file(R"(*** a.cpp	2022-04-03 18:41:54.611014944 +1200

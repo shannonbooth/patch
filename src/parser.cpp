@@ -424,6 +424,16 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
         return true;
     }
 
+    if (starts_with(line, "index ")) {
+        return true;
+    }
+
+    // NOTE: GIT binary patch line not included as part of header info.
+    if (starts_with(line, "GIT binary patch")) {
+        patch.operation = Operation::Binary;
+        return false;
+    }
+
     return false;
 }
 

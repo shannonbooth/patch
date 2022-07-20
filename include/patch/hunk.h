@@ -96,6 +96,7 @@ enum class Operation {
     Copy,
     Delete,
     Add,
+    Binary,
 };
 
 struct Patch {

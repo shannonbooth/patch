@@ -274,6 +274,12 @@ int process_patch(const Options& options)
             }
         }
 
+        if (patch.operation == Operation::Binary) {
+            out << "File " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ": git binary diffs are not supported.\n";
+            had_failure = true;
+            continue;
+        }
+
         if (options.verbose || file_to_patch.empty())
             print_header_info(patch_file.istream(), info, out);
 

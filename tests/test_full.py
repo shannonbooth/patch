@@ -1285,6 +1285,41 @@ new mode 100755
         self.assertEqual(ret.stdout, '')
 
 
+    def test_git_binary_patch(self):
+        ''' test application of unsupported git binary patches '''
+        patch = '''
+From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
+From: Shannon Booth <shannon.ml.booth@gmail.com>
+Date: Mon, 18 Jul 2022 10:16:19 +1200
+Subject: [PATCH] add utf16
+
+---
+ a.txt | Bin 0 -> 14 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 a.txt
+
+diff --git a/a.txt b/a.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c193b2437ca5bca3eaee833d9cc40b04875da742
+GIT binary patch
+literal 14
+ScmezWFOh+ZAqj|+ffxWJ!UIA8
+
+literal 0
+HcmV?d00001
+
+--
+2.25.1
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 1)
+        self.assertEqual(ret.stdout, 'File a.txt: git binary diffs are not supported.\n')
+        self.assertEqual(ret.stderr, '')
+
+
     def test_version_message(self):
         ''' test the version message is as expected '''
         ret = run_patch('patch --version')

@@ -1320,6 +1320,16 @@ HcmV?d00001
         self.assertEqual(ret.stderr, '')
 
 
+    def test_unknown_commandline(self):
+        ''' test error on unknown command line argument '''
+        ret = run_patch('patch --garbage')
+        self.assertEqual(ret.returncode, 2)
+        self.assertEqual(ret.stderr, f'''patch: **** unknown commandline argument --garbage
+Try '{PATCH_PROGRAM} --help' for more information.
+''')
+        self.assertEqual(ret.stdout, '')
+
+
     def test_version_message(self):
         ''' test the version message is as expected '''
         ret = run_patch('patch --version')

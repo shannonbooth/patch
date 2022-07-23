@@ -7,6 +7,30 @@ on:
     branches: [ main ]
 
 jobs:
+
+  coverage:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'shannonbooth'
+    steps:
+    - uses: actions/checkout@v2
+    - name: install gcovr
+      run: sudo apt-get update -qy
+        && sudo apt-get install gcovr -qy
+    - name: configure
+      run: cmake -DBUILD_TESTING=on -DPATCH_ENABLE_COVERAGE=yes -S . -B build
+    - name: compile
+      run: cmake --build build -j2
+    - name: test
+      run: ctest --test-dir build --output-on-failure -j2
+    - name: coverage
+      run: cmake --build build --target coverage
+    - name: submit to codecov.io
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: true
+        files: ./build/coverage.xml
+        verbose: true
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:

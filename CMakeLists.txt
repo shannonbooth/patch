@@ -14,11 +14,19 @@ project(patch
   LANGUAGES CXX
 )
 
-include(GNUInstallDirs)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(GNUInstallDirs)
+include(coverage)
+
+option(PATCH_ENABLE_COVERAGE "Build with gcov support" OFF)
+option(BUILD_TESTING "Build the tests" OFF)
+
+if(PATCH_ENABLE_COVERAGE)
+  add_coverage_flags()
+endif()
 
 add_library(patch
   src/applier.cpp
@@ -57,8 +65,10 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include/patch/
 
 add_subdirectory(app)
 
-option(BUILD_TESTING "Build the tests" OFF)
 if(BUILD_TESTING)
   enable_testing()
   add_subdirectory(tests)
+  if(PATCH_ENABLE_COVERAGE)
+    add_coverage_target()
+  endif()
 endif()

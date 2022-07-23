@@ -84,6 +84,38 @@ class TestPatch(unittest.TestCase):
 }
 ''')
 
+    def test_set_patch_file(self):
+        ''' test that setting file to patch works as expected '''
+        patch = '''
+--- a	2022-06-19 16:56:12.974516527 +1200
++++ b	2022-06-19 16:56:24.666877199 +1200
+@@ -1,3 +1,4 @@
+ int main()
+ {
++	return 0;
+ }
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '''int main()
+{
+}
+'''
+        with open('c', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch c')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file c\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('c', '''int main()
+{
+	return 0;
+}
+''')
+
+
     def test_basic_context_patch(self):
         ''' the most basic of context patch tests - hopefully should never fail! '''
         patch = '''

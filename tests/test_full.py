@@ -1371,6 +1371,18 @@ Try '{PATCH_PROGRAM} --help' for more information.
 Copyright (C) 2022 Shannon Booth
 ''')
 
+    def test_help_message(self):
+        ''' test the help message is as expected '''
+        ret = run_patch('patch --help')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stderr, '')
+        # Don't really care about the entire thing, just that we're giving it at all.
+        self.assertTrue(ret.stdout.startswith('''patch - (C) 2022 Shannon Booth
+
+patch reads a patch file containing a difference (diff) and applies it to files.
+'''))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument('patch_program', nargs='?', default='sb_patch', help='patch program to use for testing')

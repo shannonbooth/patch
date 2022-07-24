@@ -933,8 +933,7 @@ Patch parse_normal_patch(Patch& patch, std::istream& file)
         } else if (c == '>') {
             current_hunk->lines.emplace_back('+', Line(patch_line.substr(2, patch_line.size()), newline));
         } else if (c == '\\') {
-            if (current_hunk->lines.empty())
-                throw std::invalid_argument("Found no newline at end of file indicator before any normal diff lines");
+            assert(!current_hunk->lines.empty()); // precondition checked by `parse_patch_header`
             current_hunk->lines.back().line.newline = NewLine::None;
         } else if (patch_line == "---") {
             // do nothing

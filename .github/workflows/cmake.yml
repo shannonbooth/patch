@@ -29,7 +29,6 @@ jobs:
       with:
         fail_ci_if_error: true
         files: ./build/coverage.xml
-        verbose: true
 
   build:
     runs-on: ${{ matrix.os }}

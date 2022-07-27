@@ -265,7 +265,7 @@ void show_usage(std::ostream& out)
            "    -o, --output <file>\n"
            "                Output what would be the result of patched files to <file>.\n"
            "\n"
-	   "    -r, --reject-file <file>\n"
+           "    -r, --reject-file <file>\n"
            "                Write the reject file to <file> instead of the default location '<output-file>.rej'.\n"
            "\n"
            "    -D, --ifdef <define>\n"

@@ -47,6 +47,8 @@ struct Options {
     bool dry_run { false };
     NewlineOutput newline_output { NewlineOutput::Native };
     RejectFormat reject_format { RejectFormat::Default };
+    std::string backup_suffix;
+    std::string backup_prefix;
 };
 
 } // namespace Patch

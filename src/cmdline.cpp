@@ -179,6 +179,12 @@ const Options& CmdLineParser::parse()
         if (parse_string('r', "--reject-file", m_options.reject_file_path))
             continue;
 
+        if (parse_string('B', "--prefix", m_options.backup_prefix))
+            continue;
+
+        if (parse_string('z', "--suffix", m_options.backup_suffix))
+            continue;
+
         if (parse_int('p', "--strip", m_options.strip_size))
             continue;
 
@@ -278,6 +284,12 @@ void show_usage(std::ostream& out)
            "    -b, --backup\n"
            "                Before writing to the patched file, make a backup of the file that will be written\n"
            "                to. The output file with be given the filename suffix '.orig'.\n"
+           "\n"
+           "    -B, --prefix <prefix>\n"
+           "                Add <prefix> to the beginning of backup file names.\n"
+           "\n"
+           "    -z, --suffix <suffix>\n"
+           "                Add <suffix> to the end of backup file names.\n"
            "\n"
            "    --reject-format <format>\n"
            "                Write reject files in either 'unified' or 'context' format. By default, patch will\n"

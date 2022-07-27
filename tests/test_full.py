@@ -608,6 +608,79 @@ Not deleting file remove as content differs from patch
 }
 ''')
 
+
+    def test_backup_prefix_only(self):
+        ''' test applying a patch with backup prefix '''
+        patch = '''
+--- x	2022-07-27 21:07:04.624795529 +1200
++++ y	2022-07-27 21:07:08.304813552 +1200
+@@ -1 +1 @@
+-abc
++xyz
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'abc\n'
+        with open('x', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch --backup --prefix pre. -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file x\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('pre.orig', 'abc\n')
+        self.assertFileEqual('x', 'xyz\n')
+
+
+    def test_backup_suffix_only(self):
+        ''' test applying a patch with backup suffix '''
+        patch = '''
+--- x	2022-07-27 21:07:04.624795529 +1200
++++ y	2022-07-27 21:07:08.304813552 +1200
+@@ -1 +1 @@
+-abc
++xyz
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'abc\n'
+        with open('x', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch --backup --suffix .post -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file x\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('x.post', 'abc\n')
+        self.assertFileEqual('x', 'xyz\n')
+
+
+    def test_backup_prefix_and_suffix(self):
+        ''' test applying a patch with backup prefix and suffix '''
+        patch = '''
+--- x	2022-07-27 21:07:04.624795529 +1200
++++ y	2022-07-27 21:07:08.304813552 +1200
+@@ -1 +1 @@
+-abc
++xyz
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'abc\n'
+        with open('x', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch --backup --prefix pre. --suffix .post -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file x\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertFileEqual('pre.x.post', 'abc\n')
+        self.assertFileEqual('x', 'xyz\n')
+
+
     def test_reverse_still_applies_to_first_file(self):
         ''' test that reversing a file will still apply to first the reverse file '''
         patch = '''

@@ -203,6 +203,20 @@ static std::string output_path(const Options& options, const Patch& patch, const
     return file_to_patch;
 }
 
+static std::string backup_name(const Options& options, const std::string& output_file)
+{
+    if (!options.backup_prefix.empty() && !options.backup_suffix.empty())
+        return options.backup_prefix + output_file + options.backup_suffix;
+
+    if (!options.backup_prefix.empty())
+        return options.backup_prefix + "orig";
+
+    if (!options.backup_suffix.empty())
+        return output_file + options.backup_suffix;
+
+    return options.backup_prefix + output_file + options.backup_suffix + ".orig";
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -341,7 +355,7 @@ int process_patch(const Options& options)
         } else {
             if (!options.dry_run) {
                 if (options.save_backup || !result.all_hunks_applied_perfectly) {
-                    const auto backup_file = output_file + ".orig";
+                    const auto backup_file = backup_name(options, output_file);
 
                     // Per POSIX:
                     // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch

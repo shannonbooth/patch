@@ -28,6 +28,7 @@ Checks: >
   -cppcoreguidelines-special-member-functions,
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers
+  -readability-magic-numbers,
+  -readability-named-parameter
 
 WarningsAsErrors: '*'

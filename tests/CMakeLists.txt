@@ -37,5 +37,13 @@ patch_add_test(test_patch
   test_system.cpp
 )
 
+add_executable(patch_oom
+  stubs/stub_patch_oom.cpp
+  ${PROJECT_SOURCE_DIR}/app/main.cpp
+)
+target_include_directories(patch_oom PRIVATE ${PROJECT_SOURCE_DIR}/include)
+
+add_test(NAME Patch.Oom COMMAND ${CMAKE_COMMAND} -DPATCH=$<TARGET_FILE:patch_oom> -P "${CMAKE_CURRENT_SOURCE_DIR}/test_oom.cmake")
+
 find_package(Python3 REQUIRED)
 add_test(NAME Python.Full COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_full.py $<TARGET_FILE:sb_patch>)

@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include <fstream>
 #include <istream>
 #include <string>
-#include <fstream>
 #include <vector>
 
 namespace Patch {

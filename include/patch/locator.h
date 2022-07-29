@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <patch/patch.h>
-#include <patch/hunk.h>
 #include <cstdint>
+#include <patch/hunk.h>
+#include <patch/patch.h>
 #include <string>
 #include <vector>
 

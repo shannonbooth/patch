@@ -420,6 +420,44 @@ Hunk #1 FAILED at 1.
         self.assertEqual(ret.returncode, 1)
         self.assertFileEqual('override.rej', patch)
 
+    def test_reject_format_context(self):
+        ''' test a reject format of context '''
+        patch = '''\
+--- a/reject	2022-07-30 11:40:37.280248088 +1200
++++ b/reject	2022-07-30 11:40:49.032177150 +1200
+@@ -1,3 +1,3 @@
+ abc
+-def
++123
+ ghi
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'apc\nzxy\nghi\n'
+        with open('reject', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch --reject-format context')
+        self.assertEqual(ret.stdout, '''patching file reject
+Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file reject.rej
+''')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 1)
+        self.assertFileEqual('reject.rej', '''\
+*** reject	2022-07-30 11:40:37.280248088 +1200
+--- reject	2022-07-30 11:40:49.032177150 +1200
+***************
+*** 1,3 ****
+  abc
+! def
+  ghi
+--- 1,3 ----
+  abc
+! 123
+  ghi
+''')
 
     def test_remove_file_in_folders(self):
         ''' test a patch removing a file removes all containing empty folders '''

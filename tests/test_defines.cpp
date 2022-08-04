@@ -35,11 +35,12 @@ TEST(Defines, AddOneLine)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.define_macro = "TEST_PATCH";
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
@@ -75,11 +76,12 @@ TEST(Defines, RemoveOneLine)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.define_macro = "TEST_PATCH";
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
@@ -118,11 +120,12 @@ TEST(Defines, Mix)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.define_macro = "TEST_PATCH";
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
@@ -163,11 +166,12 @@ TEST(Defines, ChangesAtEndOfFile)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.define_macro = "TEST_PATCH";
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
@@ -266,11 +270,12 @@ int main()
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.define_macro = "MY_PATCH";
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());

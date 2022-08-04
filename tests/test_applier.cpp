@@ -33,13 +33,15 @@ TEST(Applier, AddOnelinePatch)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, AddOnelineNormalPatch)
@@ -61,13 +63,15 @@ TEST(Applier, AddOnelineNormalPatch)
 
     auto patch = Patch::parse_patch(patch_file, Patch::Format::Normal);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, RemoveOnelineNormalPatch)
@@ -89,13 +93,15 @@ TEST(Applier, RemoveOnelineNormalPatch)
 
     auto patch = Patch::parse_patch(patch_file, Patch::Format::Normal);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
     EXPECT_EQ(patch.hunks.size(), 1);
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, AddOnelinePatchNoContext)
@@ -120,13 +126,15 @@ TEST(Applier, AddOnelinePatchNoContext)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, RemoveOnelinePatchTwoLinesContext)
@@ -153,13 +161,15 @@ TEST(Applier, RemoveOnelinePatchTwoLinesContext)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, MySecond1234567)
@@ -197,12 +207,14 @@ TEST(Applier, MySecond1234567)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, TwoLinesRemovedWithNoContext)
@@ -238,13 +250,15 @@ TEST(Applier, TwoLinesRemovedWithNoContext)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, TwoLinesAddedWithNoContext)
@@ -280,13 +294,15 @@ TEST(Applier, TwoLinesAddedWithNoContext)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, My1234567)
@@ -320,13 +336,15 @@ TEST(Applier, My1234567)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, RemoveOnelinePatchNoContext)
@@ -351,13 +369,15 @@ TEST(Applier, RemoveOnelinePatchNoContext)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, AddTwoLinePatch)
@@ -387,13 +407,15 @@ TEST(Applier, AddTwoLinePatch)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, RemoveOneLinePatch)
@@ -421,13 +443,15 @@ TEST(Applier, RemoveOneLinePatch)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, RemoveTwoLinePatch)
@@ -457,13 +481,15 @@ TEST(Applier, RemoveTwoLinePatch)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, NormalDiffRemoveTwoLines)
@@ -496,13 +522,15 @@ TEST(Applier, NormalDiffRemoveTwoLines)
 
     auto patch = Patch::parse_patch(patch_file, Patch::Format::Normal);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, NormalDiffChangeLines)
@@ -538,13 +566,15 @@ TEST(Applier, NormalDiffChangeLines)
 
     auto patch = Patch::parse_patch(patch_file, Patch::Format::Normal);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, AddOneRemoveOnePatch)
@@ -574,13 +604,15 @@ TEST(Applier, AddOneRemoveOnePatch)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, MultipleHunks)
@@ -638,13 +670,15 @@ int subtract(int x, int y)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, MultipleHunksWithoutSpace)
@@ -700,13 +734,15 @@ int subtract(int x, int y)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, ContextPatch)
@@ -737,12 +773,14 @@ TEST(Applier, ContextPatch)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, MultiContextPatch)
@@ -822,13 +860,15 @@ int main()
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, ContextDiffWithChangedLine)
@@ -891,13 +931,15 @@ int main()
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, ContextDiffWithOffset)
@@ -930,13 +972,15 @@ int main()
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, UnifiedDiffWithOnlyWhitespaceChangeIgnoreWhitespace)
@@ -966,16 +1010,18 @@ TEST(Applier, UnifiedDiffWithOnlyWhitespaceChangeIgnoreWhitespace)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
     Patch::Options options;
     options.ignore_whitespace = true;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, UnifiedDiffIgnoreWhitespace)
@@ -1010,16 +1056,18 @@ TEST(Applier, UnifiedDiffIgnoreWhitespace)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
     Patch::Options options;
     options.ignore_whitespace = true;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, UnifiedDiffMissingNewLineAtEndOfFile)
@@ -1048,13 +1096,15 @@ TEST(Applier, UnifiedDiffMissingNewLineAtEndOfFile)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, SingleLineAdditionFromEmptyFile)
@@ -1073,13 +1123,15 @@ TEST(Applier, SingleLineAdditionFromEmptyFile)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
 TEST(Applier, MultiLineAdditionFromEmptyFile)
@@ -1102,11 +1154,13 @@ TEST(Applier, MultiLineAdditionFromEmptyFile)
 
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
     std::stringstream output;
 
-    Patch::Result result = Patch::apply_patch(output, reject, input_file, patch);
+    Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
     EXPECT_EQ(output.str(), expected_output.str());
     EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }

@@ -91,13 +91,13 @@ static std::string guess_filepath(const Patch& patch)
     // For now, this implementation matches the GNU behaviour when the --posix flag is specified. In
     // the future, we may want to make our implementation match whatever the behaviour of GNU patch
     // is for this path determination.
-    if (std::filesystem::is_regular_file(patch.old_file_path))
+    if (patch.old_file_path != "/dev/null" && std::filesystem::exists(patch.old_file_path))
         return patch.old_file_path;
 
-    if (std::filesystem::is_regular_file(patch.new_file_path))
+    if (patch.new_file_path != "/dev/null" && std::filesystem::exists(patch.new_file_path))
         return patch.new_file_path;
 
-    if (std::filesystem::is_regular_file(patch.index_file_path))
+    if (patch.index_file_path != "/dev/null" && std::filesystem::exists(patch.index_file_path))
         return patch.index_file_path;
 
     return {};
@@ -310,6 +310,32 @@ int process_patch(const Options& options)
 
         const auto output_file = output_path(options, patch, file_to_patch);
 
+        std::ios::openmode mode = std::ios::out;
+        if (options.newline_output != Options::NewlineOutput::Native)
+            mode |= std::ios::binary;
+
+        std::stringstream tmp_reject_file;
+        RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
+
+        if (!looks_like_adding_file && !std::filesystem::is_regular_file(file_to_patch)) {
+            // FIXME: Figure out a nice way of reducing duplication with the failure case below.
+            out << "File " << file_to_patch << " is not a regular file -- refusing to patch\n";
+            for (const auto& hunk : patch.hunks)
+                reject_writer.write_reject_file(hunk);
+            out << reject_writer.rejected_hunks() << " out of " << patch.hunks.size() << " hunk";
+            if (patch.hunks.size() > 1)
+                out << 's';
+            std::cout << " ignored";
+            if (!options.dry_run) {
+                const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
+                out << " -- saving rejects to file " << reject_path;
+                write_to_file(reject_path, mode, tmp_reject_file);
+            }
+            out << '\n';
+            had_failure = true;
+            continue;
+        }
+
         if (options.dry_run)
             out << "checking";
         else
@@ -330,10 +356,6 @@ int process_patch(const Options& options)
         }
         out << '\n';
 
-        std::ios::openmode mode = std::ios::out;
-        if (options.newline_output != Options::NewlineOutput::Native)
-            mode |= std::ios::binary;
-
         std::fstream input_file;
         if (!looks_like_adding_file || std::filesystem::exists(file_to_patch)) {
             input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::fstream::in);
@@ -342,9 +364,8 @@ int process_patch(const Options& options)
         }
 
         std::stringstream tmp_out_file;
-        std::stringstream tmp_reject_file;
 
-        Result result = apply_patch(tmp_out_file, tmp_reject_file, input_file, patch, options, out);
+        Result result = apply_patch(tmp_out_file, reject_writer, input_file, patch, options, out);
 
         input_file.close();
 

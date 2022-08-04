@@ -242,47 +242,31 @@ static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, con
     return ReverseHandling::Ignore;
 }
 
-class RejectWriter {
-public:
-    explicit RejectWriter(const Patch& patch, Options::RejectFormat reject_format)
-        : m_patch(patch)
-        , m_reject_format(reject_format)
-    {
+void RejectWriter::write_reject_file(const Hunk& hunk)
+{
+    if (should_write_as_unified()) {
+        if (m_rejected_hunks == 0)
+            write_patch_header_as_unified(m_patch, m_reject_file);
+        write_hunk_as_unified(hunk, m_reject_file);
+    } else {
+        if (m_rejected_hunks == 0)
+            write_patch_header_as_context(m_patch, m_reject_file);
+        write_hunk_as_context(hunk, m_reject_file);
     }
+    ++m_rejected_hunks;
+}
 
-    void write_reject_file(const Hunk& hunk, std::ostream& reject_file)
-    {
-        if (should_write_as_unified()) {
-            if (m_failed_failed_hunks == 0)
-                write_patch_header_as_unified(m_patch, reject_file);
-            write_hunk_as_unified(hunk, reject_file);
-        } else {
-            if (m_failed_failed_hunks == 0)
-                write_patch_header_as_context(m_patch, reject_file);
-            write_hunk_as_context(hunk, reject_file);
-        }
-        ++m_failed_failed_hunks;
-    }
+bool RejectWriter::should_write_as_unified() const
+{
+    // POSIX says that all reject files must be written in context
+    // format. However, unified diffs are much more popular than
+    // context diff these days, so we write unified diffs in unified
+    // format to avoid confusion.
+    return m_reject_format == Options::RejectFormat::Unified
+        || (m_reject_format == Options::RejectFormat::Default && m_patch.format == Format::Unified);
+}
 
-    int rejected_hunks() const { return m_failed_failed_hunks; }
-
-private:
-    bool should_write_as_unified() const
-    {
-        // POSIX says that all reject files must be written in context
-        // format. However, unified diffs are much more popular than
-        // context diff these days, so we write unified diffs in unified
-        // format to avoid confusion.
-        return m_reject_format == Options::RejectFormat::Unified
-            || (m_reject_format == Options::RejectFormat::Default && m_patch.format == Format::Unified);
-    }
-
-    const Patch& m_patch;
-    int m_failed_failed_hunks { 0 };
-    Options::RejectFormat m_reject_format { Options::RejectFormat::Default };
-};
-
-Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostream& input_file, Patch& patch, const Options& options, std::ostream& out)
+Result apply_patch(std::ostream& out_file, RejectWriter& reject_writer, std::iostream& input_file, Patch& patch, const Options& options, std::ostream& out)
 {
     if (options.reverse_patch)
         reverse(patch);
@@ -292,8 +276,6 @@ Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostr
     LineNumber line_number = 0; // NOTE: relative to 'old' file.
     LineNumber offset_old_lines_to_new = 0;
     LineNumber offset_error = 0;
-
-    RejectWriter reject_writer(patch, options.reject_format);
 
     bool skip_remaining_hunks = false;
     bool all_hunks_applied_perfectly = true;
@@ -346,7 +328,7 @@ Result apply_patch(std::ostream& out_file, std::ostream& reject_file, std::iostr
             // Per POSIX, ensure offset relative to new file rather than old file.
             hunk.new_file_range.start_line += offset_old_lines_to_new;
             hunk.old_file_range.start_line += offset_old_lines_to_new;
-            reject_writer.write_reject_file(hunk, reject_file);
+            reject_writer.write_reject_file(hunk);
         }
 
         if (location.fuzz != 0 || location.offset != 0)

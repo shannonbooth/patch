@@ -39,8 +39,9 @@ TEST(Reject, UnifiedRemoveLineNoOffset)
     std::stringstream output;
 
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
-    Patch::apply_patch(output, reject, input_file, patch);
+    Patch::apply_patch(output, reject_writer, input_file, patch);
     EXPECT_EQ(output.str(), expected_output);
 
     EXPECT_EQ(reject.str(),
@@ -82,10 +83,11 @@ TEST(Reject, ContextRemoveLine)
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.force = true;
-    Patch::apply_patch(output, reject, input_file, patch, options);
+    Patch::apply_patch(output, reject_writer, input_file, patch, options);
 
     EXPECT_EQ(output.str(), expected_output);
 
@@ -145,8 +147,9 @@ int one_more() // comments to
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
+    Patch::RejectWriter reject_writer(patch, reject);
 
-    Patch::apply_patch(output, reject, input_file, patch);
+    Patch::apply_patch(output, reject_writer, input_file, patch);
 
     EXPECT_EQ(output.str(), R"(// newly added line
 // ... and another

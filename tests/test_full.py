@@ -1463,6 +1463,45 @@ HcmV?d00001
         self.assertEqual(ret.stderr, '')
 
 
+    def test_remove_git_submodule(self):
+        ''' test removing a git submodule fails as it is not a regular file '''
+
+        patch = '''diff --git a/.gitmodules b/.gitmodules
+index 066b99a..e69de29 100644
+--- a/.gitmodules
++++ b/.gitmodules
+@@ -1,3 +0,0 @@
+-[submodule "libarchive"]
+-	path = libarchive
+-	url = https://github.com/libarchive/libarchive.git
+diff --git a/libarchive b/libarchive
+deleted file mode 160000
+index a45905b..0000000
+--- a/libarchive
++++ /dev/null
+@@ -1 +0,0 @@
+-Subproject commit a45905b0166713760a2fb4f2e908d7ce47488371
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        gitmodules = '''[submodule "libarchive"]
+	path = libarchive
+	url = https://github.com/libarchive/libarchive.git
+'''
+        with open('.gitmodules', 'w') as gitmodules_file:
+            gitmodules_file.write(gitmodules)
+        os.mkdir('libarchive')
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.stdout, '''patching file .gitmodules
+File libarchive is not a regular file -- refusing to patch
+1 out of 1 hunk ignored -- saving rejects to file libarchive.rej
+''')
+        self.assertEqual(ret.returncode, 1)
+        self.assertEqual(ret.stderr, '')
+
+
     def test_unknown_commandline(self):
         ''' test error on unknown command line argument '''
         ret = run_patch('patch --garbage')

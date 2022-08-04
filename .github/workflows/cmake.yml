@@ -8,7 +8,17 @@ on:
 
 jobs:
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: install
+      run: pip install pathspec
+    - name: format
+      run: ./scripts/clang_format.py --no-write
+
   coverage:
+    needs: [lint]
     runs-on: ubuntu-latest
     if: github.repository_owner == 'shannonbooth'
     steps:
@@ -31,6 +41,7 @@ jobs:
         files: ./build/coverage.xml
 
   build:
+    needs: [lint]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

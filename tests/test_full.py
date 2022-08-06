@@ -1463,6 +1463,39 @@ HcmV?d00001
         self.assertEqual(ret.stderr, '')
 
 
+    @unittest.expectedFailure
+    def test_git_swap_files(self):
+        ''' test that git patch swapping files is correctly applied '''
+        patch = '''\
+diff --git a/a b/b
+rename from a
+rename to b
+diff --git a/b b/a
+rename from b
+rename to a
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        a = '1\n2\n3\n'
+        with open('a', 'w') as a_file:
+            a_file.write(a)
+
+        b = 'a\nb\nc\n'
+        with open('b', 'w') as b_file:
+            b_file.write(b)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.stdout, '''\
+patching file b (renamed from a)
+patching file a (renamed from b)
+''')
+        self.assertFileEqual('a', b)
+        self.assertFileEqual('b', a)
+
+
     def test_remove_git_submodule(self):
         ''' test removing a git submodule fails as it is not a regular file '''
 

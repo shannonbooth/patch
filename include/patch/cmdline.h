@@ -12,10 +12,7 @@ namespace Patch {
 
 class cmdline_parse_error : public std::invalid_argument {
 public:
-    explicit cmdline_parse_error(const std::string& what)
-        : std::invalid_argument(what)
-    {
-    }
+    using std::invalid_argument::invalid_argument;
 };
 
 class CmdLineParser {

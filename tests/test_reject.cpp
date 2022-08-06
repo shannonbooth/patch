@@ -150,6 +150,7 @@ int one_more() // comments to
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::apply_patch(output, reject_writer, input_file, patch);
+    EXPECT_EQ(output.str(), expected_output);
 
     EXPECT_EQ(output.str(), R"(// newly added line
 // ... and another

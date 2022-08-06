@@ -142,15 +142,12 @@ int one_more() // comments to
 } // reject
 )");
 
-    auto expected_output = input_file.str();
-
     auto patch = Patch::parse_patch(patch_file);
     std::stringstream output;
     std::stringstream reject;
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::apply_patch(output, reject_writer, input_file, patch);
-    EXPECT_EQ(output.str(), expected_output);
 
     EXPECT_EQ(output.str(), R"(// newly added line
 // ... and another

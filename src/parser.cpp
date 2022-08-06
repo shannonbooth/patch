@@ -247,7 +247,7 @@ bool parse_unified_range(Hunk& hunk, const std::string& line)
 {
     Parser parser(line);
 
-    auto consume_range = [&parser](Range& range) -> bool {
+    auto consume_range = [&parser](Range& range) {
         if (!parser.consume_line_number(range.start_line))
             return false;
 

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fstream>
 #include <istream>
 #include <string>
@@ -20,8 +21,8 @@ bool get_line(std::istream& is, std::string& line, NewLine* newline = nullptr);
 
 std::string read_tty_until_enter();
 
-void chdir(const std::string& path);
+void chdir(const std::filesystem::path& path);
 
-bool remove_empty_directory(const std::string& path);
+bool remove_empty_directory(const std::filesystem::path& path);
 
 } // namespace Patch

@@ -19,7 +19,6 @@
 #    define close _close
 #    define read _read
 #    define open _open
-#    define rmdir _rmdir
 #else
 #    include <unistd.h>
 #endif
@@ -98,29 +97,34 @@ std::string read_tty_until_enter()
     }
 }
 
-bool remove_empty_directory(const std::string& path)
+bool remove_empty_directory(const std::filesystem::path& path)
 {
+#ifdef _WIN32
+    int ret = ::_wrmdir(path.c_str());
+#else
     int ret = ::rmdir(path.c_str());
+#endif
+
     if (ret == 0)
         return true;
 
     // POSIX allows for either ENOTEMPTY or EEXIST.
     if (errno != ENOTEMPTY && errno != EEXIST)
-        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path);
+        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path.u8string());
 
     return false;
 }
 
-void chdir(const std::string& path)
+void chdir(const std::filesystem::path& path)
 {
 #ifdef _WIN32
-    int ret = ::_chdir(path.c_str());
+    int ret = ::_wchdir(path.c_str());
 #else
     int ret = ::chdir(path.c_str());
 #endif
 
     if (ret != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path);
+        throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path.u8string());
 }
 
 } // namespace Patch

@@ -84,6 +84,39 @@ class TestPatch(unittest.TestCase):
 }
 ''')
 
+    @unittest.skip("not supported on all platforms yet")
+    def test_basic_unicode_patch(self):
+        ''' test a basic patch which has a non ASCII filename '''
+        patch = '''
+--- to_patch	2022-06-19 16:56:12.974516527 +1200
++++ to_patch	2022-06-19 16:56:24.666877199 +1200
+@@ -1,3 +1,4 @@
+ int main()
+ {
++	return 0;
+ }
+'''
+        with open('ハローワールド.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '''int main()
+{
+}
+'''
+        with open('to_patch', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i ハローワールド.patch')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.stdout, 'patching file to_patch\n')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFileEqual('to_patch', '''int main()
+{
+	return 0;
+}
+''')
+
+
     def test_set_patch_file(self):
         ''' test that setting file to patch works as expected '''
         patch = '''

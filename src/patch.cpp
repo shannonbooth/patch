@@ -154,9 +154,10 @@ public:
             std::ios::openmode mode = std::ios::in | std::ios::out;
             if (options.newline_output != Options::NewlineOutput::Native)
                 mode |= std::ios::binary;
+
             m_patch_file.open(options.patch_file_path, mode);
             if (!m_patch_file)
-                throw std::system_error(errno, std::generic_category(), "Unable to open patch file " + options.patch_file_path);
+                throw std::system_error(errno, std::generic_category(), "Unable to open patch file " + options.patch_file_path.string());
         }
     }
 

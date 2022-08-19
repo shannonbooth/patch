@@ -16,6 +16,7 @@
 #ifdef _WIN32
 #    include <direct.h>
 #    include <io.h>
+#    include <windows.h>
 #    define close _close
 #    define read _read
 #    define open _open
@@ -127,4 +128,44 @@ void chdir(const std::filesystem::path& path)
         throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path.u8string());
 }
 
+#ifdef _WIN32
+std::wstring to_wide(const std::string& str)
+{
+    if (str.empty())
+        return {};
+
+    int length = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+    if (length == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Failed widening string");
+
+    std::wstring wide_str;
+    wide_str.resize(static_cast<size_t>(length));
+
+    length = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), &wide_str[0], length);
+    if (length == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Failed widening string");
+
+    return wide_str;
+}
+
+std::string to_narrow(const std::wstring& str)
+{
+    if (str.empty())
+        return {};
+
+    int length = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), nullptr, 0, nullptr, nullptr);
+    if (length == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Failed narrowing string");
+
+    std::string narrow_str;
+    narrow_str.resize(static_cast<size_t>(length));
+
+    length = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), &narrow_str[0], length, nullptr, nullptr);
+    if (length == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Failed narrowing string");
+
+    return narrow_str;
+}
+
+#endif
 } // namespace Patch

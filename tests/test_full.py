@@ -84,7 +84,6 @@ class TestPatch(unittest.TestCase):
 }
 ''')
 
-    @unittest.skip("not supported on all platforms yet")
     def test_basic_unicode_patch(self):
         ''' test a basic patch which has a non ASCII filename '''
         patch = '''

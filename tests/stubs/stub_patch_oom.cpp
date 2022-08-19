@@ -7,6 +7,10 @@
 
 namespace Patch {
 
+CmdLine::CmdLine(int, const char* const*)
+{
+}
+
 int process_patch(const Options&)
 {
     throw std::bad_alloc();

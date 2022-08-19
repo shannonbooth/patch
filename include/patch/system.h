@@ -25,4 +25,12 @@ void chdir(const std::filesystem::path& path);
 
 bool remove_empty_directory(const std::filesystem::path& path);
 
+#ifdef _WIN32
+
+std::wstring to_wide(const std::string& str);
+
+std::string to_narrow(const std::wstring& str);
+
+#endif
+
 } // namespace Patch

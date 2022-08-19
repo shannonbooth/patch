@@ -7,6 +7,8 @@
 #include <ostream>
 #include <patch/options.h>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace Patch {
 
@@ -15,8 +17,30 @@ public:
     using std::invalid_argument::invalid_argument;
 };
 
+class CmdLine {
+public:
+    CmdLine(int argc, const char* const* argv);
+
+private:
+    friend class CmdLineParser;
+
+    int m_argc;
+    const char* const* m_argv;
+
+#ifdef _WIN32
+    std::vector<std::string> narrowed_argv_str;
+    std::vector<const char*> narrowed_argv;
+#endif
+};
+
 class CmdLineParser {
 public:
+    explicit CmdLineParser(const CmdLine& cmdline)
+        : m_argc(cmdline.m_argc)
+        , m_argv(cmdline.m_argv)
+    {
+    }
+
     CmdLineParser(int argc, const char* const* argv)
         : m_argc(argc)
         , m_argv(argv)
@@ -26,6 +50,7 @@ public:
     const Options& parse();
 
 private:
+    bool parse_path(char short_opt, const char* long_opt, std::filesystem::path& option);
     bool parse_string(char short_opt, const char* long_opt, std::string& option);
     bool parse_int(char short_opt, const char* long_opt, int& option);
 

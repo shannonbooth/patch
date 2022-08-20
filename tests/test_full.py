@@ -1411,6 +1411,35 @@ index de98044..0f673f8 100644
         self.assertEqual(ret.stdout, 'patching file 1\n')
         self.assertEqual(ret.stderr, '')
 
+    def test_chdir_unicode_(self):
+        ''' test using chdir with non ascii '''
+
+        os.mkdir('गिलास')
+        patch = '''
+--- 1	2022-06-26 11:17:58.948060133 +1200
++++ 2	2022-06-26 11:18:03.500001858 +1200
+@@ -1,3 +1,2 @@
+ 1
+-2
+ 3
+'''
+        with open(os.path.join('गिलास', 'diff.patch'), 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '''1
+2
+3
+'''
+        with open(os.path.join('गिलास', '1'), 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch -d गिलास')
+
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file 1\n')
+
+
     def test_add_executable_bit(self):
         ''' test that a patch changing mode applies '''
 

@@ -215,7 +215,7 @@ const Options& CmdLineParser::parse()
         if (parse_path('i', "--input", m_options.patch_file_path))
             continue;
 
-        if (parse_string('d', "--directory", m_options.patch_directory_path))
+        if (parse_path('d', "--directory", m_options.patch_directory_path))
             continue;
 
         if (parse_string('D', "--ifdef", m_options.define_macro))

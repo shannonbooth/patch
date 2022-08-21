@@ -352,7 +352,7 @@ int process_patch(const Options& options)
             }
         } else if (patch.operation == Operation::Copy) {
             out << " (copied from " << file_to_patch << ")";
-        } else if (output_to_stdout) {
+        } else if (!options.out_file_path.empty()) {
             out << " (read from " << file_to_patch << ")";
         }
         out << '\n';

@@ -869,6 +869,33 @@ int main()
         self.assertEqual(ret.returncode, 0)
         self.assertEqual(ret.stdout, '')
 
+
+    def test_write_output_to_some_file(self):
+        ''' test overriding the file path to patch '''
+        patch = '''
+--- a	2022-08-21 12:01:05.302352795 +1200
++++ b	2022-08-21 12:01:08.874339091 +1200
+@@ -1,3 +1,3 @@
+ a
+-b
++d
+ c
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'a\nb\nc\n'
+        with open('a', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch -osome-file')
+        self.assertEqual(ret.stdout, 'patching file some-file (read from a)\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFileEqual('a', 'a\nb\nc\n')
+        self.assertFileEqual('some-file', 'a\nd\nc\n')
+
+
     def test_reverse_option_when_reversed(self):
         ''' test that we still check for reversed when reverse option specified '''
         patch = '''

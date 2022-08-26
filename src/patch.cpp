@@ -183,16 +183,6 @@ static void write_to_file(const std::string& path, std::ios::openmode mode, std:
         throw std::system_error(errno, std::generic_category(), "Failed writing to file " + path);
 }
 
-static void remove_file_and_empty_parent_folders(std::filesystem::path path)
-{
-    std::filesystem::remove(path);
-    while (path.has_parent_path()) {
-        path = path.parent_path();
-        if (!remove_empty_directory(path.string()))
-            break;
-    }
-}
-
 static std::string output_path(const Options& options, const Patch& patch, const std::string& file_to_patch)
 {
     if (!options.out_file_path.empty())

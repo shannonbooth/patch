@@ -25,6 +25,8 @@ void chdir(const std::filesystem::path& path);
 
 bool remove_empty_directory(const std::filesystem::path& path);
 
+void remove_file_and_empty_parent_folders(std::filesystem::path path);
+
 #ifdef _WIN32
 
 std::wstring to_wide(const std::string& str);

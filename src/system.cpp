@@ -116,6 +116,16 @@ bool remove_empty_directory(const std::filesystem::path& path)
     return false;
 }
 
+void remove_file_and_empty_parent_folders(std::filesystem::path path)
+{
+    std::filesystem::remove(path);
+    while (path.has_parent_path()) {
+        path = path.parent_path();
+        if (!remove_empty_directory(path.string()))
+            break;
+    }
+}
+
 void chdir(const std::filesystem::path& path)
 {
 #ifdef _WIN32
@@ -129,6 +139,7 @@ void chdir(const std::filesystem::path& path)
 }
 
 #ifdef _WIN32
+
 std::wstring to_wide(const std::string& str)
 {
     if (str.empty())

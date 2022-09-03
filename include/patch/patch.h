@@ -15,7 +15,7 @@ struct PatchHeaderInfo;
 
 std::string to_string(Format format);
 
-void print_header_info(std::istream& patch, PatchHeaderInfo& header_info, std::ostream& out);
+void print_header_info(std::istream& patch, const PatchHeaderInfo& header_info, std::ostream& out);
 
 enum class Default {
     True,

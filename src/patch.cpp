@@ -227,7 +227,6 @@ int process_patch(const Options& options)
     // When writing the patched file to cout - write any prompts to cerr instead.
     const bool output_to_stdout = options.out_file_path == "-";
     auto& out = output_to_stdout ? std::cerr : std::cout;
-    auto& err = std::cerr;
 
     PatchFile patch_file(options);
 

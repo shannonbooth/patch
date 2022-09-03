@@ -21,6 +21,11 @@ static bool starts_with(const std::string& str, const std::string& prefix)
     return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
 }
 
+constexpr bool is_octal(char c)
+{
+    return c >= '0' && c <= '7';
+}
+
 constexpr bool is_digit(char c)
 {
     return c >= '0' && c <= '9';
@@ -123,7 +128,8 @@ public:
                 if (is_eof())
                     throw std::invalid_argument("Invalid unterminated \\ in quoted path " + m_line);
 
-                switch (consume()) {
+                char c = consume();
+                switch (c) {
                 case '\\':
                     output += '\\';
                     break;
@@ -136,6 +142,32 @@ public:
                 case 't':
                     output += '\t';
                     break;
+                // Octal encoding possibilities
+                // Must be followed by 1, 2, or 3 octal digits '0' - '7' (inclusive)
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7': {
+                    unsigned char result = c - '0';
+
+                    for (int i = 1; i < 3; ++i) {
+                        char octal_val = peek();
+                        if (!is_octal(octal_val))
+                            break;
+
+                        uint8_t digit_val = octal_val - '0';
+                        result = result * 8 + digit_val;
+
+                        ++m_current;
+                    }
+
+                    output += static_cast<char>(result);
+                    break;
+                }
                 default:
                     throw std::invalid_argument("Invalid or unsupported escape character in path " + m_line);
                 }

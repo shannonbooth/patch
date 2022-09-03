@@ -661,6 +661,41 @@ Not deleting file remove as content differs from patch
         self.assertFileEqual('f', 'a line\n')
         self.assertFalse(os.path.exists('f.orig'))
 
+
+    def test_backup_rename_patch(self):
+        ''' test that no backup is created for a rename patch '''
+
+        # NOTE: this might very well be a bug. However, GNU patch
+        # also has this behavior, so this test is to ensure any
+        # change here is made deliberately.
+        patch = '''
+commit 61593eeba9cf1663927cbccec2a15a987b6f9e53
+Author: Shannon Booth <shannon.ml.booth@gmail.com>
+Date:   Sun Sep 4 11:27:52 2022 +1200
+
+    rename
+
+diff --git a/a b/b
+similarity index 100%
+rename from a
+rename to b
+'''
+
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'ab'
+        with open('a', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -b -i diff.patch')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertEqual(ret.stdout, 'patching file b (renamed from a)\n')
+        self.assertFileEqual('b', 'ab')
+        self.assertEqual(set(os.listdir()), {'b', 'diff.patch'})
+
+
     def test_backup_on_top_of_existing_file(self):
         ''' test that when a patch creating a file has the backup option, a empty backup is made '''
         patch = '''

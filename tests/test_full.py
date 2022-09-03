@@ -15,7 +15,7 @@ PATCH_PROGRAM = 'sb_patch'
 def run(cmd, input=None):
     ''' run patch with some options '''
     try:
-        return subprocess.run(cmd, text=True, capture_output=True, timeout=1, input=input)
+        return subprocess.run(cmd, text=True, capture_output=True, timeout=1, input=input, encoding='utf8')
     except subprocess.TimeoutExpired as e:
         print(e.stderr)
         print('------------------------------')
@@ -114,6 +114,31 @@ class TestPatch(unittest.TestCase):
 	return 0;
 }
 ''')
+
+
+    def test_basic_unicode_patch_filepaths(self):
+        ''' test a patch which is changing a non ASCII filename '''
+        patch = '''
+--- "\\327\\251\\327\\234\\327\\225\\327\\235 \\327\\242\\327\\225\\327\\234\\327\\235!"	2022-09-03 14:51:28.429821767 +1200
++++ another	2022-09-03 14:52:15.250024346 +1200
+@@ -1,3 +1,2 @@
+ a
+-b
+ c
+'''
+        with open('diff.patch', 'w') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = 'a\nb\nc\n'
+
+        with open('שלום עולם!', 'w') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.stdout, 'patching file שלום עולם!\n')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFileEqual('שלום עולם!', 'a\nc\n')
 
 
     def test_set_patch_file(self):

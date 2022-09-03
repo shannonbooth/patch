@@ -89,21 +89,6 @@ bool CmdLineParser::parse_string(char short_opt, const char* long_opt, std::stri
     return false;
 }
 
-bool CmdLineParser::parse_path(char short_opt, const char* long_opt, std::filesystem::path& option)
-{
-    std::string str;
-    if (!parse_string(short_opt, long_opt, str))
-        return false;
-
-#ifdef _WIN32
-    option = to_wide(str);
-#else
-    option = str;
-#endif
-
-    return true;
-}
-
 bool CmdLineParser::parse_int(char short_opt, const char* long_opt, int& option)
 {
     std::string option_as_str;
@@ -212,10 +197,10 @@ const Options& CmdLineParser::parse()
 
         // By this stage, we know that this arg is some option.
         // Now we need to work out which one it is.
-        if (parse_path('i', "--input", m_options.patch_file_path))
+        if (parse_string('i', "--input", m_options.patch_file_path))
             continue;
 
-        if (parse_path('d', "--directory", m_options.patch_directory_path))
+        if (parse_string('d', "--directory", m_options.patch_directory_path))
             continue;
 
         if (parse_string('D', "--ifdef", m_options.define_macro))

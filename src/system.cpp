@@ -98,7 +98,7 @@ std::string read_tty_until_enter()
     }
 }
 
-bool remove_empty_directory(const std::filesystem::path& path)
+static bool remove_empty_directory(const std::filesystem::path& path)
 {
 #ifdef _WIN32
     int ret = ::_wrmdir(path.c_str());
@@ -111,31 +111,52 @@ bool remove_empty_directory(const std::filesystem::path& path)
 
     // POSIX allows for either ENOTEMPTY or EEXIST.
     if (errno != ENOTEMPTY && errno != EEXIST)
-        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path.u8string());
+        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path.string());
 
     return false;
 }
 
-void remove_file_and_empty_parent_folders(std::filesystem::path path)
+void remove_file_and_empty_parent_folders(const std::string& path)
 {
-    std::filesystem::remove(path);
-    while (path.has_parent_path()) {
-        path = path.parent_path();
-        if (!remove_empty_directory(path.string()))
+    std::filesystem::path native_path(to_native(path));
+
+    std::filesystem::remove(native_path);
+    while (native_path.has_parent_path()) {
+        native_path = native_path.parent_path();
+        if (!remove_empty_directory(native_path))
             break;
     }
 }
 
-void chdir(const std::filesystem::path& path)
+void ensure_parent_directories(const std::string& path)
+{
+    const std::filesystem::path native_path(to_native(path));
+
+    if (native_path.has_parent_path())
+        std::filesystem::create_directories(native_path.parent_path());
+}
+
+void chdir(const std::string& path)
 {
 #ifdef _WIN32
-    int ret = ::_wchdir(path.c_str());
+    const auto wpath = to_wide(path);
+    int ret = ::_wchdir(wpath.c_str());
 #else
     int ret = ::chdir(path.c_str());
 #endif
 
     if (ret != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path.u8string());
+        throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path);
+}
+
+bool file_exists(const std::string& path)
+{
+    return std::filesystem::exists(to_native(path));
+}
+
+bool is_regular_file(const std::string& path)
+{
+    return std::filesystem::is_regular_file(to_native(path));
 }
 
 #ifdef _WIN32

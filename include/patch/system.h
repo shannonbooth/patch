@@ -21,17 +21,33 @@ bool get_line(std::istream& is, std::string& line, NewLine* newline = nullptr);
 
 std::string read_tty_until_enter();
 
-void chdir(const std::filesystem::path& path);
+void chdir(const std::string& path);
 
-bool remove_empty_directory(const std::filesystem::path& path);
+void remove_file_and_empty_parent_folders(const std::string& path);
 
-void remove_file_and_empty_parent_folders(std::filesystem::path path);
+void ensure_parent_directories(const std::string& path);
+
+bool file_exists(const std::string& path);
+
+bool is_regular_file(const std::string& path);
 
 #ifdef _WIN32
 
 std::wstring to_wide(const std::string& str);
 
 std::string to_narrow(const std::wstring& str);
+
+inline std::wstring to_native(const std::string& str)
+{
+    return to_wide(str);
+}
+
+#else
+
+inline std::string to_native(const std::string& str)
+{
+    return str;
+}
 
 #endif
 

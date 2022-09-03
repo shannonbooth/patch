@@ -50,7 +50,6 @@ public:
     const Options& parse();
 
 private:
-    bool parse_path(char short_opt, const char* long_opt, std::filesystem::path& option);
     bool parse_string(char short_opt, const char* long_opt, std::string& option);
     bool parse_int(char short_opt, const char* long_opt, int& option);
 

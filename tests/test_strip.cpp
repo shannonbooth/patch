@@ -76,6 +76,24 @@ TEST(Strip, QuotedStringGood)
     EXPECT_EQ(path, "with quote \" escape char");
     EXPECT_EQ(timestamp, "");
 
+    // Octal simple
+    path.clear();
+    Patch::parse_file_line(R"("\110\145\154\154\157\054\040\167\157\162\154\144\041\040\061\062\063")", 0, path, &timestamp);
+    EXPECT_EQ(path, "Hello, world! 123");
+    EXPECT_EQ(timestamp, "");
+
+    // Octal escape codes (+ ASCII char)
+    path.clear();
+    Patch::parse_file_line(R"("\327\251\327\234\327\225\327\235 \327\242\327\225\327\234\327\235!")", 0, path, &timestamp);
+    EXPECT_EQ(path, "שלום עולם!");
+    EXPECT_EQ(timestamp, "");
+
+    // Octal escape codes, not all 3 chars
+    path.clear();
+    Patch::parse_file_line(R"("\110\145\154\154\157\054\40cruel \167\157\162\154\144\041\40\061\62\063123")", 0, path, &timestamp);
+    EXPECT_EQ(path, "Hello, cruel world! 123123");
+    EXPECT_EQ(timestamp, "");
+
     path.clear();
     Patch::parse_file_line(R"("quoted string \\ then \" timestamp"	2022-06-10 19:28:11.018017172 +1200)", 0, path, &timestamp);
     EXPECT_EQ(path, "quoted string \\ then \" timestamp");

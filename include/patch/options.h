@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <filesystem>
 #include <string>
 
 namespace Patch {
@@ -25,10 +24,10 @@ struct Options {
     // posix defined options
     bool save_backup { false };
     bool interpret_as_context { false };
-    std::filesystem::path patch_directory_path;
+    std::string patch_directory_path;
     std::string define_macro;
     bool interpret_as_ed { false };
-    std::filesystem::path patch_file_path;
+    std::string patch_file_path;
     bool ignore_whitespace { false };
     bool interpret_as_normal { false };
     bool ignore_reversed { false };

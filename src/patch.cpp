@@ -91,13 +91,13 @@ static std::string guess_filepath(const Patch& patch)
     // For now, this implementation matches the GNU behaviour when the --posix flag is specified. In
     // the future, we may want to make our implementation match whatever the behaviour of GNU patch
     // is for this path determination.
-    if (patch.old_file_path != "/dev/null" && std::filesystem::exists(patch.old_file_path))
+    if (patch.old_file_path != "/dev/null" && file_exists(patch.old_file_path))
         return patch.old_file_path;
 
-    if (patch.new_file_path != "/dev/null" && std::filesystem::exists(patch.new_file_path))
+    if (patch.new_file_path != "/dev/null" && file_exists(patch.new_file_path))
         return patch.new_file_path;
 
-    if (patch.index_file_path != "/dev/null" && std::filesystem::exists(patch.index_file_path))
+    if (patch.index_file_path != "/dev/null" && file_exists(patch.index_file_path))
         return patch.index_file_path;
 
     return {};
@@ -112,7 +112,7 @@ static std::string prompt_for_filepath(std::ostream& out)
 
         if (!buffer.empty()) {
             errno = 0;
-            if (std::filesystem::is_regular_file(buffer.c_str()))
+            if (is_regular_file(buffer))
                 return buffer;
             auto saved_errno = errno;
 
@@ -155,9 +155,9 @@ public:
             if (options.newline_output != Options::NewlineOutput::Native)
                 mode |= std::ios::binary;
 
-            m_patch_file.open(options.patch_file_path, mode);
+            m_patch_file.open(to_native(options.patch_file_path), mode);
             if (!m_patch_file)
-                throw std::system_error(errno, std::generic_category(), "Unable to open patch file " + options.patch_file_path.string());
+                throw std::system_error(errno, std::generic_category(), "Unable to open patch file " + options.patch_file_path);
         }
     }
 
@@ -171,7 +171,8 @@ private:
 
 static void write_to_file(const std::string& path, std::ios::openmode mode, std::stringstream& content)
 {
-    std::ofstream file(path, mode | std::ios::trunc);
+    std::ofstream file(to_native(path), mode | std::ios::trunc);
+
     if (!file)
         throw std::system_error(errno, std::generic_category(), "Unable to open file " + path);
 
@@ -308,7 +309,7 @@ int process_patch(const Options& options)
         std::stringstream tmp_reject_file;
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
-        if (!looks_like_adding_file && !std::filesystem::is_regular_file(file_to_patch)) {
+        if (!looks_like_adding_file && !is_regular_file(file_to_patch)) {
             // FIXME: Figure out a nice way of reducing duplication with the failure case below.
             out << "File " << file_to_patch << " is not a regular file -- refusing to patch\n";
             for (const auto& hunk : patch.hunks)
@@ -348,8 +349,8 @@ int process_patch(const Options& options)
         out << '\n';
 
         std::fstream input_file;
-        if (!looks_like_adding_file || std::filesystem::exists(file_to_patch)) {
-            input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::fstream::in);
+        if (!looks_like_adding_file || file_exists(file_to_patch)) {
+            input_file.open(to_native(file_to_patch), looks_like_adding_file ? mode : mode | std::fstream::in);
             if (!input_file)
                 throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
         }
@@ -371,16 +372,13 @@ int process_patch(const Options& options)
 
                     // Per POSIX:
                     // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
-                    if (std::filesystem::exists(output_file) && backed_up_files.emplace(backup_file).second)
+                    if (file_exists(output_file) && backed_up_files.emplace(backup_file).second)
                         std::filesystem::rename(output_file, backup_file);
                 }
 
                 // Ensure that parent directories exist if we are adding a file.
-                if (looks_like_adding_file) {
-                    std::filesystem::path path(output_file);
-                    if (path.has_parent_path())
-                        std::filesystem::create_directories(path.parent_path());
-                }
+                if (looks_like_adding_file)
+                    ensure_parent_directories(output_file);
 
                 write_to_file(output_file, mode, tmp_out_file);
                 if (patch.new_file_mode != 0) {

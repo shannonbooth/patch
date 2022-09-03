@@ -24,7 +24,7 @@
 
 namespace Patch {
 
-void print_header_info(std::istream& patch, PatchHeaderInfo& header_info, std::ostream& out)
+void print_header_info(std::istream& patch, const PatchHeaderInfo& header_info, std::ostream& out)
 {
     patch.seekg(header_info.patch_start);
     out << "Hmm...  Looks like a " << to_string(header_info.format) << " diff to me...\n";

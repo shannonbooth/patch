@@ -91,13 +91,13 @@ static std::string guess_filepath(const Patch& patch)
     // For now, this implementation matches the GNU behaviour when the --posix flag is specified. In
     // the future, we may want to make our implementation match whatever the behaviour of GNU patch
     // is for this path determination.
-    if (patch.old_file_path != "/dev/null" && file_exists(patch.old_file_path))
+    if (patch.old_file_path != "/dev/null" && filesystem::exists(patch.old_file_path))
         return patch.old_file_path;
 
-    if (patch.new_file_path != "/dev/null" && file_exists(patch.new_file_path))
+    if (patch.new_file_path != "/dev/null" && filesystem::exists(patch.new_file_path))
         return patch.new_file_path;
 
-    if (patch.index_file_path != "/dev/null" && file_exists(patch.index_file_path))
+    if (patch.index_file_path != "/dev/null" && filesystem::exists(patch.index_file_path))
         return patch.index_file_path;
 
     return {};
@@ -112,7 +112,7 @@ static std::string prompt_for_filepath(std::ostream& out)
 
         if (!buffer.empty()) {
             errno = 0;
-            if (is_regular_file(buffer))
+            if (filesystem::is_regular_file(buffer))
                 return buffer;
             auto saved_errno = errno;
 
@@ -308,7 +308,7 @@ int process_patch(const Options& options)
         std::stringstream tmp_reject_file;
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
-        if (!looks_like_adding_file && !is_regular_file(file_to_patch)) {
+        if (!looks_like_adding_file && !filesystem::is_regular_file(file_to_patch)) {
             // FIXME: Figure out a nice way of reducing duplication with the failure case below.
             out << "File " << file_to_patch << " is not a regular file -- refusing to patch\n";
             for (const auto& hunk : patch.hunks)
@@ -348,7 +348,7 @@ int process_patch(const Options& options)
         out << '\n';
 
         std::fstream input_file;
-        if (!looks_like_adding_file || file_exists(file_to_patch)) {
+        if (!looks_like_adding_file || filesystem::exists(file_to_patch)) {
             input_file.open(to_native(file_to_patch), looks_like_adding_file ? mode : mode | std::fstream::in);
             if (!input_file)
                 throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
@@ -371,8 +371,8 @@ int process_patch(const Options& options)
 
                     // Per POSIX:
                     // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
-                    if (file_exists(output_file) && backed_up_files.emplace(backup_file).second)
-                        std::filesystem::rename(output_file, backup_file);
+                    if (filesystem::exists(output_file) && backed_up_files.emplace(backup_file).second)
+                        filesystem::rename(output_file, backup_file);
                 }
 
                 // Ensure that parent directories exist if we are adding a file.
@@ -381,8 +381,8 @@ int process_patch(const Options& options)
 
                 write_to_file(output_file, mode, tmp_out_file);
                 if (patch.new_file_mode != 0) {
-                    auto perms = static_cast<std::filesystem::perms>(patch.new_file_mode) & std::filesystem::perms::mask;
-                    std::filesystem::permissions(output_file, perms);
+                    auto perms = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
+                    filesystem::permissions(output_file, perms);
                 }
             }
 
@@ -406,7 +406,7 @@ int process_patch(const Options& options)
                 // Clean up the file if it looks like it was removed.
                 // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
                 if (patch.new_file_path == "/dev/null") {
-                    if (std::filesystem::file_size(output_file) == 0) {
+                    if (filesystem::file_size(output_file) == 0) {
                         if (!options.dry_run)
                             remove_file_and_empty_parent_folders(output_file);
                     } else {

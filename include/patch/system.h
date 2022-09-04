@@ -27,9 +27,21 @@ void remove_file_and_empty_parent_folders(const std::string& path);
 
 void ensure_parent_directories(const std::string& path);
 
-bool file_exists(const std::string& path);
+namespace filesystem {
+
+bool exists(const std::string& path);
 
 bool is_regular_file(const std::string& path);
+
+void rename(const std::string& old_path, const std::string& new_path);
+
+using std::filesystem::perms;
+
+void permissions(const std::string& path, perms permissions);
+
+uintmax_t file_size(const std::string& path);
+
+} // namespace filesystem
 
 #ifdef _WIN32
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <filesystem>
 #include <patch/system.h>
 
 #include <cstdio>
@@ -149,7 +150,9 @@ void chdir(const std::string& path)
         throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path);
 }
 
-bool file_exists(const std::string& path)
+namespace filesystem {
+
+bool exists(const std::string& path)
 {
     return std::filesystem::exists(to_native(path));
 }
@@ -158,6 +161,23 @@ bool is_regular_file(const std::string& path)
 {
     return std::filesystem::is_regular_file(to_native(path));
 }
+
+void rename(const std::string& old_path, const std::string& new_path)
+{
+    std::filesystem::rename(to_native(old_path), to_native(new_path));
+}
+
+void permissions(const std::string& path, perms permissions)
+{
+    std::filesystem::permissions(to_native(path), permissions);
+}
+
+uintmax_t file_size(const std::string& path)
+{
+    return std::filesystem::file_size(to_native(path));
+}
+
+} // namespace filesystem
 
 #ifdef _WIN32
 

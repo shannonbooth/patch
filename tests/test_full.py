@@ -42,7 +42,7 @@ class TestPatch(unittest.TestCase):
 
     def assertFileEqual(self, path, content):
         ''' assert that the given path has the expected file content '''
-        with open(path, 'r') as file:
+        with open(path, 'r', encoding='utf8') as file:
             file_content = file.read()
         self.assertEqual(file_content, content)
 
@@ -64,14 +64,14 @@ class TestPatch(unittest.TestCase):
 +	return 0;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('to_patch', 'w') as to_patch_file:
+        with open('to_patch', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -95,14 +95,14 @@ class TestPatch(unittest.TestCase):
 +	return 0;
  }
 '''
-        with open('ハローワールド.patch', 'w') as patch_file:
+        with open('ハローワールド.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('to_patch', 'w') as to_patch_file:
+        with open('to_patch', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i ハローワールド.patch')
@@ -126,12 +126,12 @@ class TestPatch(unittest.TestCase):
 -b
  c
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'a\nb\nc\n'
 
-        with open('שלום עולם!', 'w') as to_patch_file:
+        with open('שלום עולם!', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -162,12 +162,12 @@ index de98044..0f7bc76 100644
 -b
  c
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'Мир\nb\nc\n'
 
-        with open('նախքան', 'w') as to_patch_file:
+        with open('նախքան', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -idiff.patch')
@@ -188,14 +188,14 @@ index de98044..0f7bc76 100644
 +	return 0;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('c', 'w') as to_patch_file:
+        with open('c', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch c')
@@ -222,14 +222,14 @@ index de98044..0f7bc76 100644
 +     return 0;
   }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -259,7 +259,7 @@ index de98044..0f7bc76 100644
  8
  9
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''1
@@ -272,7 +272,7 @@ index de98044..0f7bc76 100644
 8
 9
 '''
-        with open('x', 'w') as to_patch_file:
+        with open('x', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -300,14 +300,14 @@ index de98044..0f7bc76 100644
 +	return 0;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('to_patch', 'w') as to_patch_file:
+        with open('to_patch', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch --dry-run')
@@ -329,7 +329,7 @@ index 0000000..7a1c613
 @@ -0,0 +1 @@
 +some file
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -350,14 +350,14 @@ index 0000000..7a1c613
 +	return 0;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('to_patch', 'w') as to_patch_file:
+        with open('to_patch', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch --dry-run -o -')
@@ -383,14 +383,14 @@ int main()
 -2
  3
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''a
 b
 c
 '''
-        with open('1', 'w') as to_patch_file:
+        with open('1', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch --dry-run --force')
@@ -407,7 +407,7 @@ Hunk #1 FAILED at 1.
     def test_ed_patches_not_supported(self):
         ''' test that when we try patch an ed patch file, we fail with an appropriate error '''
         patch = '3d\n'
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         ret = run_patch('patch -i diff.patch --ed')
@@ -425,7 +425,7 @@ Hunk #1 FAILED at 1.
 +{
 +}
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         self.assertFalse(os.path.exists('add')) # sanity check
@@ -448,7 +448,7 @@ Hunk #1 FAILED at 1.
 +{
 +}
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         self.assertFalse(os.path.exists('e')) # sanity check
@@ -471,7 +471,7 @@ Hunk #1 FAILED at 1.
 +{
 +}
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         self.assertFalse(os.path.exists('e')) # sanity check
@@ -497,11 +497,11 @@ Hunk #1 FAILED at 1.
 +2
 +3
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '1\n2\n3\n'
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch --force -r override.rej')
@@ -524,11 +524,11 @@ Hunk #1 FAILED at 1.
 +123
  ghi
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'apc\nzxy\nghi\n'
-        with open('reject', 'w') as to_patch_file:
+        with open('reject', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch --reject-format context')
@@ -560,16 +560,16 @@ Hunk #1 FAILED at 1.
 @@ -1 +0,0 @@
 -1
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         path = os.path.join('a', 'b', 'c', 'd')
         os.makedirs(path)
         to_patch = '1\n'
-        with open(os.path.join(path, 'e'), 'w') as to_patch_file:
+        with open(os.path.join(path, 'e'), 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
-        with open(os.path.join('a', '1'), 'w') as another_file:
+        with open(os.path.join('a', '1'), 'w', encoding='utf8') as another_file:
             another_file.write('some stuff!\n')
 
         # Test that the file and empty directory are removed, but the
@@ -593,14 +593,14 @@ Hunk #1 FAILED at 1.
 -{
 -}
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('to_remove', 'w') as to_patch_file:
+        with open('to_remove', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         self.assertTrue(os.path.exists('to_remove'))
@@ -621,7 +621,7 @@ Hunk #1 FAILED at 1.
 -{
 -}
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
@@ -629,7 +629,7 @@ Hunk #1 FAILED at 1.
 }
 // some trailing garbage
 '''
-        with open('remove', 'w') as to_patch_file:
+        with open('remove', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -649,7 +649,7 @@ Not deleting file remove as content differs from patch
 @@ -0,0 +1 @@
 +a line
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         self.assertFalse(os.path.exists('f')) # sanity check
@@ -681,11 +681,11 @@ rename from a
 rename to b
 '''
 
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'ab'
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -b -i diff.patch')
@@ -708,18 +708,18 @@ rename to b
  }
 '''
 
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         existing = 'some file content!\n'
-        with open('a.orig', 'w') as existing_file:
+        with open('a.orig', 'w', encoding='utf8') as existing_file:
             existing_file.write(existing)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -b -i diff.patch')
@@ -752,7 +752,7 @@ rename to b
 +	return 5; // and comment
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
@@ -760,7 +760,7 @@ rename to b
     return 0;
 }
 '''
-        with open('main.cpp', 'w') as to_patch_file:
+        with open('main.cpp', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -b -i diff.patch')
@@ -784,11 +784,11 @@ rename to b
 -abc
 +xyz
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'abc\n'
-        with open('x', 'w') as to_patch_file:
+        with open('x', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch --backup --prefix pre. -i diff.patch')
@@ -808,11 +808,11 @@ rename to b
 -abc
 +xyz
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'abc\n'
-        with open('x', 'w') as to_patch_file:
+        with open('x', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch --backup --suffix .post -i diff.patch')
@@ -832,11 +832,11 @@ rename to b
 -abc
 +xyz
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'abc\n'
-        with open('x', 'w') as to_patch_file:
+        with open('x', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch --backup --prefix pre. --suffix .post -i diff.patch')
@@ -858,7 +858,7 @@ rename to b
 +    return 1;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
@@ -866,9 +866,9 @@ rename to b
     return 1;
 }
 '''
-        with open('x.cpp', 'w') as to_patch_file:
+        with open('x.cpp', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
-        with open('y.cpp', 'w') as to_patch_file:
+        with open('y.cpp', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         # GNU patch does not seem to also reverse the old and new file
@@ -902,7 +902,7 @@ rename to b
 
 '''
         for extra_arg in [' -i -', '']:
-            with open('a', 'w') as to_patch_file:
+            with open('a', 'w', encoding='utf8') as to_patch_file:
                 to_patch_file.write(to_patch)
             ret = run_patch('patch' + extra_arg, input=patch)
             self.assertEqual(ret.stderr, '')
@@ -925,14 +925,14 @@ rename to b
 +	return 1;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
 {
 }
 '''
-        with open('x.cpp', 'w') as to_patch_file:
+        with open('x.cpp', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -o -')
@@ -953,11 +953,11 @@ int main()
 @@ -1 +0,0 @@
 -1
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '1\n'
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -o -')
@@ -977,11 +977,11 @@ int main()
 +d
  c
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'a\nb\nc\n'
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -osome-file')
@@ -1003,7 +1003,7 @@ int main()
 -	return 0;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
@@ -1011,7 +1011,7 @@ int main()
 	return 0;
 }
 '''
-        with open('main.cpp', 'w') as to_patch_file:
+        with open('main.cpp', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -RN -i diff.patch')
@@ -1235,10 +1235,10 @@ similarity index 100%
 rename from orig_file
 rename to another_new
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
-        with open('orig_file', 'w') as to_patch_file:
+        with open('orig_file', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write('a\nb\nc\nd\n')
 
         ret = run_patch('patch -i diff.patch')
@@ -1255,11 +1255,11 @@ similarity index 100%
 rename from x
 rename to y
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = 'a\nb\nc\nd\n'
-        with open('y', 'w') as to_patch_file:
+        with open('y', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -R')
@@ -1287,10 +1287,10 @@ index 71ac1b5..fc3102f 100644
  g
  h
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
-        with open('thing', 'w') as to_patch_file:
+        with open('thing', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write('''a
 b
 c
@@ -1322,7 +1322,7 @@ similarity index 100%
 copy from x
 copy to y
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
@@ -1330,7 +1330,7 @@ copy to y
     return 0;
 }
 '''
-        with open('x', 'w') as to_patch_file:
+        with open('x', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -1357,7 +1357,7 @@ index 905869d..2227c3a 100644
 +    return 1;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''int main()
@@ -1365,7 +1365,7 @@ index 905869d..2227c3a 100644
     return 0;
 }
 '''
-        with open('x', 'w') as to_patch_file:
+        with open('x', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -1401,11 +1401,11 @@ rename to b
 2.25.1
 
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         existing_b = '1\n2\n3\n'
-        with open('b', 'w') as to_patch_file:
+        with open('b', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(existing_b)
 
         ret = run_patch('patch -i diff.patch')
@@ -1432,11 +1432,11 @@ index de98044..0f673f8 100644
 +2
  c
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         existing_a = 'a\nb\nc\n'
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(existing_a)
 
         ret = run_patch('patch -i diff.patch')
@@ -1463,11 +1463,11 @@ index de98044..0f673f8 100644
 +2
  c
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         existing_a = 'a\n2\nc\n'
-        with open('a', 'w') as to_patch_file:
+        with open('a', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(existing_a)
 
         ret = run_patch('patch -i diff.patch --reverse')
@@ -1484,7 +1484,7 @@ index de98044..0f673f8 100644
         some
         garbage!
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -1518,14 +1518,14 @@ index de98044..0f673f8 100644
 -2
  3
 '''
-        with open(os.path.join('folder', 'diff.patch'), 'w') as patch_file:
+        with open(os.path.join('folder', 'diff.patch'), 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''1
 2
 3
 '''
-        with open(os.path.join('folder', '1'), 'w') as to_patch_file:
+        with open(os.path.join('folder', '1'), 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -d folder')
@@ -1534,7 +1534,7 @@ index de98044..0f673f8 100644
         self.assertEqual(ret.stdout, 'patching file 1\n')
         self.assertEqual(ret.stderr, '')
 
-    def test_chdir_unicode_(self):
+    def test_chdir_unicode(self):
         ''' test using chdir with non ascii '''
 
         os.mkdir('गिलास')
@@ -1546,14 +1546,14 @@ index de98044..0f673f8 100644
 -2
  3
 '''
-        with open(os.path.join('गिलास', 'diff.patch'), 'w') as patch_file:
+        with open(os.path.join('गिलास', 'diff.patch'), 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '''1
 2
 3
 '''
-        with open(os.path.join('गिलास', '1'), 'w') as to_patch_file:
+        with open(os.path.join('गिलास', '1'), 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch -d गिलास')
@@ -1571,11 +1571,11 @@ diff --git a/file b/file
 old mode 100644
 new mode 100755
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         to_patch = '1\n2\n3\n'
-        with open('file', 'w') as to_patch_file:
+        with open('file', 'w', encoding='utf8') as to_patch_file:
             to_patch_file.write(to_patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -1597,7 +1597,7 @@ new mode 100755
 -	return 0;
  }
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         ret = run_patch('patch -i diff.patch -d bad_directory')
@@ -1638,7 +1638,7 @@ HcmV?d00001
 --
 2.25.1
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         ret = run_patch('patch -i diff.patch')
@@ -1658,15 +1658,15 @@ diff --git a/b b/a
 rename from b
 rename to a
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         a = '1\n2\n3\n'
-        with open('a', 'w') as a_file:
+        with open('a', 'w', encoding='utf8') as a_file:
             a_file.write(a)
 
         b = 'a\nb\nc\n'
-        with open('b', 'w') as b_file:
+        with open('b', 'w', encoding='utf8') as b_file:
             b_file.write(b)
 
         ret = run_patch('patch -i diff.patch')
@@ -1699,14 +1699,14 @@ index a45905b..0000000
 @@ -1 +0,0 @@
 -Subproject commit a45905b0166713760a2fb4f2e908d7ce47488371
 '''
-        with open('diff.patch', 'w') as patch_file:
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 
         gitmodules = '''[submodule "libarchive"]
 	path = libarchive
 	url = https://github.com/libarchive/libarchive.git
 '''
-        with open('.gitmodules', 'w') as gitmodules_file:
+        with open('.gitmodules', 'w', encoding='utf8') as gitmodules_file:
             gitmodules_file.write(gitmodules)
         os.mkdir('libarchive')
 

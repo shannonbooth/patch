@@ -38,7 +38,7 @@ TEST(Parser, NormalDiffHeader)
 
 TEST(Parser, NormalDiffSimple)
 {
-    std::stringstream patch_file(R"(2a3
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3
 > 	return 0;
 )");
     auto patch = Patch::parse_patch(patch_file, Patch::Format::Normal);
@@ -53,7 +53,7 @@ TEST(Parser, NormalDiffSimple)
 
 TEST(Parser, OneHunk)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/only_add_return.cpp
 +++ b/only_add_return.cpp
 @@ -1,3 +1,4 @@
@@ -77,7 +77,7 @@ TEST(Parser, OneHunk)
 
 TEST(Parser, OneHunkAddNoContext)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-08-21 14:35:06.584242817 +1200
 +++ main2.cpp	2022-08-21 14:19:47.509561172 +1200
 @@ -2,0 +3 @@
@@ -98,7 +98,7 @@ TEST(Parser, OneHunkAddNoContext)
 
 TEST(Parser, OneUnifiedHunkRemoveNoContext)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-01-04 13:29:06.799930273 +1300
 +++ main2.cpp	2022-01-04 13:29:05.599932817 +1300
 @@ -3 +2,0 @@
@@ -119,7 +119,7 @@ TEST(Parser, OneUnifiedHunkRemoveNoContext)
 
 TEST(Parser, OneContextHunkNoContextRemoveLine)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** main1.cpp	2022-01-04 13:29:06.799930273 +1300
 --- main2.cpp	2022-01-04 13:29:05.599932817 +1300
 ***************
@@ -142,7 +142,7 @@ TEST(Parser, OneContextHunkNoContextRemoveLine)
 
 TEST(Parser, OneContextHunkNoContextAddLine)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** main1.cpp	2022-08-21 14:35:06.584242817 +1200
 --- main2.cpp	2022-08-21 14:19:47.509561172 +1200
 ***************
@@ -165,7 +165,7 @@ TEST(Parser, OneContextHunkNoContextAddLine)
 
 TEST(Parser, UnifiedNoNewlineAtEndOfFile)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- no_newline1.cpp	2022-01-30 13:57:31.173528027 +1300
 +++ no_newline2.cpp	2022-01-30 13:57:36.321216497 +1300
 @@ -1,4 +1,4 @@
@@ -193,7 +193,7 @@ TEST(Parser, UnifiedNoNewlineAtEndOfFile)
 
 TEST(Parser, NoNewlineInMiddleOfHunk)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a.cpp	2022-05-08 14:42:02.601222193 +1200
 +++ b.cpp	2022-04-24 18:21:59.931984592 +1200
 @@ -1,3 +1,4 @@
@@ -215,7 +215,7 @@ TEST(Parser, NoNewlineInMiddleOfHunk)
 
 TEST(Parser, ContextNoNewlineAtEndOfFileBothSides)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** no_newline1.cpp	2022-01-31 12:26:11.209333486 +1300
 --- no_newline2.cpp	2022-01-31 12:26:14.089325436 +1300
 ***************
@@ -258,7 +258,7 @@ TEST(Parser, SpaceSeparatedFilenameAndTimestamp)
     // Inspired by an editor which mangled the tabs to spaces and patch was not
     // parsing this correctly. GNU patch could parse this correctly, so now
     // do we!
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file  2022-08-21 14:35:06.584242817 +1200
 +++ file  2022-08-21 14:19:47.509561172 +1200
 @@ -1 +0,0 @@
@@ -279,7 +279,7 @@ TEST(Parser, SpaceSeparatedFilenameAndTimestamp)
 
 TEST(Parser, ContextNoNewlineAtEndOfFileOneSide)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** no_newline1.cpp	2022-01-31 12:26:11.209333486 +1300
 --- no_newline2.cpp	2022-01-31 12:28:16.076964354 +1300
 ***************
@@ -324,7 +324,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileOneSide)
 
 TEST(Parser, TwoHunks)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/only_add_return.cpp
 +++ b/only_add_return.cpp
 @@ -1,7 +1,3 @@
@@ -354,7 +354,7 @@ TEST(Parser, TwoHunks)
 
 TEST(Parser, OneHunkNameInTimestamp)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-06-06 10:19:48.246931254 +1200
 +++ main2.cpp	2022-06-06 15:47:25.948226810 +1200
 @@ -1,3 +1,4 @@
@@ -372,7 +372,7 @@ TEST(Parser, OneHunkNameInTimestamp)
 
 TEST(Parser, GitDiffSimple)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/main.cpp b/main.cpp
 index 5047a34..905869d 100644
 --- a/main.cpp
@@ -392,7 +392,7 @@ index 5047a34..905869d 100644
 
 TEST(Parser, GitRenameWithQuotedFilename)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/a.txt "b/b\nc"
 similarity index 100%
 rename from a.txt
@@ -410,7 +410,7 @@ rename to "b\nc"
 
 TEST(Parser, GitRenameWithStripZero)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 From 89629b257f091dd0ff78509ca0ad626089defaa7 Mon Sep 17 00:00:00 2001
 From: Shannon Booth <shannon.ml.booth@gmail.com>
 Date: Tue, 5 Jul 2022 18:53:32 +1200
@@ -441,7 +441,7 @@ rename to b
 
 TEST(Parser, GitChangeMode)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 From e8e9fc10f0915e2dfa02db34cce97aa7e66b4d61 Mon Sep 17 00:00:00 2001
 From: Shannon Booth <shannon.ml.booth@gmail.com>
 Date: Sun, 10 Jul 2022 09:50:24 +1200
@@ -472,7 +472,7 @@ new mode 100755
 
 TEST(Parser, GitChangeModeWithTabbedFilename)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git "a/some\tname" "b/some\tname"
 old mode 100644
 new mode 100755
@@ -491,7 +491,7 @@ new mode 100755
 
 TEST(Parser, GitChangeModeWithSpacedFilename)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/with space b/with space
 old mode 100755
 new mode 100644
@@ -510,7 +510,7 @@ new mode 100644
 
 TEST(Parser, TestWithTabInTimestampHeader)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- ../test/main2.cpp	2022-06-06 15:47:25.948226810 +1200
 +++ ../test/main1.cpp	2022-06-06 10:19:48.246931254 +1200
 @@ -1,4 +1,3 @@
@@ -533,7 +533,7 @@ TEST(Parser, TestWithTabInTimestampHeader)
 
 TEST(Parser, WithIndexHeader)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 Index: test/Makefile
 ===================================================================
 --- test-server-tree.orig/Makefile
@@ -564,7 +564,7 @@ Index: test/Makefile
 
 TEST(Parser, ContextDiff)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** test1_input.cpp	2022-06-19 17:14:31.743526819 +1200
 --- test1_output.cpp	2022-06-19 17:14:31.743526819 +1200
 ***************
@@ -589,7 +589,7 @@ TEST(Parser, ContextDiff)
 
 TEST(Parse, ComplexContextDiff)
 {
-    std::stringstream patch_file(R"(
+    std::string patch_file_str = R"(
 *** main2.cpp	2022-06-26 15:43:50.743831486 +1200
 --- main1.cpp	2022-06-26 15:44:36.224763329 +1200
 ***************
@@ -615,8 +615,9 @@ TEST(Parse, ComplexContextDiff)
 -     return -1;
   }
 --- 14,17 ----
-)");
-    ASSERT_EQ(patch_file.str().size(), 447); // keep trailing whitespace
+)";
+    ASSERT_EQ(patch_file_str.size(), 447); // keep trailing whitespace
+    Patch::File patch_file = Patch::File::create_temporary_with_content(patch_file_str);
 
     auto patch = Patch::parse_patch(patch_file);
 
@@ -642,7 +643,7 @@ TEST(Parse, ComplexContextDiff)
 
 TEST(Parse, ContextDiffWithChangedLine)
 {
-    std::stringstream patch_file(R"(
+    std::string patch_file_str = R"(
 *** main1.cpp	2022-07-14 17:02:39.711744921 +1200
 --- main2.cpp	2022-07-14 17:03:34.110450111 +1200
 ***************
@@ -669,9 +670,10 @@ TEST(Parse, ContextDiffWithChangedLine)
   {
 ! 	return 1;
   }
-)");
-    ASSERT_EQ(patch_file.str().size(), 364); // keep trailing whitespace
+)";
+    ASSERT_EQ(patch_file_str.size(), 364); // keep trailing whitespace
 
+    Patch::File patch_file = Patch::File::create_temporary_with_content(patch_file_str);
     auto patch = Patch::parse_patch(patch_file);
 
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
@@ -694,7 +696,7 @@ TEST(Parse, ContextDiffWithChangedLine)
 
 TEST(Parse, NormalDiffNoNewLineAtEndOfFile)
 {
-    std::stringstream patch_file(R"(0a1
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(0a1
 > a
 \ No newline at end of file
 )");
@@ -710,7 +712,7 @@ TEST(Parse, NormalDiffNoNewLineAtEndOfFile)
 
 TEST(Parse, NormalDiffSpaceBeforeNormalCommand)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 0a1
 > a
 )");

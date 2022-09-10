@@ -2,6 +2,7 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <gtest/gtest.h>
+#include <patch/file.h>
 #include <patch/formatter.h>
 #include <patch/hunk.h>
 #include <patch/patch.h>
@@ -24,9 +25,9 @@ TEST(Formatter, ChangeLines)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 5;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
-    EXPECT_EQ(ss1.str(), R"(@@ -1,4 +1,5 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,4 +1,5 @@
  int main()
  {
 -    return 0;
@@ -35,10 +36,10 @@ TEST(Formatter, ChangeLines)
  }
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
 
-    EXPECT_EQ(ss2.str(), R"(*** 1,4 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,4 ****
   int main()
   {
 !     return 0;
@@ -67,18 +68,18 @@ TEST(Formatter, AddLine)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 4;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
-    EXPECT_EQ(ss1.str(), R"(@@ -1,3 +1,4 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,3 +1,4 @@
  int main()
  {
 +    return 0;
  }
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
-    EXPECT_EQ(ss2.str(), R"(*** 1,3 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,3 ****
 --- 1,4 ----
   int main()
   {
@@ -102,18 +103,18 @@ TEST(Formatter, RemoveLine)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 3;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
-    EXPECT_EQ(ss1.str(), R"(@@ -1,4 +1,3 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,4 +1,3 @@
  int main()
  {
 -    return 0;
  }
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
-    EXPECT_EQ(ss2.str(), R"(*** 1,4 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,4 ****
   int main()
   {
 -     return 0;
@@ -142,9 +143,9 @@ TEST(Formatter, MoreComplexPatch)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 6;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
-    EXPECT_EQ(ss1.str(), R"(@@ -1,7 +1,6 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,7 +1,6 @@
 -A line that needs to be changed!
 -A similar line that needs to be changed is this.
  some words...
@@ -156,10 +157,10 @@ TEST(Formatter, MoreComplexPatch)
  key blob
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
 
-    EXPECT_EQ(ss2.str(), R"(*** 1,7 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,7 ****
 - A line that needs to be changed!
 - A similar line that needs to be changed is this.
   some words...
@@ -189,15 +190,15 @@ TEST(Formatter, OnlyOneLineInFromFiles)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 0;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
-    EXPECT_EQ(ss1.str(), R"(@@ -2 +1,0 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -2 +1,0 @@
 -2
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
-    EXPECT_EQ(ss2.str(), R"(*** 2 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 2 ****
 - 2
 --- 1 ----
 )");
@@ -218,10 +219,10 @@ TEST(Formatter, NoNewLineAtEndOfFileBothSides)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 4;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
 
-    EXPECT_EQ(ss1.str(), R"(@@ -1,3 +1,4 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,3 +1,4 @@
  int main()
  {
 +    return 0;
@@ -229,9 +230,9 @@ TEST(Formatter, NoNewLineAtEndOfFileBothSides)
 \ No newline at end of file
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
-    EXPECT_EQ(ss2.str(), R"(*** 1,3 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,3 ****
 --- 1,4 ----
   int main()
   {
@@ -257,10 +258,10 @@ TEST(Formatter, NoNewLineAtEndOfFileForToFile)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 4;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
 
-    EXPECT_EQ(ss1.str(), R"(@@ -1,3 +1,4 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,3 +1,4 @@
  int main()
  {
 -}
@@ -269,9 +270,9 @@ TEST(Formatter, NoNewLineAtEndOfFileForToFile)
 \ No newline at end of file
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
-    EXPECT_EQ(ss2.str(), R"(*** 1,3 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,3 ****
   int main()
   {
 ! }
@@ -300,10 +301,10 @@ TEST(Formatter, NoNewLineAtEndOfFileForOldFile)
     hunk.new_file_range.start_line = 1;
     hunk.new_file_range.number_of_lines = 3;
 
-    std::stringstream ss1;
+    Patch::File ss1 = Patch::File::create_temporary();
     Patch::write_hunk_as_unified(hunk, ss1);
 
-    EXPECT_EQ(ss1.str(), R"(@@ -1,4 +1,3 @@
+    EXPECT_EQ(ss1.read_all_as_string(), R"(@@ -1,4 +1,3 @@
  int main()
  {
 -    return 0;
@@ -312,9 +313,9 @@ TEST(Formatter, NoNewLineAtEndOfFileForOldFile)
 +}
 )");
 
-    std::stringstream ss2;
+    Patch::File ss2 = Patch::File::create_temporary();
     Patch::write_hunk_as_context(hunk, ss2);
-    EXPECT_EQ(ss2.str(), R"(*** 1,4 ****
+    EXPECT_EQ(ss2.read_all_as_string(), R"(*** 1,4 ****
   int main()
   {
 !     return 0;

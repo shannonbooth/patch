@@ -9,7 +9,7 @@
 
 TEST(Reject, UnifiedRemoveLineNoOffset)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- 1	2022-04-24 12:58:33.100280281 +1200
 +++ 2	2022-04-24 12:58:31.560276720 +1200
 @@ -2,7 +2,6 @@
@@ -22,7 +22,7 @@ TEST(Reject, UnifiedRemoveLineNoOffset)
  8
 )");
 
-    std::stringstream input_file(R"(1
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(1
 2
 3
 5
@@ -34,17 +34,16 @@ TEST(Reject, UnifiedRemoveLineNoOffset)
 10
 )");
 
-    auto expected_output = input_file.str();
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
+    Patch::File output = Patch::File::create_temporary();
 
-    std::stringstream reject;
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::apply_patch(output, reject_writer, input_file, patch);
-    EXPECT_EQ(output.str(), expected_output);
+    EXPECT_EQ(output.read_all_as_string(), input_file.read_all_as_string());
 
-    EXPECT_EQ(reject.str(),
+    EXPECT_EQ(reject.read_all_as_string(),
         R"(--- 1	2022-04-24 12:58:33.100280281 +1200
 +++ 2	2022-04-24 12:58:31.560276720 +1200
 @@ -2,7 +2,6 @@
@@ -60,7 +59,7 @@ TEST(Reject, UnifiedRemoveLineNoOffset)
 
 TEST(Reject, ContextRemoveLine)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** a.cpp	2022-04-25 10:47:18.388073392 +1200
 --- b.cpp	2022-04-25 10:04:06.012170915 +1200
 ***************
@@ -72,26 +71,24 @@ TEST(Reject, ContextRemoveLine)
 --- 1,3 ----
 )");
 
-    std::stringstream input_file(R"(int main()
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(int main()
 {
 /	return 0;
 }
 )");
 
-    auto expected_output = input_file.str();
-
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
     options.force = true;
     Patch::apply_patch(output, reject_writer, input_file, patch, options);
 
-    EXPECT_EQ(output.str(), expected_output);
+    EXPECT_EQ(output.read_all_as_string(), input_file.read_all_as_string());
 
-    EXPECT_EQ(reject.str(),
+    EXPECT_EQ(reject.read_all_as_string(),
         R"(*** a.cpp	2022-04-25 10:47:18.388073392 +1200
 --- b.cpp	2022-04-25 10:04:06.012170915 +1200
 ***************
@@ -106,7 +103,7 @@ TEST(Reject, ContextRemoveLine)
 
 TEST(Reject, OffsetInPreviousHunkAppliesToReject)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main.cpp	2022-06-07 20:08:07.722685716 +1200
 +++ second_main.cpp	2022-06-07 20:08:22.863130397 +1200
 @@ -1,5 +1,6 @@
@@ -125,7 +122,7 @@ TEST(Reject, OffsetInPreviousHunkAppliesToReject)
  }
 )");
 
-    std::stringstream input_file(R"(// newly added line
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(// newly added line
 // ... and another
 int main()
 {
@@ -143,13 +140,13 @@ int one_more() // comments to
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::apply_patch(output, reject_writer, input_file, patch);
 
-    EXPECT_EQ(output.str(), R"(// newly added line
+    EXPECT_EQ(output.read_all_as_string(), R"(// newly added line
 // ... and another
 int main()
 {
@@ -167,7 +164,7 @@ int one_more() // comments to
 } // reject
 )");
 
-    EXPECT_EQ(reject.str(), R"(--- main.cpp	2022-06-07 20:08:07.722685716 +1200
+    EXPECT_EQ(reject.read_all_as_string(), R"(--- main.cpp	2022-06-07 20:08:07.722685716 +1200
 +++ second_main.cpp	2022-06-07 20:08:22.863130397 +1200
 @@ -10,5 +11,5 @@
  //

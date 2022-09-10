@@ -9,7 +9,7 @@
 
 TEST(DetermineFormat, Unified)
 {
-    std::stringstream patch_file(R"(--- a.cpp	2022-03-20 12:42:14.665007336 +1300
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(--- a.cpp	2022-03-20 12:42:14.665007336 +1300
 +++ b.cpp	2022-03-20 12:42:20.772998512 +1300
 @@ -1,3 +1,4 @@
  int main()
@@ -37,7 +37,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, Git)
 {
-    std::stringstream patch_file(R"(diff --git a/b.cpp b/b.cpp
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(diff --git a/b.cpp b/b.cpp
 index 5047a34..a46866d 100644
 --- a/b.cpp
 +++ b/b.cpp
@@ -69,7 +69,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, GitExtendedRenameNoHunk)
 {
-    std::stringstream patch_file(R"(diff --git a/new_file b/another_new
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(diff --git a/new_file b/another_new
 similarity index 100%
 rename from new_file
 rename to another_new
@@ -100,7 +100,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, GitExtendedRenameWithHunk)
 {
-    std::stringstream patch_file(R"(diff --git a/file b/test
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(diff --git a/file b/test
 similarity index 87%
 rename from a/b/c/d/thing
 rename to a/b/c/d/e/test
@@ -145,7 +145,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, GitBinary)
 {
-    std::stringstream patch_file(R"(From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
 From: Shannon Booth <shannon.ml.booth@gmail.com>
 Date: Mon, 18 Jul 2022 10:16:19 +1200
 Subject: [PATCH] add utf16
@@ -203,7 +203,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, Context)
 {
-    std::stringstream patch_file(R"(*** a.cpp	2022-04-03 18:41:54.611014944 +1200
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(*** a.cpp	2022-04-03 18:41:54.611014944 +1200
 --- c.cpp	2022-04-03 18:42:00.850801875 +1200
 ***************
 *** 1,3 ****
@@ -233,7 +233,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, ContextWithUnifiedRangeInHeader)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 Some text
 @@ -1,29 +0,0 @@
 
@@ -276,7 +276,7 @@ The text leading up to this was:
 
 TEST(DetermineFormat, Normal)
 {
-    std::stringstream patch_file(R"(2a3
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3
 > 	return 0;
 )");
 
@@ -291,7 +291,7 @@ TEST(DetermineFormat, Normal)
 
 TEST(DetermineFormat, NormalWithFromAndToFileLines)
 {
-    std::stringstream patch_file(R"(Index: thing
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(Index: thing
 +++ a.cpp
 --- b.cpp
 *** c.cpp

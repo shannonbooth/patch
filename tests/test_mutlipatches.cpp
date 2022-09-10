@@ -8,7 +8,7 @@
 
 TEST(MultiPatchParse, UnifiedPatchSimple)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
 --- a/main1.cpp	2022-11-06 12:51:37.191776249 +1300
 +++ b/main1.cpp	2022-11-06 12:51:51.941802026 +1300
@@ -49,7 +49,7 @@ diff -u -r a/main2.cpp b/main2.cpp
 
 TEST(MultiPatchParse, UnifiedPatchSimpleWithoutHeader)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
 --- a/main1.cpp	2022-11-06 12:51:37.191776249 +1300
 +++ b/main1.cpp	2022-11-06 12:51:51.941802026 +1300
@@ -89,7 +89,7 @@ diff -u -r a/main1.cpp b/main1.cpp
 
 TEST(MultiPatchParse, UnifiedPatchWithEmptySpaceHeaderAfterFirstPatch)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
 --- a/main1.cpp	2022-11-06 12:51:37.191776249 +1300
 +++ b/main1.cpp	2022-11-06 12:51:51.941802026 +1300
@@ -132,7 +132,7 @@ actually part of the header of the following patch :^)
 
 TEST(MultiPatchParse, UnifiedPatchFollowedByContextPatch)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
 --- a/main1.cpp	2022-11-06 12:51:37.191776249 +1300
 +++ b/main1.cpp	2022-11-06 12:51:51.941802026 +1300
@@ -186,7 +186,7 @@ diff -rc a/main2.cpp b/main2.cpp
 
 TEST(MultiPatchParse, ContextDiffSimple)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -rc a/main1.cpp b/main1.cpp
 *** a/main1.cpp	2022-11-06 12:51:37.191776249 +1300
 --- b/main1.cpp	2022-11-06 12:51:51.941802026 +1300
@@ -232,7 +232,7 @@ diff -rc a/main2.cpp b/main2.cpp
 
 TEST(MultiPatchParse, GitDiffRenameAndCopy)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/b b/copy
 similarity index 100%
 copy from b

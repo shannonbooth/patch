@@ -9,7 +9,7 @@
 
 TEST(Defines, AddOneLine)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file.cpp	2022-01-30 13:57:31.173528027 +1300
 +++ file.cpp	2022-01-30 13:57:36.321216497 +1300
 @@ -1,3 +1,4 @@
@@ -19,12 +19,12 @@ TEST(Defines, AddOneLine)
  }
 )");
 
-    std::stringstream input_file(R"(int main()
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(int main()
 {
 }
 )");
 
-    std::stringstream expected_output(R"(int main()
+    std::string expected_output(R"(int main()
 {
 #ifdef TEST_PATCH
     return 1;
@@ -33,8 +33,8 @@ TEST(Defines, AddOneLine)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
@@ -43,13 +43,13 @@ TEST(Defines, AddOneLine)
     Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
-    EXPECT_EQ(output.str(), expected_output.str());
-    EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(output.read_all_as_string(), expected_output);
+    EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
 TEST(Defines, RemoveOneLine)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file.cpp	2022-01-30 13:57:31.173528027 +1300
 +++ file.cpp	2022-01-30 13:57:36.321216497 +1300
 @@ -1,4 +1,3 @@
@@ -59,13 +59,13 @@ TEST(Defines, RemoveOneLine)
  }
 )");
 
-    std::stringstream input_file(R"(int main()
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(int main()
 {
     return 0;
 }
 )");
 
-    std::stringstream expected_output(R"(int main()
+    std::string expected_output(R"(int main()
 {
 #ifndef TEST_PATCH
     return 0;
@@ -74,8 +74,8 @@ TEST(Defines, RemoveOneLine)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
@@ -84,13 +84,13 @@ TEST(Defines, RemoveOneLine)
     Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
-    EXPECT_EQ(output.str(), expected_output.str());
-    EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(output.read_all_as_string(), expected_output);
+    EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
 TEST(Defines, Mix)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file.cpp	2022-01-30 13:57:31.173528027 +1300
 +++ file.cpp	2022-01-30 13:57:36.321216497 +1300
 @@ -1,4 +1,4 @@
@@ -101,13 +101,13 @@ TEST(Defines, Mix)
  }
 )");
 
-    std::stringstream input_file(R"(int main()
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(int main()
 {
     return 0;
 }
 )");
 
-    std::stringstream expected_output(R"(int main()
+    std::string expected_output(R"(int main()
 {
 #ifndef TEST_PATCH
     return 0;
@@ -118,8 +118,8 @@ TEST(Defines, Mix)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
@@ -128,13 +128,13 @@ TEST(Defines, Mix)
     Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
-    EXPECT_EQ(output.str(), expected_output.str());
-    EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(output.read_all_as_string(), expected_output);
+    EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
 TEST(Defines, ChangesAtEndOfFile)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main.cpp	2022-02-20 19:38:33.685996435 +1300
 +++ main.cpp	2022-02-20 19:38:48.069436313 +1300
 @@ -1,4 +1,4 @@
@@ -146,13 +146,13 @@ TEST(Defines, ChangesAtEndOfFile)
 +} // some change to this last line.
 )");
 
-    std::stringstream input_file(R"(int main()
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(int main()
 {
     return 0;
 }
 )");
 
-    std::stringstream expected_output(R"(int main()
+    std::string expected_output(R"(int main()
 {
 #ifndef TEST_PATCH
     return 0;
@@ -164,8 +164,8 @@ TEST(Defines, ChangesAtEndOfFile)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
@@ -174,13 +174,13 @@ TEST(Defines, ChangesAtEndOfFile)
     Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
-    EXPECT_EQ(output.str(), expected_output.str());
-    EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(output.read_all_as_string(), expected_output);
+    EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
 TEST(Defines, MoreComplexPatch)
 {
-    std::stringstream patch_file(R"(
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- add.cpp	2022-02-26 13:15:21.624635744 +1300
 +++ sub.cpp	2022-02-26 13:15:07.396899118 +1300
 @@ -1,17 +1,17 @@
@@ -208,7 +208,7 @@ TEST(Defines, MoreComplexPatch)
  }
 )");
 
-    std::stringstream input_file(R"(int add(int a, int b)
+    Patch::File input_file = Patch::File::create_temporary_with_content(R"(int add(int a, int b)
 {
 	return a + b;
 }
@@ -227,7 +227,7 @@ int main()
 }
 )");
 
-    std::stringstream expected_output(R"(#ifndef MY_PATCH
+    std::string expected_output(R"(#ifndef MY_PATCH
 int add(int a, int b)
 #else
 int subtract(int a, int b)
@@ -268,8 +268,8 @@ int main()
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    std::stringstream output;
-    std::stringstream reject;
+    Patch::File output = Patch::File::create_temporary();
+    Patch::File reject = Patch::File::create_temporary();
     Patch::RejectWriter reject_writer(patch, reject);
 
     Patch::Options options;
@@ -278,6 +278,6 @@ int main()
     Patch::Result result = Patch::apply_patch(output, reject_writer, input_file, patch, options);
     EXPECT_EQ(result.failed_hunks, 0);
     EXPECT_FALSE(result.was_skipped);
-    EXPECT_EQ(output.str(), expected_output.str());
-    EXPECT_EQ(reject.str(), "");
+    EXPECT_EQ(output.read_all_as_string(), expected_output);
+    EXPECT_EQ(reject.read_all_as_string(), "");
 }

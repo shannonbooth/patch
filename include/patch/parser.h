@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <istream>
+#include <patch/file.h>
 #include <patch/hunk.h>
 #include <string>
 #include <vector>
@@ -15,20 +16,20 @@ bool parse_unified_range(Hunk& hunk, const std::string& line);
 bool parse_normal_range(Hunk& hunk, const std::string& line);
 
 struct PatchHeaderInfo {
-    std::istream::pos_type patch_start;
+    fpos_t patch_start {};
     size_t lines_till_first_hunk { 0 };
     Format format { Format::Unknown };
 };
 
-bool parse_patch_header(Patch& patch, std::istream& file, PatchHeaderInfo& header_info, int strip = -1);
+bool parse_patch_header(Patch& patch, File& file, PatchHeaderInfo& header_info, int strip = -1);
 
-void parse_patch_body(Patch& patch, std::istream& file);
+void parse_patch_body(Patch& patch, File& file);
 
-Patch parse_patch(std::istream& file, Format format = Format::Unknown, int strip = -1);
+Patch parse_patch(File& file, Format format = Format::Unknown, int strip = -1);
 
-Patch parse_context_patch(Patch& patch, std::istream& file);
-Patch parse_unified_patch(Patch& patch, std::istream& file);
-Patch parse_normal_patch(Patch& patch, std::istream& file);
+Patch parse_context_patch(Patch& patch, File& file);
+Patch parse_unified_patch(Patch& patch, File& file);
+Patch parse_normal_patch(Patch& patch, File& file);
 
 void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp = nullptr);
 

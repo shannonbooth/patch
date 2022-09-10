@@ -27,35 +27,6 @@
 
 namespace Patch {
 
-bool get_line(std::istream& is, std::string& line, NewLine* newline)
-{
-    line.clear();
-
-    if (!is) {
-        if (newline)
-            *newline = NewLine::None;
-        return false;
-    }
-
-    std::getline(is, line);
-    bool have_data = !line.empty() || !is.eof();
-    if (!line.empty()) {
-        if (line.back() == '\r') {
-            line.pop_back();
-            if (newline)
-                *newline = NewLine::CRLF;
-        } else {
-            if (newline)
-                *newline = is.eof() ? NewLine::None : NewLine::LF;
-        }
-    } else {
-        if (newline)
-            *newline = is.eof() ? NewLine::None : NewLine::LF;
-    }
-
-    return have_data;
-}
-
 std::string read_tty_until_enter()
 {
     // NOTE: we need to read from /dev/tty and not stdin. This is for two reasons:

@@ -34,7 +34,7 @@ patch_add_test(test_patch
   test_parser.cpp
   test_reject.cpp
   test_strip.cpp
-  test_system.cpp
+  test_file.cpp
 )
 
 add_executable(patch_oom

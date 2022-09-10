@@ -701,6 +701,7 @@ rename from a
 rename to b
 '''
 
+        # FIXME: add a test for no newline patch...
         with open('diff.patch', 'w', encoding='utf8') as patch_file:
             patch_file.write(patch)
 

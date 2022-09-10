@@ -10,12 +10,13 @@
 
 namespace Patch {
 
+class File;
 struct Patch;
 struct Hunk;
 
 class RejectWriter {
 public:
-    explicit RejectWriter(const Patch& patch, std::ostream& reject_file, Options::RejectFormat reject_format = Options::RejectFormat::Default)
+    explicit RejectWriter(const Patch& patch, File& reject_file, Options::RejectFormat reject_format = Options::RejectFormat::Default)
         : m_patch(patch)
         , m_reject_file(reject_file)
         , m_reject_format(reject_format)
@@ -31,7 +32,7 @@ private:
 
     const Patch& m_patch;
     int m_rejected_hunks { 0 };
-    std::ostream& m_reject_file;
+    File& m_reject_file;
     Options::RejectFormat m_reject_format { Options::RejectFormat::Default };
 };
 
@@ -41,7 +42,7 @@ struct Result {
     bool all_hunks_applied_perfectly;
 };
 
-Result apply_patch(std::ostream& out_file, RejectWriter& reject_writer, std::iostream& input_file, Patch& patch, const Options& options = {}, std::ostream& out = std::cout);
+Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file, Patch& patch, const Options& options = {}, std::ostream& out = std::cout);
 
 void reverse(Patch& patch);
 

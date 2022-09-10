@@ -6,11 +6,11 @@
 #include <climits>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <patch/applier.h>
 #include <patch/cmdline.h>
+#include <patch/file.h>
 #include <patch/hunk.h>
 #include <patch/options.h>
 #include <patch/parser.h>
@@ -24,7 +24,7 @@
 
 namespace Patch {
 
-void print_header_info(std::istream& patch, const PatchHeaderInfo& header_info, std::ostream& out)
+void print_header_info(File& patch, const PatchHeaderInfo& header_info, std::ostream& out)
 {
     patch.seekg(header_info.patch_start);
     out << "Hmm...  Looks like a " << to_string(header_info.format) << " diff to me...\n";
@@ -36,7 +36,7 @@ void print_header_info(std::istream& patch, const PatchHeaderInfo& header_info, 
         std::string line;
         while (my_lines > 1) {
             --my_lines;
-            if (!get_line(patch, line))
+            if (!patch.get_line(line))
                 throw std::runtime_error("Failure reading line from patch outputting header info");
 
             out << '|' << line << '\n';
@@ -146,43 +146,24 @@ public:
     explicit PatchFile(const Options& options)
     {
         if (options.patch_file_path.empty() || options.patch_file_path == "-") {
-            m_in_memory_buffer << std::cin.rdbuf();
-            if (!m_in_memory_buffer)
-                throw std::system_error(errno, std::generic_category(), "Unable to read patch from stdin");
-            m_patch_istream = &m_in_memory_buffer;
+            m_patch_file = File::create_temporary(stdin);
         } else {
             std::ios::openmode mode = std::ios::in | std::ios::out;
             if (options.newline_output != Options::NewlineOutput::Native)
                 mode |= std::ios::binary;
 
-            m_patch_file.open(to_native(options.patch_file_path), mode);
+            m_patch_file.open(options.patch_file_path, mode);
             if (!m_patch_file)
                 throw std::system_error(errno, std::generic_category(), "Unable to open patch file " + options.patch_file_path);
         }
     }
 
-    std::istream& istream() { return *m_patch_istream; }
+    File& file() { return m_patch_file; }
 
 private:
-    std::fstream m_patch_file;
+    File m_patch_file;
     std::stringstream m_in_memory_buffer;
-    std::istream* m_patch_istream { &m_patch_file };
 };
-
-static void write_to_file(const std::string& path, std::ios::openmode mode, std::stringstream& content)
-{
-    std::ofstream file(to_native(path), mode | std::ios::trunc);
-
-    if (!file)
-        throw std::system_error(errno, std::generic_category(), "Unable to open file " + path);
-
-    if (content.rdbuf()->in_avail() == 0)
-        return;
-
-    file << content.rdbuf();
-    if (!file)
-        throw std::system_error(errno, std::generic_category(), "Failed writing to file " + path);
-}
 
 static std::string output_path(const Options& options, const Patch& patch, const std::string& file_to_patch)
 {
@@ -242,7 +223,7 @@ int process_patch(const Options& options)
 
     // Continue parsing patches from the input file and applying them.
     while (true) {
-        if (patch_file.istream().eof()) {
+        if (patch_file.file().eof()) {
             if (options.verbose)
                 out << "done\n";
             break;
@@ -250,7 +231,7 @@ int process_patch(const Options& options)
 
         Patch patch(format);
         PatchHeaderInfo info;
-        bool should_parse_body = parse_patch_header(patch, patch_file.istream(), info, options.strip_size);
+        bool should_parse_body = parse_patch_header(patch, patch_file.file(), info, options.strip_size);
 
         if (patch.format == Format::Unknown) {
             if (first_patch)
@@ -286,7 +267,7 @@ int process_patch(const Options& options)
         }
 
         if (options.verbose || file_to_patch.empty())
-            print_header_info(patch_file.istream(), info, out);
+            print_header_info(patch_file.file(), info, out);
 
         if (file_to_patch.empty())
             file_to_patch = prompt_for_filepath(out);
@@ -297,7 +278,7 @@ int process_patch(const Options& options)
         }
 
         if (should_parse_body)
-            parse_patch_body(patch, patch_file.istream());
+            parse_patch_body(patch, patch_file.file());
 
         const auto output_file = output_path(options, patch, file_to_patch);
 
@@ -305,7 +286,7 @@ int process_patch(const Options& options)
         if (options.newline_output != Options::NewlineOutput::Native)
             mode |= std::ios::binary;
 
-        std::stringstream tmp_reject_file;
+        File tmp_reject_file = File::create_temporary();
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
         if (!looks_like_adding_file && !filesystem::is_regular_file(file_to_patch)) {
@@ -320,7 +301,8 @@ int process_patch(const Options& options)
             if (!options.dry_run) {
                 const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
                 out << " -- saving rejects to file " << reject_path;
-                write_to_file(reject_path, mode, tmp_reject_file);
+                File file(reject_path, mode | std::ios::trunc);
+                tmp_reject_file.write_entire_contents_to(file);
             }
             out << '\n';
             had_failure = true;
@@ -347,14 +329,14 @@ int process_patch(const Options& options)
         }
         out << '\n';
 
-        std::fstream input_file;
+        File input_file;
         if (!looks_like_adding_file || filesystem::exists(file_to_patch)) {
-            input_file.open(to_native(file_to_patch), looks_like_adding_file ? mode : mode | std::fstream::in);
+            input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::ios_base::in);
             if (!input_file)
                 throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
         }
 
-        std::stringstream tmp_out_file;
+        File tmp_out_file = File::create_temporary();
 
         Result result = apply_patch(tmp_out_file, reject_writer, input_file, patch, options, out);
 
@@ -362,8 +344,7 @@ int process_patch(const Options& options)
 
         if (output_to_stdout) {
             // Nothing else to do other than write to stdout :^)
-            if (tmp_out_file.rdbuf()->in_avail() > 0 && !(std::cout << tmp_out_file.rdbuf()))
-                throw std::system_error(errno, std::generic_category(), "Failure writing to stdout");
+            tmp_out_file.write_entire_contents_to(stdout);
         } else {
             if (!options.dry_run) {
                 if (options.save_backup || !result.all_hunks_applied_perfectly) {
@@ -379,7 +360,9 @@ int process_patch(const Options& options)
                 if (looks_like_adding_file)
                     ensure_parent_directories(output_file);
 
-                write_to_file(output_file, mode, tmp_out_file);
+                File file(output_file, mode | std::ios::trunc);
+                tmp_out_file.write_entire_contents_to(file);
+
                 if (patch.new_file_mode != 0) {
                     auto perms = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
                     filesystem::permissions(output_file, perms);
@@ -396,7 +379,9 @@ int process_patch(const Options& options)
                 if (!options.dry_run) {
                     const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
                     out << " -- saving rejects to file " << reject_path;
-                    write_to_file(reject_path, mode, tmp_reject_file);
+
+                    File file(reject_path, mode | std::ios::trunc);
+                    tmp_reject_file.write_entire_contents_to(file);
                 }
                 out << '\n';
             } else {

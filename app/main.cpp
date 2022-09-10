@@ -8,8 +8,6 @@
 
 int main(int argc, const char* const* argv)
 {
-    std::ios::sync_with_stdio(false);
-
     try {
         Patch::CmdLine cmdline(argc, argv);
         Patch::CmdLineParser cmdline_parser(cmdline);

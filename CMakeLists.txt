@@ -36,6 +36,7 @@ add_library(patch
   src/parser.cpp
   src/patch.cpp
   src/system.cpp
+  src/file.cpp
 )
 
 target_include_directories(patch

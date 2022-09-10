@@ -5,12 +5,12 @@
 #include <limits>
 #include <ostream>
 #include <patch/applier.h>
+#include <patch/file.h>
 #include <patch/formatter.h>
 #include <patch/hunk.h>
 #include <patch/locator.h>
 #include <patch/options.h>
 #include <patch/patch.h>
-#include <patch/system.h>
 #include <sstream>
 #include <system_error>
 
@@ -18,53 +18,53 @@ namespace Patch {
 
 class LineWriter {
 public:
-    LineWriter(std::ostream& stream, const Options& options)
-        : m_stream(stream)
+    LineWriter(File& file, const Options& options)
+        : m_file(file)
         , m_options(options)
     {
     }
 
     LineWriter& operator<<(const Line& line)
     {
-        m_stream << line.content;
+        m_file << line.content;
         *this << line.newline;
         return *this;
     }
 
-    LineWriter operator<<(const char* content)
+    LineWriter& operator<<(const char* content)
     {
-        m_stream << content;
+        m_file << content;
         return *this;
     }
 
-    LineWriter operator<<(const std::string& content)
+    LineWriter& operator<<(const std::string& content)
     {
-        m_stream << content;
+        m_file << content;
         return *this;
     }
 
-    LineWriter operator<<(NewLine newline)
+    LineWriter& operator<<(NewLine newline)
     {
         if (newline == NewLine::None)
             return *this;
 
         if (m_options.newline_output == Options::NewlineOutput::Native
             || m_options.newline_output == Options::NewlineOutput::LF) {
-            m_stream << '\n';
+            m_file << '\n';
             return *this;
         }
 
         if (m_options.newline_output == Options::NewlineOutput::CRLF) {
-            m_stream << "\r\n";
+            m_file << "\r\n";
             return *this;
         }
 
         switch (newline) {
         case NewLine::CRLF:
-            m_stream << "\r\n";
+            m_file << "\r\n";
             break;
         case NewLine::LF:
-            m_stream << '\n';
+            m_file << '\n';
             break;
         case NewLine::None:
             break;
@@ -73,19 +73,20 @@ public:
     }
 
 private:
-    std::ostream& m_stream;
+    File& m_file;
     const Options& m_options;
 };
 
-static std::vector<Line> file_as_lines(std::iostream& input_file)
+static std::vector<Line> file_as_lines(File& input_file)
 {
     std::vector<Line> lines;
     NewLine newline;
-    for (std::string line; get_line(input_file, line, &newline);) {
+    std::string line;
+    while (input_file.get_line(line, &newline)) {
         if (input_file.fail())
             throw std::system_error(errno, std::generic_category(), "Failed reading from input file");
 
-        lines.emplace_back(std::move(line), newline);
+        lines.emplace_back(line, newline);
     }
 
     return lines;
@@ -266,7 +267,7 @@ bool RejectWriter::should_write_as_unified() const
         || (m_reject_format == Options::RejectFormat::Default && m_patch.format == Format::Unified);
 }
 
-Result apply_patch(std::ostream& out_file, RejectWriter& reject_writer, std::iostream& input_file, Patch& patch, const Options& options, std::ostream& out)
+Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file, Patch& patch, const Options& options, std::ostream& out)
 {
     if (options.reverse_patch)
         reverse(patch);

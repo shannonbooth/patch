@@ -4,20 +4,10 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
-#include <istream>
 #include <string>
 #include <vector>
 
 namespace Patch {
-
-enum class NewLine {
-    LF,
-    CRLF,
-    None,
-};
-
-bool get_line(std::istream& is, std::string& line, NewLine* newline = nullptr);
 
 std::string read_tty_until_enter();
 

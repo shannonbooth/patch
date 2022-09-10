@@ -9,13 +9,14 @@
 namespace Patch {
 
 enum class Format;
+class File;
 struct Options;
 struct Patch;
 struct PatchHeaderInfo;
 
 std::string to_string(Format format);
 
-void print_header_info(std::istream& patch, const PatchHeaderInfo& header_info, std::ostream& out);
+void print_header_info(File& patch, const PatchHeaderInfo& header_info, std::ostream& out);
 
 enum class Default {
     True,

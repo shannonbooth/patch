@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <patch/file.h>
 #include <patch/formatter.h>
 #include <patch/hunk.h>
 
 namespace Patch {
 
-void write_hunk_as_unified(const Hunk& hunk, std::ostream& out)
+void write_hunk_as_unified(const Hunk& hunk, File& out)
 {
     // Write hunk range
     out << "@@ -" << hunk.old_file_range.start_line;
@@ -28,7 +29,7 @@ void write_hunk_as_unified(const Hunk& hunk, std::ostream& out)
 
 static void write_hunk_as_context(const std::vector<PatchLine>& old_lines, const Range& old_range,
     const std::vector<PatchLine>& new_lines, const Range& new_range,
-    std::ostream& out)
+    File& out)
 {
     out << "*** " << old_range.start_line;
     if (old_range.number_of_lines > 1)
@@ -57,7 +58,7 @@ static void write_hunk_as_context(const std::vector<PatchLine>& old_lines, const
     }
 }
 
-void write_hunk_as_context(const Hunk& hunk, std::ostream& out)
+void write_hunk_as_context(const Hunk& hunk, File& out)
 {
     size_t new_lines_last = 0;
     size_t old_lines_last = 0;
@@ -140,7 +141,7 @@ void write_hunk_as_context(const Hunk& hunk, std::ostream& out)
         write_hunk_as_context(old_lines, hunk.old_file_range, new_lines, hunk.new_file_range, out);
 }
 
-void write_patch_header_as_unified(const Patch& patch, std::ostream& out)
+void write_patch_header_as_unified(const Patch& patch, File& out)
 {
     out << "--- " << patch.old_file_path;
     if (!patch.old_file_time.empty())
@@ -153,7 +154,7 @@ void write_patch_header_as_unified(const Patch& patch, std::ostream& out)
     out << '\n';
 }
 
-void write_patch_header_as_context(const Patch& patch, std::ostream& out)
+void write_patch_header_as_context(const Patch& patch, File& out)
 {
     out << "*** " << patch.old_file_path;
     if (!patch.old_file_time.empty())

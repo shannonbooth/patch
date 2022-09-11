@@ -957,7 +957,7 @@ Patch parse_normal_patch(Patch& patch, std::istream& file)
     NewLine newline;
     while (get_line(file, patch_line, &newline)) {
         if (patch_line.empty())
-            throw std::invalid_argument("Empty patch line given to normal diff");
+            break;
 
         const char c = patch_line.at(0);
         if (c == '<') {

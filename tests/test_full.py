@@ -242,6 +242,26 @@ index de98044..0f7bc76 100644
 }
 ''')
 
+    def test_normal_patch_with_trailing_newline(self):
+        ''' test that a normal patch with a trailing newline applies without errors '''
+        patch = '''2d1
+< 2
+
+'''
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '1\n2\n3\n'
+        with open('a', 'w', encoding='utf8') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        ret = run_patch('patch -i diff.patch a')
+        self.assertEqual(ret.stdout, 'patching file a\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFileEqual('a', '1\n3\n')
+
+
     def test_less_basic_patch(self):
         ''' test a slightly more complex patch '''
         patch = '''

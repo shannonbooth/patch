@@ -125,7 +125,26 @@ namespace filesystem {
 
 bool exists(const std::string& path)
 {
-    return std::filesystem::exists(to_native(path));
+#ifdef _WIN32
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (GetFileAttributesExW(to_native(path).c_str(), GetFileExInfoStandard, &data))
+        return true;
+
+    switch (GetLastError()) {
+    case ERROR_BAD_PATHNAME:
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_INVALID_DRIVE:
+    case ERROR_INVALID_NAME:
+    case ERROR_INVALID_PARAMETER:
+    case ERROR_PATH_NOT_FOUND:
+        return false;
+    default:
+        return true;
+    }
+#else
+    struct stat buf;
+    return ::stat(path.c_str(), &buf) == 0;
+#endif
 }
 
 bool is_regular_file(const std::string& path)

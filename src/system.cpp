@@ -135,7 +135,14 @@ bool is_regular_file(const std::string& path)
 
 void rename(const std::string& old_path, const std::string& new_path)
 {
-    std::filesystem::rename(to_native(old_path), to_native(new_path));
+#ifdef _WIN32
+    // rename on Windows does not follow Dr.POSIX and overwrite existing files, so we need to use MoveFileEx with MOVEFILE_REPLACE_EXISTING set.
+    if (MoveFileExW(to_native(old_path).c_str(), to_native(new_path).c_str(), MOVEFILE_REPLACE_EXISTING) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to rename " + old_path + " to " + new_path);
+#else
+    if (std::rename(old_path.c_str(), new_path.c_str()) != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to rename " + old_path + " to " + new_path);
+#endif
 }
 
 void permissions(const std::string& path, perms permissions)

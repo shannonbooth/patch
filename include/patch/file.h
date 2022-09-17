@@ -5,6 +5,7 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <ios>
 #include <patch/system.h>
 #include <system_error>
 

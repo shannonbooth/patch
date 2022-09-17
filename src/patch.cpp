@@ -309,6 +309,16 @@ int process_patch(const Options& options)
             continue;
         }
 
+        const auto old_permissions = std::filesystem::status(output_file).permissions();
+        const auto write_perm_mask = std::filesystem::perms::group_write | std::filesystem::perms::owner_write | std::filesystem::perms::others_write;
+        const bool fix_permissions = (old_permissions & write_perm_mask) == std::filesystem::perms::none;
+
+        if (fix_permissions) {
+            out << "File " << output_file << " is read-only; trying to patch anyway;\n";
+            if (!options.dry_run)
+                std::filesystem::permissions(output_file, old_permissions | write_perm_mask);
+        }
+
         if (options.dry_run)
             out << "checking";
         else
@@ -366,6 +376,9 @@ int process_patch(const Options& options)
                 if (patch.new_file_mode != 0) {
                     auto perms = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
                     filesystem::permissions(output_file, perms);
+                } else if (fix_permissions) {
+                    // Restore permissions to before they were changed.
+                    std::filesystem::permissions(output_file, old_permissions);
                 }
             }
 

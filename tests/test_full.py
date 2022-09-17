@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import stat
 import unittest
 
 PATCH_PROGRAM = 'sb_patch'
@@ -1606,6 +1607,44 @@ new mode 100755
         self.assertEqual(ret.stderr, '')
         self.assertFileEqual('file', to_patch)
         self.assertTrue(os.access('file', os.X_OK))
+
+
+    def test_read_only_file(self):
+        ''' test patching a file which is read only still applies '''
+
+        patch = '''
+--- a/a	2022-09-18 09:59:59.586887443 +1200
++++ b/a	2022-09-18 10:00:04.410912780 +1200
+@@ -1,4 +1,3 @@
+ 1
+ 2
+-3
+ 4
+'''
+        with open('diff.patch', 'w', encoding='utf8') as patch_file:
+            patch_file.write(patch)
+
+        to_patch = '1\n2\n3\n4\n'
+        with open('a', 'w', encoding='utf8') as to_patch_file:
+            to_patch_file.write(to_patch)
+
+        # Make file read-only. Keep track of old mode.
+        mode = os.stat('a').st_mode
+        ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
+        os.chmod('a', mode & ro_mask)
+        old_mode = os.stat('a').st_mode
+
+        ret = run_patch('patch -i diff.patch')
+
+        self.assertEqual(ret.stdout, 'File a is read-only; trying to patch anyway;\npatching file a\n')
+        self.assertEqual(ret.stderr, '')
+        self.assertEqual(ret.returncode, 0)
+        self.assertFileEqual('a', '1\n2\n4\n')
+
+        # Ensure file permissions restored to original
+        new_mode = os.stat('a').st_mode
+        self.assertEqual(new_mode, old_mode)
+
 
     def test_error_on_chdir_to_bad_directory(self):
         ''' test that an appropriate error is shown on chdir to a non existent directory '''

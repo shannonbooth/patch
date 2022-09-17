@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -25,7 +24,47 @@ bool is_regular_file(const std::string& path);
 
 void rename(const std::string& old_path, const std::string& new_path);
 
-using std::filesystem::perms;
+enum class perms : unsigned {
+    none = 0,
+    owner_read = 0400,
+    owner_write = 0200,
+    owner_exec = 0100,
+    owner_all = 0700,
+    group_read = 040,
+    group_write = 020,
+    group_exec = 010,
+    group_all = 070,
+    others_read = 04,
+    others_write = 02,
+    others_exec = 01,
+    others_all = 07,
+    all = 0777,
+    set_uid = 04000,
+    set_gid = 02000,
+    sticky_bit = 01000,
+    mask = 07777,
+    unknown = 0xFFFF,
+};
+
+inline perms operator&(perms left, perms right)
+{
+    return static_cast<perms>(static_cast<unsigned>(left) & static_cast<unsigned>(right));
+}
+
+inline perms operator|(perms left, perms right)
+{
+    return static_cast<perms>(static_cast<unsigned>(left) | static_cast<unsigned>(right));
+}
+
+inline perms& operator&=(perms& left, perms right)
+{
+    return left = left & right;
+}
+
+inline perms& operator|=(perms& left, perms right)
+{
+    return left = left | right;
+}
 
 void permissions(const std::string& path, perms permissions);
 

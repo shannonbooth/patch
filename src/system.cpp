@@ -181,7 +181,37 @@ void rename(const std::string& old_path, const std::string& new_path)
 
 void permissions(const std::string& path, perms permissions)
 {
-    std::filesystem::permissions(to_native(path), permissions);
+    if (permissions == perms::unknown)
+        return;
+
+#ifdef _WIN32
+    const auto native = to_native(path);
+
+    DWORD attributes = GetFileAttributesW(native.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to set permissions to " + path);
+
+    // No group/owner/all on Windows - if any are set treat as write permissions.
+    const auto write_perms = perms::owner_write | perms::group_write | perms::others_write;
+
+    bool should_be_read_only = (permissions & write_perms) == perms::none;
+
+    // If the file is already read only - there is nothing to do.
+    if ((attributes & FILE_ATTRIBUTE_READONLY) && should_be_read_only)
+        return;
+
+    if (should_be_read_only)
+        attributes |= FILE_ATTRIBUTE_READONLY;
+    else
+        attributes &= ~FILE_ATTRIBUTE_READONLY;
+
+    if (SetFileAttributesW(native.c_str(), attributes) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to set permissions to " + path);
+
+#else
+    if (::chmod(path.c_str(), static_cast<mode_t>(permissions)) != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to change permissions for " + path);
+#endif
 }
 
 uintmax_t file_size(const std::string& path)

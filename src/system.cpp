@@ -149,7 +149,22 @@ bool exists(const std::string& path)
 
 bool is_regular_file(const std::string& path)
 {
-    return std::filesystem::is_regular_file(to_native(path));
+#ifdef _WIN32
+    DWORD attributes = GetFileAttributesW(to_native(path).c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES)
+        return false;
+
+    if (attributes & FILE_ATTRIBUTE_DIRECTORY)
+        return false;
+
+    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+        return false;
+
+    return true;
+#else
+    struct stat buf;
+    return ::stat(path.c_str(), &buf) == 0 && S_ISREG(buf.st_mode);
+#endif
 }
 
 void rename(const std::string& old_path, const std::string& new_path)

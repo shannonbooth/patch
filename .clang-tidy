@@ -29,6 +29,7 @@ Checks: >
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-magic-numbers,
-  -readability-named-parameter
+  -readability-named-parameter,
+  -cppcoreguidelines-pro-type-member-init
 
 WarningsAsErrors: '*'

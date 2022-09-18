@@ -14,7 +14,7 @@ void chdir(const std::string& path);
 
 void remove_file_and_empty_parent_folders(const std::string& path);
 
-void ensure_parent_directories(const std::string& path);
+void ensure_parent_directories(const std::string& file_path);
 
 namespace filesystem {
 

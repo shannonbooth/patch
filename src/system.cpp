@@ -100,12 +100,33 @@ void remove_file_and_empty_parent_folders(const std::string& path)
     }
 }
 
-void ensure_parent_directories(const std::string& path)
+void ensure_parent_directories(const std::string& file_path)
 {
-    const std::filesystem::path native_path(to_native(path));
+    if (file_path.empty())
+        throw std::system_error(std::make_error_code(std::errc::invalid_argument), "Invalid path to create directories");
 
-    if (native_path.has_parent_path())
-        std::filesystem::create_directories(native_path.parent_path());
+    std::size_t i = file_path.find_last_of('/');
+    std::string path = file_path.substr(0, i + 1);
+
+    // Move forwards through the path given, creating each individual directory.
+    // Note that the below loop assumes that the path given has been canonicalized,
+    // i.e, does not contain any '..' or similar components.
+    size_t pos = 0;
+    while ((pos = path.find_first_of('/', pos)) != std::string::npos) {
+        auto dir = path.substr(0, pos++);
+
+        if (dir.empty())
+            continue;
+
+#ifdef _WIN32
+        int ret = _wmkdir(to_native(dir).c_str());
+#else
+        int ret = mkdir(dir.c_str(), 0777);
+#endif
+
+        if (ret != 0 && errno != EEXIST)
+            throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
+    }
 }
 
 void chdir(const std::string& path)

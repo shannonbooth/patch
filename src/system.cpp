@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <filesystem>
 #include <patch/system.h>
 
 #include <cstdio>
@@ -70,10 +69,10 @@ std::string read_tty_until_enter()
     }
 }
 
-static bool remove_empty_directory(const std::filesystem::path& path)
+static bool remove_empty_directory(const std::string& path)
 {
 #ifdef _WIN32
-    int ret = ::_wrmdir(path.c_str());
+    int ret = ::_wrmdir(to_native(path).c_str());
 #else
     int ret = ::rmdir(path.c_str());
 #endif
@@ -83,19 +82,34 @@ static bool remove_empty_directory(const std::filesystem::path& path)
 
     // POSIX allows for either ENOTEMPTY or EEXIST.
     if (errno != ENOTEMPTY && errno != EEXIST)
-        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path.string());
+        throw std::system_error(errno, std::generic_category(), "Unable to remove directory " + path);
 
     return false;
 }
 
-void remove_file_and_empty_parent_folders(const std::string& path)
+void remove_file_and_empty_parent_folders(std::string path)
 {
-    std::filesystem::path native_path(to_native(path));
+#ifdef _WIN32
+    int ret = _wremove(to_native(path).c_str());
+#else
+    int ret = std::remove(path.c_str());
+#endif
 
-    std::filesystem::remove(native_path);
-    while (native_path.has_parent_path()) {
-        native_path = native_path.parent_path();
-        if (!remove_empty_directory(native_path))
+    if (ret != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
+
+    while (true) {
+
+        std::size_t i = path.find_last_of('/');
+        if (i == std::string::npos)
+            break;
+
+        path = path.substr(0, i);
+
+        if (path.empty())
+            break;
+
+        if (!remove_empty_directory(path))
             break;
     }
 }

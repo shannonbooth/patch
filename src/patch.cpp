@@ -162,7 +162,6 @@ public:
 
 private:
     File m_patch_file;
-    std::stringstream m_in_memory_buffer;
 };
 
 static std::string output_path(const Options& options, const Patch& patch, const std::string& file_to_patch)

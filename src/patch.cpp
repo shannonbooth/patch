@@ -5,7 +5,6 @@
 #include <cassert>
 #include <climits>
 #include <cstring>
-#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <patch/applier.h>
@@ -308,14 +307,14 @@ int process_patch(const Options& options)
             continue;
         }
 
-        const auto old_permissions = std::filesystem::status(output_file).permissions();
-        const auto write_perm_mask = std::filesystem::perms::group_write | std::filesystem::perms::owner_write | std::filesystem::perms::others_write;
-        const bool fix_permissions = (old_permissions & write_perm_mask) == std::filesystem::perms::none;
+        const auto old_permissions = filesystem::get_permissions(output_file);
+        const auto write_perm_mask = filesystem::perms::group_write | filesystem::perms::owner_write | filesystem::perms::others_write;
+        const bool fix_permissions = (old_permissions & write_perm_mask) == filesystem::perms::none;
 
         if (fix_permissions) {
             out << "File " << output_file << " is read-only; trying to patch anyway;\n";
             if (!options.dry_run)
-                std::filesystem::permissions(output_file, old_permissions | write_perm_mask);
+                filesystem::permissions(output_file, old_permissions | write_perm_mask);
         }
 
         if (options.dry_run)
@@ -377,7 +376,7 @@ int process_patch(const Options& options)
                     filesystem::permissions(output_file, perms);
                 } else if (fix_permissions) {
                     // Restore permissions to before they were changed.
-                    std::filesystem::permissions(output_file, old_permissions);
+                    filesystem::permissions(output_file, old_permissions);
                 }
             }
 

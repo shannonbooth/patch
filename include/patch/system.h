@@ -68,6 +68,8 @@ inline perms& operator|=(perms& left, perms right)
 
 void permissions(const std::string& path, perms permissions);
 
+perms get_permissions(const std::string& path);
+
 uintmax_t file_size(const std::string& path);
 
 } // namespace filesystem

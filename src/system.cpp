@@ -249,6 +249,29 @@ void permissions(const std::string& path, perms permissions)
 #endif
 }
 
+perms get_permissions(const std::string& path)
+{
+#ifdef _WIN32
+    DWORD attributes = GetFileAttributesW(to_native(path).c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES)
+        return perms::unknown;
+
+    perms permissions = perms::owner_read | perms::group_read | perms::others_read;
+
+    if (!(attributes & FILE_ATTRIBUTE_READONLY))
+        permissions |= perms::owner_write | perms::group_write | perms::others_write;
+
+    return permissions;
+#else
+
+    struct stat buf;
+    if (::stat(path.c_str(), &buf) != 0)
+        return perms::unknown;
+
+    return static_cast<perms>(buf.st_mode) & perms::mask;
+#endif
+}
+
 uintmax_t file_size(const std::string& path)
 {
 #ifdef _WIN32

@@ -132,6 +132,18 @@ void CmdLineParser::handle_newline_strategy(const std::string& strategy)
         throw cmdline_parse_error("unrecognized newline strategy " + strategy);
 }
 
+void CmdLineParser::handle_read_only(const std::string& handling)
+{
+    if (handling == "warn")
+        m_options.read_only_handling = Options::ReadOnlyHandling::Warn;
+    else if (handling == "ignore")
+        m_options.read_only_handling = Options::ReadOnlyHandling::Ignore;
+    else if (handling == "fail")
+        m_options.read_only_handling = Options::ReadOnlyHandling::Fail;
+    else
+        throw cmdline_parse_error("unrecognized read-only handling " + handling);
+}
+
 void CmdLineParser::handle_reject_format(const std::string& format)
 {
     if (format == "context")
@@ -226,6 +238,11 @@ const Options& CmdLineParser::parse()
 
         if (parse_string('\0', "--newline-output", m_buffer)) {
             handle_newline_strategy(m_buffer);
+            continue;
+        }
+
+        if (parse_string('\0', "--read-only", m_buffer)) {
+            handle_read_only(m_buffer);
             continue;
         }
 
@@ -336,6 +353,14 @@ void show_usage(std::ostream& out)
            "\n"
            "    -d, --directory <directory>\n"
            "                Change the working directory to <directory> before applying the patch file.\n"
+           "\n"
+           "    --read-only <handling>\n"
+           "                Change how to handle when the file being patched is read only. The default read-only behaviour\n"
+           "                is to 'warn'. The possible values for this flag are:\n"
+           "\n"
+           "                    warn    Warn that the file is read-only, but proceed patching it anyway.\n"
+           "                    ignore  Proceed patching without any warning issued.\n"
+           "                    fail    Fail, and refuse patching the file.\n"
            "\n"
            "    --newline-handling <handling>\n"
            "                Change how newlines are output to the patched file. The default newline behavior\n"

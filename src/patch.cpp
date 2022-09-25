@@ -295,7 +295,7 @@ int process_patch(const Options& options)
             out << reject_writer.rejected_hunks() << " out of " << patch.hunks.size() << " hunk";
             if (patch.hunks.size() > 1)
                 out << 's';
-            std::cout << " ignored";
+            out << " ignored";
             if (!options.dry_run) {
                 const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
                 out << " -- saving rejects to file " << reject_path;
@@ -386,7 +386,7 @@ int process_patch(const Options& options)
                 out << result.failed_hunks << " out of " << patch.hunks.size() << " hunk";
                 if (patch.hunks.size() > 1)
                     out << 's';
-                std::cout << reason;
+                out << reason;
                 if (!options.dry_run) {
                     const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
                     out << " -- saving rejects to file " << reject_path;

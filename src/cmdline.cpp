@@ -132,14 +132,14 @@ void CmdLineParser::handle_newline_strategy(const std::string& strategy)
         throw cmdline_parse_error("unrecognized newline strategy " + strategy);
 }
 
-void CmdLineParser::handle_reject_format(const std::string& strategy)
+void CmdLineParser::handle_reject_format(const std::string& format)
 {
-    if (strategy == "context")
+    if (format == "context")
         m_options.reject_format = Options::RejectFormat::Context;
-    else if (strategy == "unified")
+    else if (format == "unified")
         m_options.reject_format = Options::RejectFormat::Unified;
     else
-        throw cmdline_parse_error("unrecognized reject format " + strategy);
+        throw cmdline_parse_error("unrecognized reject format " + format);
 }
 
 void CmdLineParser::parse_short_bool(const std::string& option_string)

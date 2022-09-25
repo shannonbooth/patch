@@ -188,6 +188,26 @@ static std::string backup_name(const Options& options, const std::string& output
     return options.backup_prefix + output_file + options.backup_suffix + ".orig";
 }
 
+static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, const std::string& output_file, const Patch& patch, const Options& options)
+{
+    out << " refusing to patch\n"
+        << patch.hunks.size() << " out of " << patch.hunks.size() << " hunk";
+    if (patch.hunks.size() > 1)
+        out << 's';
+    out << " ignored";
+
+    if (!options.dry_run) {
+        const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
+        out << " -- saving rejects to file " << reject_path;
+        File file(reject_path, mode | std::ios::trunc);
+
+        RejectWriter reject_writer(patch, file, options.reject_format);
+        for (const auto& hunk : patch.hunks)
+            reject_writer.write_reject_file(hunk);
+    }
+    out << '\n';
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -288,21 +308,8 @@ int process_patch(const Options& options)
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
         if (!looks_like_adding_file && !filesystem::is_regular_file(file_to_patch)) {
-            // FIXME: Figure out a nice way of reducing duplication with the failure case below.
-            out << "File " << file_to_patch << " is not a regular file -- refusing to patch\n";
-            for (const auto& hunk : patch.hunks)
-                reject_writer.write_reject_file(hunk);
-            out << reject_writer.rejected_hunks() << " out of " << patch.hunks.size() << " hunk";
-            if (patch.hunks.size() > 1)
-                out << 's';
-            out << " ignored";
-            if (!options.dry_run) {
-                const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
-                out << " -- saving rejects to file " << reject_path;
-                File file(reject_path, mode | std::ios::trunc);
-                tmp_reject_file.write_entire_contents_to(file);
-            }
-            out << '\n';
+            out << "File " << file_to_patch << " is not a regular file --";
+            refuse_to_patch(out, mode, output_file, patch, options);
             had_failure = true;
             continue;
         }

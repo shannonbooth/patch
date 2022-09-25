@@ -21,6 +21,12 @@ struct Options {
         Default,
     };
 
+    enum class ReadOnlyHandling {
+        Warn,
+        Ignore,
+        Fail,
+    };
+
     // posix defined options
     bool save_backup { false };
     bool interpret_as_context { false };
@@ -47,6 +53,7 @@ struct Options {
     bool dry_run { false };
     NewlineOutput newline_output { NewlineOutput::Native };
     RejectFormat reject_format { RejectFormat::Default };
+    ReadOnlyHandling read_only_handling { ReadOnlyHandling::Warn };
     std::string backup_suffix;
     std::string backup_prefix;
 };

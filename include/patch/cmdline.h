@@ -57,6 +57,7 @@ private:
     void parse_short_bool(const std::string& option);
     void parse_operand();
     void handle_newline_strategy(const std::string& strategy);
+    void handle_read_only(const std::string& handling);
     void handle_reject_format(const std::string& format);
 
     int i { 1 };

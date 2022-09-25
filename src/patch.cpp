@@ -319,7 +319,17 @@ int process_patch(const Options& options)
         const bool fix_permissions = (old_permissions & write_perm_mask) == filesystem::perms::none;
 
         if (fix_permissions) {
-            out << "File " << output_file << " is read-only; trying to patch anyway;\n";
+            if (options.read_only_handling != Options::ReadOnlyHandling::Ignore) {
+                out << "File " << output_file << " is read-only;";
+                if (options.read_only_handling == Options::ReadOnlyHandling::Warn) {
+                    out << " trying to patch anyway\n";
+                } else {
+                    refuse_to_patch(out, mode, output_file, patch, options);
+                    had_failure = true;
+                    continue;
+                }
+            }
+
             if (!options.dry_run)
                 filesystem::permissions(output_file, old_permissions | write_perm_mask);
         }

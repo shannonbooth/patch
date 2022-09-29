@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+
+#pragma once
+
+#cmakedefine HAVE_FORKPTY_PTY
+#cmakedefine HAVE_FORKPTY_UTIL

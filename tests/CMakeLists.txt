@@ -3,6 +3,7 @@
 
 include(FetchContent)
 include(GoogleTest)
+include(CheckSymbolExists)
 
 FetchContent_Declare(
   googletest
@@ -36,6 +37,21 @@ patch_add_test(test_patch
   test_strip.cpp
   test_file.cpp
 )
+
+set(CMAKE_REQUIRED_LIBRARIES "util")
+check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY)
+check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL)
+unset(CMAKE_REQUIRED_LIBRARIES)
+
+configure_file(src/config.h.in src/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
+
+if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
+  add_executable(test_pty test_pty.cpp src/pty_spawn.cpp)
+  target_link_libraries(test_pty PRIVATE patch util)
+  target_include_directories(test_pty PRIVATE src)
+  add_test(NAME Patch.Pty COMMAND test_pty $<TARGET_FILE:sb_patch>)
+endif()
 
 add_executable(patch_oom
   stubs/stub_patch_oom.cpp

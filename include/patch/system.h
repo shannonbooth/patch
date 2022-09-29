@@ -18,6 +18,8 @@ void ensure_parent_directories(const std::string& file_path);
 
 namespace filesystem {
 
+std::string make_temp_directory();
+
 bool exists(const std::string& path);
 
 bool is_regular_file(const std::string& path);

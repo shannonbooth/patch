@@ -158,6 +158,28 @@ void chdir(const std::string& path)
 
 namespace filesystem {
 
+std::string make_temp_directory()
+{
+#ifdef _WIN32
+    std::wstring wpath = L"patch-XXXXXX";
+
+    if (_wmktemp_s(&wpath[0], wpath.size() + 1) < 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to create temporary file name");
+
+    if (_wmkdir(wpath.c_str()) < 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
+
+    return to_narrow(wpath);
+#else
+    std::string path = "patch-XXXXXX";
+
+    if (!mkdtemp(&path[0]))
+        throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
+
+    return path;
+#endif
+}
+
 bool exists(const std::string& path)
 {
 #ifdef _WIN32

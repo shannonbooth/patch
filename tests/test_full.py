@@ -680,7 +680,7 @@ Not deleting file remove as content differs from patch
         self.assertEqual(ret.returncode, 0)
         self.assertEqual(ret.stdout, 'patching file f\n')
         self.assertFileEqual('f', 'a line\n')
-        self.assertFalse(os.path.exists('f.orig'))
+        self.assertFileEqual('f.orig', '')
 
 
     def test_backup_rename_patch(self):
@@ -714,8 +714,9 @@ rename to b
         self.assertEqual(ret.stderr, '')
         self.assertEqual(ret.returncode, 0)
         self.assertEqual(ret.stdout, 'patching file b (renamed from a)\n')
-        self.assertFileEqual('b', 'ab')
-        self.assertEqual(set(os.listdir()), {'b', 'diff.patch'})
+        self.assertFileEqual('b', to_patch)
+        self.assertFileEqual('b.orig', '')
+        self.assertEqual(set(os.listdir()), {'b', 'b.orig', 'diff.patch'})
 
 
     def test_backup_on_top_of_existing_file(self):

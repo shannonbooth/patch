@@ -12,9 +12,9 @@
 #include <system_error>
 #include <unistd.h>
 
-#ifdef HAVE_FORKPTY_PTY
+#if defined(HAVE_FORKPTY_PTY)
 #    include <pty.h>
-#elif HAVE_FORKPTY_UTIL
+#elif defined(HAVE_FORKPTY_UTIL)
 #    include <util.h>
 #else
 #    error "Unknown include for forkpty"

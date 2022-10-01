@@ -21,6 +21,8 @@ class File {
 public:
     File() = default;
 
+    explicit File(const std::string& path, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out);
+
     ~File();
 
     File(const File& other) = delete;
@@ -63,14 +65,17 @@ public:
 
     static File create_temporary_with_content(const std::string& initial_content);
 
+    static void touch(const std::string& name)
+    {
+        File file(name, std::ios_base::out);
+    }
+
     void write_entire_contents_to(FILE* file);
 
     void write_entire_contents_to(File& file)
     {
         write_entire_contents_to(file.m_file);
     }
-
-    explicit File(const std::string& path, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out);
 
     bool get_line(std::string& line, NewLine* newline = nullptr);
 

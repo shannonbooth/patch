@@ -377,8 +377,14 @@ int process_patch(const Options& options)
 
                     // Per POSIX:
                     // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
-                    if (filesystem::exists(output_file) && backed_up_files.emplace(backup_file).second)
-                        filesystem::rename(output_file, backup_file);
+                    if (backed_up_files.emplace(backup_file).second) {
+                        // If the output file being backed up exists, rename name that as the backup.
+                        // For a missing output file just create an empty backup file instead.
+                        if (filesystem::exists(output_file))
+                            filesystem::rename(output_file, backup_file);
+                        else
+                            File::touch(backup_file);
+                    }
                 }
 
                 // Ensure that parent directories exist if we are adding a file.

@@ -21,6 +21,7 @@
 #    define read _read
 #    define open _open
 #else
+#    include <limits.h>
 #    include <unistd.h>
 #endif
 
@@ -154,6 +155,35 @@ void chdir(const std::string& path)
 
     if (ret != 0)
         throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path);
+}
+
+std::string current_path()
+{
+#ifdef _WIN32
+    std::wstring result;
+    result.resize(MAX_PATH);
+
+    while (true) {
+        const auto requested_size = static_cast<unsigned long>(result.size());
+
+        const auto size = GetCurrentDirectoryW(requested_size, &result[0]);
+
+        if (size == 0)
+            throw std::system_error(GetLastError(), std::system_category(), "Failed getting current directory");
+
+        result.resize(size);
+        if (size == requested_size)
+            return to_narrow(result);
+    }
+#else
+    std::string path;
+    path.resize(PATH_MAX);
+
+    if (!getcwd(&path[0], path.size()))
+        throw std::system_error(errno, std::generic_category(), "Failed getting current directory");
+
+    return path;
+#endif
 }
 
 namespace filesystem {

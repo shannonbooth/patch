@@ -46,6 +46,15 @@ unset(CMAKE_REQUIRED_LIBRARIES)
 configure_file(src/config.h.in src/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 
+add_library(patch_test src/test.cpp)
+target_link_libraries(patch_test PUBLIC patch)
+target_include_directories(patch_test PUBLIC src)
+if(WIN32)
+  target_sources(patch_test PRIVATE src/windows_process.cpp)
+else()
+  target_sources(patch_test PRIVATE src/unix_process.cpp)
+endif()
+
 if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
   add_executable(test_pty test_pty.cpp src/pty_spawn.cpp)
   target_link_libraries(test_pty PRIVATE patch util)
@@ -60,6 +69,10 @@ add_executable(patch_oom
 target_include_directories(patch_oom PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 add_test(NAME Patch.Oom COMMAND ${CMAKE_COMMAND} -DPATCH=$<TARGET_FILE:patch_oom> -P "${CMAKE_CURRENT_SOURCE_DIR}/test_oom.cmake")
+
+add_executable(test_basic test_basic.cpp)
+target_link_libraries(test_basic PRIVATE patch_test)
+add_test(NAME Patch.Basic COMMAND test_basic $<TARGET_FILE:sb_patch>)
 
 find_package(Python3 REQUIRED)
 add_test(NAME Python.Full COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_full.py $<TARGET_FILE:sb_patch>)

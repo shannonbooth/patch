@@ -27,7 +27,7 @@
         }                                                                  \
     } while (false)
 
-void register_test(std::function<void(const char*)> test);
+void register_test(std::string name, std::function<void(const char*)> test);
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNCTION_NAME(name) test_##name
@@ -42,7 +42,7 @@ void register_test(std::function<void(const char*)> test);
         TEST_REGISTER_HELPER(name)                                      \
         ()                                                              \
         {                                                               \
-            register_test(TEST_FUNCTION_NAME(name));                    \
+            register_test(#name, TEST_FUNCTION_NAME(name));             \
         }                                                               \
     };                                                                  \
     static const TEST_REGISTER_HELPER(name) TEST_REGISTER_HELPER(name); \

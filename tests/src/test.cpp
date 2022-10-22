@@ -6,8 +6,9 @@
 
 class Test {
 public:
-    explicit Test(std::function<void(const char*)> test_function)
-        : m_test_function(std::move(test_function))
+    explicit Test(std::string name, std::function<void(const char*)> test_function)
+        : m_name(std::move(name))
+        , m_test_function(std::move(test_function))
         , m_tmp_dir(Patch::filesystem::make_temp_directory())
         , m_start_dir(Patch::current_path())
     {
@@ -22,9 +23,12 @@ public:
         m_test_function(patch_path);
     }
 
+    const std::string& name() const { return m_name; }
+
 private:
     std::function<void(const char*)> m_test_function;
 
+    std::string m_name;
     std::string m_tmp_dir;
     std::string m_start_dir;
     std::string m_test;
@@ -50,7 +54,7 @@ void Test::tear_down()
 
 class TestRunner {
 public:
-    void register_test(std::function<void(const char*)> test);
+    void register_test(std::string name, std::function<void(const char*)> test);
 
     bool run_all_tests(const char* patch_path);
 
@@ -58,9 +62,9 @@ private:
     std::vector<Test> m_tests;
 };
 
-void TestRunner::register_test(std::function<void(const char*)> test_function)
+void TestRunner::register_test(std::string name, std::function<void(const char*)> test_function)
 {
-    m_tests.emplace_back(std::move(test_function));
+    m_tests.emplace_back(std::move(name), std::move(test_function));
 }
 
 bool TestRunner::run_all_tests(const char* patch_path)
@@ -75,6 +79,7 @@ bool TestRunner::run_all_tests(const char* patch_path)
             test.test(patch_path);
         } catch (const std::exception& e) {
             std::cerr << e.what() << '\n';
+            std::cerr << test.name() << " FAILED!\n";
             success = false;
         }
 
@@ -90,9 +95,9 @@ static TestRunner& runner()
     return r;
 }
 
-void register_test(std::function<void(const char*)> test_function)
+void register_test(std::string name, std::function<void(const char*)> test_function)
 {
-    runner().register_test(std::move(test_function));
+    runner().register_test(std::move(name), std::move(test_function));
 }
 
 int main(int argc, const char* const* argv)

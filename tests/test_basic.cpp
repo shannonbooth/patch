@@ -45,7 +45,7 @@ PATCH_TEST(basic)
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(basic_output_to_stderr)
+PATCH_TEST(basic_output_to_stdout)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -81,4 +81,44 @@ PATCH_TEST(basic_output_to_stderr)
 }
 )");
     EXPECT_EQ(process.return_code(), 0);
+}
+
+PATCH_TEST(basic_unicode_patch)
+{
+    {
+        Patch::File file("ハローワールド.patch", std::ios_base::out);
+
+        file << R"(
+--- to_patch	2022-06-19 16:56:12.974516527 +1200
++++ to_patch	2022-06-19 16:56:24.666877199 +1200
+@@ -1,3 +1,4 @@
+ int main()
+ {
++	return 0;
+ }
+
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+
+        file << R"(int main()
+{
+}
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "ハローワールド.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("to_patch", R"(int main()
+{
+	return 0;
+}
+)");
 }

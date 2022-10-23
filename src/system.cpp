@@ -3,15 +3,16 @@
 
 #include <patch/system.h>
 
+#include <array>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
-#include <system_error>
-
 #include <fcntl.h>
+#include <iostream>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <system_error>
 
 #ifdef _WIN32
 #    include <direct.h>
@@ -21,7 +22,6 @@
 #    define read _read
 #    define open _open
 #else
-#    include <limits.h>
 #    include <unistd.h>
 #endif
 
@@ -133,14 +133,7 @@ void ensure_parent_directories(const std::string& file_path)
         if (dir.empty())
             continue;
 
-#ifdef _WIN32
-        int ret = _wmkdir(to_native(dir).c_str());
-#else
-        int ret = mkdir(dir.c_str(), 0777);
-#endif
-
-        if (ret != 0 && errno != EEXIST)
-            throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
+        filesystem::create_directory(dir);
     }
 }
 
@@ -208,6 +201,24 @@ std::string make_temp_directory()
 
     return path;
 #endif
+}
+
+bool create_directory(const std::string& path)
+{
+#ifdef _WIN32
+    int ret = _wmkdir(to_native(path).c_str());
+#else
+    int ret = mkdir(path.c_str(), 0777);
+#endif
+
+    if (ret != 0) {
+        if (errno == EEXIST)
+            return false;
+
+        throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
+    }
+
+    return true;
 }
 
 bool exists(const std::string& path)

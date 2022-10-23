@@ -20,6 +20,8 @@ void ensure_parent_directories(const std::string& file_path);
 
 namespace filesystem {
 
+bool create_directory(const std::string& path);
+
 std::string make_temp_directory();
 
 bool exists(const std::string& path);

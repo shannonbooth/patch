@@ -9,6 +9,14 @@
 #include <stdexcept>
 #include <string>
 
+#define EXPECT_TRUE(condition)                            \
+    do {                                                  \
+        if (!condition) {                                 \
+            std::cerr << "FAIL: condition is not true\n"; \
+            throw std::runtime_error("Test failed");      \
+        }                                                 \
+    } while (false)
+
 #define EXPECT_EQ(lhs, rhs)                                        \
     do {                                                           \
         /* NOLINTNEXTLINE(readability-container-size-empty) */     \

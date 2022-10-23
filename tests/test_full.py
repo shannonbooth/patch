@@ -73,7 +73,7 @@ class TestPatch(unittest.TestCase):
 
         ret = run_patch('patch -i diff.patch')
         self.assertEqual(ret.stderr, '')
-        self.assertEqual(ret.stdout, 'patching file שלום עולם!\n')
+        self.assertEqual(ret.stdout, 'patching file \'שלום עולם!\'\n')
         self.assertEqual(ret.returncode, 0)
         self.assertFileEqual('שלום עולם!', 'a\nc\n')
 

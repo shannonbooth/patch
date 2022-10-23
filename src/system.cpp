@@ -169,13 +169,12 @@ std::string current_path()
             return to_narrow(result);
     }
 #else
-    std::string path;
-    path.resize(PATH_MAX);
+    std::array<char, PATH_MAX> buf;
 
-    if (!getcwd(&path[0], path.size()))
+    if (!getcwd(buf.data(), buf.size()))
         throw std::system_error(errno, std::generic_category(), "Failed getting current directory");
 
-    return path;
+    return std::string(buf.data());
 #endif
 }
 

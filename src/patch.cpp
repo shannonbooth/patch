@@ -208,6 +208,32 @@ static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, con
     out << '\n';
 }
 
+static bool needs_quoting(const std::string& input)
+{
+    // FIXME: This list is probably incomplete.
+    //        Is based off special characters in shell.
+    return std::any_of(input.begin(), input.end(), [](unsigned char c) {
+        return c == '!'
+            || c == '`'
+            || c == '$'
+            || c == '('
+            || c == ')'
+            || c == '>'
+            || c == '<'
+            || c == '['
+            || c == ']'
+            || c == '&';
+    });
+}
+
+static std::string format_filename(const std::string& input)
+{
+    if (!needs_quoting(input))
+        return input;
+
+    return "'" + input + "'";
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -339,7 +365,8 @@ int process_patch(const Options& options)
         else
             out << "patching";
 
-        out << " file " << output_file;
+        out << " file " << format_filename(output_file);
+
         if (patch.operation == Operation::Rename) {
             if (file_to_patch == output_file) {
                 out << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";

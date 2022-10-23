@@ -873,26 +873,6 @@ rename to b
 4
 ''')
 
-    def test_write_empty_output_to_stdout(self):
-        ''' test that setting -o to - writes the patched file to stdout for an empty file '''
-        patch = '''
---- a	2022-07-02 15:23:07.929349813 +1200
-+++ /dev/null	2022-06-30 20:33:13.470250591 +1200
-@@ -1 +0,0 @@
--1
-'''
-        with open('diff.patch', 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        to_patch = '1\n'
-        with open('a', 'w', encoding='utf8') as to_patch_file:
-            to_patch_file.write(to_patch)
-
-        ret = run_patch('patch -i diff.patch -o -')
-        self.assertEqual(ret.stderr, 'patching file - (read from a)\n')
-        self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, '')
-
 
     def test_write_output_to_some_file(self):
         ''' test overriding the file path to patch '''
@@ -1655,41 +1635,6 @@ new mode 100755
         self.assertEqual(ret.stdout, '')
 
 
-    def test_git_binary_patch(self):
-        ''' test application of unsupported git binary patches '''
-        patch = '''
-From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
-From: Shannon Booth <shannon.ml.booth@gmail.com>
-Date: Mon, 18 Jul 2022 10:16:19 +1200
-Subject: [PATCH] add utf16
-
----
- a.txt | Bin 0 -> 14 bytes
- 1 file changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 a.txt
-
-diff --git a/a.txt b/a.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..c193b2437ca5bca3eaee833d9cc40b04875da742
-GIT binary patch
-literal 14
-ScmezWFOh+ZAqj|+ffxWJ!UIA8
-
-literal 0
-HcmV?d00001
-
---
-2.25.1
-'''
-        with open('diff.patch', 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        ret = run_patch('patch -i diff.patch')
-        self.assertEqual(ret.returncode, 1)
-        self.assertEqual(ret.stdout, 'File a.txt: git binary diffs are not supported.\n')
-        self.assertEqual(ret.stderr, '')
-
-
     @unittest.expectedFailure
     def test_git_swap_files(self):
         ''' test that git patch swapping files is correctly applied '''
@@ -1721,45 +1666,6 @@ patching file a (renamed from b)
 ''')
         self.assertFileEqual('a', b)
         self.assertFileEqual('b', a)
-
-
-    def test_remove_git_submodule(self):
-        ''' test removing a git submodule fails as it is not a regular file '''
-
-        patch = '''diff --git a/.gitmodules b/.gitmodules
-index 066b99a..e69de29 100644
---- a/.gitmodules
-+++ b/.gitmodules
-@@ -1,3 +0,0 @@
--[submodule "libarchive"]
--	path = libarchive
--	url = https://github.com/libarchive/libarchive.git
-diff --git a/libarchive b/libarchive
-deleted file mode 160000
-index a45905b..0000000
---- a/libarchive
-+++ /dev/null
-@@ -1 +0,0 @@
--Subproject commit a45905b0166713760a2fb4f2e908d7ce47488371
-'''
-        with open('diff.patch', 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        gitmodules = '''[submodule "libarchive"]
-	path = libarchive
-	url = https://github.com/libarchive/libarchive.git
-'''
-        with open('.gitmodules', 'w', encoding='utf8') as gitmodules_file:
-            gitmodules_file.write(gitmodules)
-        os.mkdir('libarchive')
-
-        ret = run_patch('patch -i diff.patch')
-        self.assertEqual(ret.stdout, '''patching file .gitmodules
-File libarchive is not a regular file -- refusing to patch
-1 out of 1 hunk ignored -- saving rejects to file libarchive.rej
-''')
-        self.assertEqual(ret.returncode, 1)
-        self.assertEqual(ret.stderr, '')
 
 
     def test_unknown_commandline(self):

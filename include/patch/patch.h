@@ -27,4 +27,4 @@ bool check_with_user(const std::string& question, std::ostream& out, Default def
 
 int process_patch(const Options& options);
 
-} //namespace Patch
+} // namespace Patch

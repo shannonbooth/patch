@@ -40,7 +40,9 @@ patch_add_test(test_patch
 
 set(CMAKE_REQUIRED_LIBRARIES "util")
 check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY)
-check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL)
+if(NOT HAVE_FORKPTY_PTY)
+  check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL)
+endif()
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(src/config.h.in src/config.h)

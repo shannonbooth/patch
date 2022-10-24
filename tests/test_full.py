@@ -53,66 +53,6 @@ class TestPatch(unittest.TestCase):
             file_content = file.read()
         self.assertEqual(file_content, content)
 
-    def test_basic_unicode_patch_filepaths(self):
-        ''' test a patch which is changing a non ASCII filename '''
-        patch = '''
---- "\\327\\251\\327\\234\\327\\225\\327\\235 \\327\\242\\327\\225\\327\\234\\327\\235!"	2022-09-03 14:51:28.429821767 +1200
-+++ another	2022-09-03 14:52:15.250024346 +1200
-@@ -1,3 +1,2 @@
- a
--b
- c
-'''
-        with open('diff.patch', 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        to_patch = 'a\nb\nc\n'
-
-        with open('שלום עולם!', 'w', encoding='utf8') as to_patch_file:
-            to_patch_file.write(to_patch)
-
-        ret = run_patch('patch -i diff.patch')
-        self.assertEqual(ret.stderr, '')
-        self.assertEqual(ret.stdout, 'patching file \'שלום עולם!\'\n')
-        self.assertEqual(ret.returncode, 0)
-        self.assertFileEqual('שלום עולם!', 'a\nc\n')
-
-
-    def test_unicode_rename_git_no_quoting(self):
-        ''' test a git patch (without quote path) renaming a unicode file '''
-        patch = '''
-commit f3f4654d6a154907dbd36c47d49c910b0c10c072
-Author: Shannon Booth <shannon.ml.booth@gmail.com>
-Date:   Sun Sep 4 11:03:05 2022 +1200
-
-    Add unicode path using core.quotePath false
-
-diff --git a/file b/지배
-similarity index 66%
-rename from file
-rename to 지배
-index de98044..0f7bc76 100644
---- a/նախքան
-+++ b/지배
-@@ -1,3 +1,2 @@
- Мир
--b
- c
-'''
-        with open('diff.patch', 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        to_patch = 'Мир\nb\nc\n'
-
-        with open('նախքան', 'w', encoding='utf8') as to_patch_file:
-            to_patch_file.write(to_patch)
-
-        ret = run_patch('patch -idiff.patch')
-        self.assertEqual(ret.stderr, '')
-        self.assertEqual(ret.stdout, 'patching file 지배 (renamed from նախքան)\n')
-        self.assertEqual(ret.returncode, 0)
-        self.assertFileEqual('지배', 'Мир\nc\n')
-
 
     def test_set_patch_file(self):
         ''' test that setting file to patch works as expected '''
@@ -1413,63 +1353,6 @@ index de98044..0f673f8 100644
 
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')
-
-    def test_chdir_good_case(self):
-        ''' test using chdir allows relative path to work '''
-
-        os.mkdir('folder')
-        patch = '''
---- 1	2022-06-26 11:17:58.948060133 +1200
-+++ 2	2022-06-26 11:18:03.500001858 +1200
-@@ -1,3 +1,2 @@
- 1
--2
- 3
-'''
-        with open(os.path.join('folder', 'diff.patch'), 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        to_patch = '''1
-2
-3
-'''
-        with open(os.path.join('folder', '1'), 'w', encoding='utf8') as to_patch_file:
-            to_patch_file.write(to_patch)
-
-        ret = run_patch('patch -i diff.patch -d folder')
-
-        self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, 'patching file 1\n')
-        self.assertEqual(ret.stderr, '')
-
-    def test_chdir_unicode(self):
-        ''' test using chdir with non ascii '''
-
-        os.mkdir('गिलास')
-        patch = '''
---- 1	2022-06-26 11:17:58.948060133 +1200
-+++ 2	2022-06-26 11:18:03.500001858 +1200
-@@ -1,3 +1,2 @@
- 1
--2
- 3
-'''
-        with open(os.path.join('गिलास', 'diff.patch'), 'w', encoding='utf8') as patch_file:
-            patch_file.write(patch)
-
-        to_patch = '''1
-2
-3
-'''
-        with open(os.path.join('गिलास', '1'), 'w', encoding='utf8') as to_patch_file:
-            to_patch_file.write(to_patch)
-
-        ret = run_patch('patch -i diff.patch -d गिलास')
-
-        self.assertEqual(ret.stderr, '')
-        self.assertEqual(ret.returncode, 0)
-        self.assertEqual(ret.stdout, 'patching file 1\n')
-
 
     def test_add_executable_bit(self):
         ''' test that a patch changing mode applies '''

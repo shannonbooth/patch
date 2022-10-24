@@ -84,11 +84,23 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
     size_t stderr_offset = 0;
 
     while (true) {
-        std::array<struct pollfd, 2> fds = {};
-        fds[0].fd = stdout_pipe.read_fd();
-        fds[0].events = POLLIN;
-        fds[1].fd = stderr_pipe.read_fd();
-        fds[1].events = POLLIN;
+        std::vector<struct pollfd> fds;
+        if (stdout_pipe.read_fd() >= 0) {
+            struct pollfd fd = {};
+            fd.fd = stdout_pipe.read_fd();
+            fd.events = POLLIN;
+            fds.emplace_back(fd);
+        }
+
+        if (stderr_pipe.read_fd() >= 0) {
+            struct pollfd fd = {};
+            fd.fd = stderr_pipe.read_fd();
+            fd.events = POLLIN;
+            fds.emplace_back(fd);
+        }
+
+        if (fds.empty())
+            break;
 
         int poll_result = ::poll(fds.data(), fds.size(), 5000);
         if (poll_result < 0)
@@ -106,7 +118,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
             if (fd.fd == stdout_pipe.read_fd()) {
                 auto ret = ::read(stdout_pipe.read_fd(), &m_stdout_data[0] + stdout_offset, m_stdout_data.size() - stdout_offset);
                 if (ret <= 0) {
-                    done = true;
+                    stdout_pipe.close_read_fd();
                     continue;
                 }
 
@@ -117,7 +129,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
             } else if (fd.fd == stderr_pipe.read_fd()) {
                 auto ret = ::read(stderr_pipe.read_fd(), &m_stderr_data[0] + stderr_offset, m_stderr_data.size() - stderr_offset);
                 if (ret <= 0) {
-                    done = true;
+                    stderr_pipe.close_read_fd();
                     continue;
                 }
 
@@ -127,9 +139,6 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
                     m_stderr_data.resize(m_stderr_data.size() * 2);
             }
         }
-
-        if (done)
-            break;
     }
 
     m_stdout_data.resize(stdout_offset);

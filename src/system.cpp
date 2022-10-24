@@ -165,7 +165,7 @@ std::string current_path()
             throw std::system_error(GetLastError(), std::system_category(), "Failed getting current directory");
 
         result.resize(size);
-        if (size == requested_size)
+        if (size <= requested_size)
             return to_narrow(result);
     }
 #else

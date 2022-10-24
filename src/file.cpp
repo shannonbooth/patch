@@ -132,7 +132,7 @@ File::File(const std::string& path, std::ios_base::openmode mode)
 #endif
 {
     if (!m_file)
-        throw std::system_error(errno, std::generic_category(), "Unable to open file");
+        throw std::system_error(errno, std::generic_category(), "Unable to open file " + path);
 }
 
 bool File::open(const std::string& path, std::ios_base::openmode mode)

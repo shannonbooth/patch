@@ -236,3 +236,113 @@ HcmV?d00001
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 1);
 }
+
+PATCH_TEST(basic_unicode_patch_filepaths)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- "\327\251\327\234\327\225\327\235 \327\242\327\225\327\234\327\235!"	2022-09-03 14:51:28.429821767 +1200
++++ another	2022-09-03 14:52:15.250024346 +1200
+@@ -1,3 +1,2 @@
+ a
+-b
+ c
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("שלום עולם!", std::ios_base::out);
+        file << "a\nb\nc\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file 'שלום עולם!'\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("שלום עולם!", "a\nc\n");
+}
+
+PATCH_TEST(unicode_rename_git_no_quoting)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+commit f3f4654d6a154907dbd36c47d49c910b0c10c072
+Author: Shannon Booth <shannon.ml.booth@gmail.com>
+Date:   Sun Sep 4 11:03:05 2022 +1200
+
+    Add unicode path using core.quotePath false
+
+diff --git a/file b/지배
+similarity index 66%
+rename from file
+rename to 지배
+index de98044..0f7bc76 100644
+--- a/նախքան
++++ b/지배
+@@ -1,3 +1,2 @@
+ Мир
+-b
+ c
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("նախքան", std::ios_base::out);
+        file << "Мир\nb\nc\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-idiff.patch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file 지배 (renamed from նախքան)\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("지배", "Мир\nc\n");
+}
+
+static void test_chdir(const char* patch_path, const std::string& folder)
+{
+    EXPECT_TRUE(Patch::filesystem::create_directory(folder));
+
+    {
+        Patch::File file(folder + "/diff.patch", std::ios_base::out);
+
+        file << R"(
+--- 1	2022-06-26 11:17:58.948060133 +1200
++++ 2	2022-06-26 11:18:03.500001858 +1200
+@@ -1,3 +1,2 @@
+ 1
+-2
+ 3
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file(folder + "/1", std::ios_base::out);
+        file << "1\n2\n3\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-d", folder.c_str(), nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file 1\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ(folder + "/1", "1\n3\n");
+}
+
+PATCH_TEST(chdir_unicode)
+{
+    test_chdir(patch_path, "गिलास");
+}
+
+PATCH_TEST(chdir_good_case)
+{
+    test_chdir(patch_path, "folder");
+}

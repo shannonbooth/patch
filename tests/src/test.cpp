@@ -25,6 +25,8 @@ public:
 
     const std::string& name() const { return m_name; }
 
+    bool run(const char* patch_path);
+
 private:
     std::function<void(const char*)> m_test_function;
 
@@ -52,11 +54,34 @@ void Test::tear_down()
     std::system(command.c_str());
 }
 
+bool Test::run(const char* patch_path)
+{
+    bool success = true;
+
+    setup();
+
+    try {
+        test(patch_path);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+        std::cerr << m_name << " FAILED!\n";
+        success = false;
+    }
+
+    tear_down();
+
+    return success;
+}
+
 class TestRunner {
 public:
     void register_test(std::string name, std::function<void(const char*)> test);
 
     bool run_all_tests(const char* patch_path);
+
+    bool run_test(const char* patch_path, const char* test_name);
+
+    const std::vector<Test>& tests() const { return m_tests; }
 
 private:
     std::vector<Test> m_tests;
@@ -67,23 +92,23 @@ void TestRunner::register_test(std::string name, std::function<void(const char*)
     m_tests.emplace_back(std::move(name), std::move(test_function));
 }
 
+bool TestRunner::run_test(const char* patch_path, const char* test_name)
+{
+    for (Test& test : m_tests) {
+        if (test.name() == test_name)
+            return test.run(patch_path);
+    }
+
+    return false;
+}
+
 bool TestRunner::run_all_tests(const char* patch_path)
 {
     bool success = true;
 
     for (Test& test : m_tests) {
-
-        test.setup();
-
-        try {
-            test.test(patch_path);
-        } catch (const std::exception& e) {
-            std::cerr << e.what() << '\n';
-            std::cerr << test.name() << " FAILED!\n";
+        if (!test.run(patch_path))
             success = false;
-        }
-
-        test.tear_down();
     }
 
     return success;
@@ -102,10 +127,26 @@ void register_test(std::string name, std::function<void(const char*)> test_funct
 
 int main(int argc, const char* const* argv)
 {
-    if (argc != 2) {
-        std::cerr << argc << " - Wrong number of arguments given\n";
-        return 1;
+    auto& r = runner();
+
+    // List tests
+    if (argc == 1) {
+        for (const auto& test : r.tests())
+            std::cout << test.name() << '\n';
+        return 0;
     }
 
-    return runner().run_all_tests(argv[1]) ? 0 : 1;
+    // Run all tests
+    if (argc == 2) {
+        return r.run_all_tests(argv[1]) ? 0 : 1;
+    }
+
+    // Run specific test
+    if (argc == 3) {
+        return r.run_test(argv[1], argv[2]) ? 0 : 1;
+    }
+
+    std::cerr << argc << " - Wrong number of arguments given\n";
+
+    return 1;
 }

@@ -34,13 +34,10 @@
         }                                                          \
     } while (false)
 
-#define EXPECT_FILE_EQ(file, rhs)                                          \
-    do {                                                                   \
-        const auto file_data = Patch::File(file).read_all_as_string();     \
-        if (file_data != rhs) {                                            \
-            std::cerr << "FAIL: '" << file << "' data != " << rhs << '\n'; \
-            throw std::runtime_error("Test failed");                       \
-        }                                                                  \
+#define EXPECT_FILE_EQ(file, rhs)                                      \
+    do {                                                               \
+        const auto file_data = Patch::File(file).read_all_as_string(); \
+        EXPECT_EQ(file_data, rhs);                                     \
     } while (false)
 
 void register_test(std::string name, std::function<void(const char*)> test);

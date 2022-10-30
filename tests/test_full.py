@@ -241,7 +241,7 @@ rename to b
         self.assertEqual(ret.returncode, 0)
         self.assertEqual(ret.stdout, 'patching file x\n')
         self.assertEqual(ret.stderr, '')
-        self.assertFileEqual('pre.orig', 'abc\n')
+        self.assertFileEqual('pre.x', 'abc\n')
         self.assertFileEqual('x', 'xyz\n')
 
 

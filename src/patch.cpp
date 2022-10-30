@@ -180,7 +180,7 @@ static std::string backup_name(const Options& options, const std::string& output
         return options.backup_prefix + output_file + options.backup_suffix;
 
     if (!options.backup_prefix.empty())
-        return options.backup_prefix + "orig";
+        return options.backup_prefix + output_file;
 
     if (!options.backup_suffix.empty())
         return output_file + options.backup_suffix;

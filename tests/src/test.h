@@ -43,10 +43,10 @@
         }                                                          \
     } while (false)
 
-#define EXPECT_FILE_EQ(file, rhs)                                      \
-    do {                                                               \
-        const auto file_data = Patch::File(file).read_all_as_string(); \
-        EXPECT_EQ(file_data, rhs);                                     \
+#define EXPECT_FILE_EQ(file, rhs)                                                         \
+    do {                                                                                  \
+        const auto file_data = Patch::File(file, std::ios_base::in).read_all_as_string(); \
+        EXPECT_EQ(file_data, rhs);                                                        \
     } while (false)
 
 void register_test(std::string name, std::function<void(const char*)> test);

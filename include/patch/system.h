@@ -62,6 +62,11 @@ inline perms operator|(perms left, perms right)
     return static_cast<perms>(static_cast<unsigned>(left) | static_cast<unsigned>(right));
 }
 
+inline perms operator^(perms left, perms right)
+{
+    return static_cast<perms>(static_cast<unsigned>(left) ^ static_cast<unsigned>(right));
+}
+
 inline perms& operator&=(perms& left, perms right)
 {
     return left = left & right;
@@ -70,6 +75,11 @@ inline perms& operator&=(perms& left, perms right)
 inline perms& operator|=(perms& left, perms right)
 {
     return left = left | right;
+}
+
+inline perms& operator^=(perms& left, perms right)
+{
+    return left = left ^ right;
 }
 
 void permissions(const std::string& path, perms permissions);

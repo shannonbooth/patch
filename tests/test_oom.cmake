@@ -16,6 +16,6 @@ if(NOT output STREQUAL "")
   message(FATAL_ERROR "${PATCH} returned ${output}")
 endif()
 
-if(NOT error STREQUAL "patch: **** out of memory\n")
+if(NOT error STREQUAL "${PATCH}: **** out of memory\n")
   message(FATAL_ERROR "${PATCH} returned '${error}'")
 endif()

@@ -83,7 +83,7 @@ index 0000000..7a1c613
         ret = run_patch('patch -i diff.patch --ed')
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')
-        self.assertEqual(ret.stderr, 'patch: **** ed format patches are not supported by this version of patch\n')
+        self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** ed format patches are not supported by this version of patch\n')
 
     def test_backup_when_patch_is_adding_file(self):
         ''' test that when a patch creating a file has the backup option, a empty backup is made '''
@@ -880,7 +880,7 @@ index de98044..0f673f8 100644
         ret = run_patch('patch -i diff.patch')
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')
-        self.assertEqual(ret.stderr, 'patch: **** Only garbage was found in the patch input.\n')
+        self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Only garbage was found in the patch input.\n')
 
     def test_error_when_non_existent_patch_file_given(self):
         ''' test that when patch is given a non-existent patch file is given an error is raised '''
@@ -889,9 +889,9 @@ index de98044..0f673f8 100644
 
         # windows returns in different case, we don't care.
         if os.name == 'nt':
-            self.assertEqual(ret.stderr, 'patch: **** Unable to open patch file diff.patch: no such file or directory\n')
+            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Unable to open patch file diff.patch: no such file or directory\n')
         else:
-            self.assertEqual(ret.stderr, 'patch: **** Unable to open patch file diff.patch: No such file or directory\n')
+            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Unable to open patch file diff.patch: No such file or directory\n')
 
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')
@@ -1052,9 +1052,9 @@ new mode 100755
 
         # windows returns in different case, we don't care.
         if os.name == 'nt':
-            self.assertEqual(ret.stderr, 'patch: **** Unable to change to directory bad_directory: no such file or directory\n')
+            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Unable to change to directory bad_directory: no such file or directory\n')
         else:
-            self.assertEqual(ret.stderr, 'patch: **** Unable to change to directory bad_directory: No such file or directory\n')
+            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Unable to change to directory bad_directory: No such file or directory\n')
 
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')
@@ -1097,7 +1097,7 @@ patching file a (renamed from b)
         ''' test error on unknown command line argument '''
         ret = run_patch('patch --garbage')
         self.assertEqual(ret.returncode, 2)
-        self.assertEqual(ret.stderr, f'''patch: **** unknown commandline argument --garbage
+        self.assertEqual(ret.stderr, f'''{PATCH_PROGRAM}: **** unknown commandline argument --garbage
 Try '{PATCH_PROGRAM} --help' for more information.
 ''')
         self.assertEqual(ret.stdout, '')

@@ -147,7 +147,7 @@ void chdir(const std::string& path)
 #endif
 
     if (ret != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to change to directory " + path);
+        throw std::system_error(errno, std::generic_category(), "Can't change to directory " + path + " ");
 }
 
 std::string current_path()

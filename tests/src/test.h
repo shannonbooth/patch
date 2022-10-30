@@ -25,6 +25,15 @@
         }                                                  \
     } while (false)
 
+#define EXPECT_NE(lhs, rhs)                                        \
+    do {                                                           \
+        /* NOLINTNEXTLINE(readability-container-size-empty) */     \
+        if ((lhs) == (rhs)) {                                      \
+            std::cerr << "FAIL: " << lhs << " == " << rhs << '\n'; \
+            throw std::runtime_error("Test failed");               \
+        }                                                          \
+    } while (false)
+
 #define EXPECT_EQ(lhs, rhs)                                        \
     do {                                                           \
         /* NOLINTNEXTLINE(readability-container-size-empty) */     \

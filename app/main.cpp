@@ -13,14 +13,14 @@ int main(int argc, const char* const* argv)
         Patch::CmdLineParser cmdline_parser(cmdline);
         return Patch::process_patch(cmdline_parser.parse());
     } catch (const std::bad_alloc&) {
-        std::cerr << "patch: **** out of memory\n";
+        std::cerr << argv[0] << ": **** out of memory\n";
         return 2;
     } catch (const Patch::cmdline_parse_error& e) {
-        std::cerr << "patch: **** " << e.what() << '\n'
+        std::cerr << argv[0] << ": **** " << e.what() << '\n'
                   << "Try '" << argv[0] << " --help' for more information.\n";
         return 2;
     } catch (const std::exception& e) {
-        std::cerr << "patch: **** " << e.what() << '\n';
+        std::cerr << argv[0] << ": **** " << e.what() << '\n';
         return 2;
     }
 }

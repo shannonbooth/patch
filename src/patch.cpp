@@ -399,7 +399,7 @@ int process_patch(const Options& options)
             tmp_out_file.write_entire_contents_to(stdout);
         } else {
             if (!options.dry_run) {
-                if (options.save_backup || !result.all_hunks_applied_perfectly) {
+                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped)) {
                     const auto backup_file = backup_name(options, output_file);
 
                     // Per POSIX:

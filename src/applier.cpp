@@ -229,7 +229,7 @@ static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, con
 
     // Check whether we've been told to ignore this on the command line.
     if (options.ignore_reversed) {
-        out << " Skipping patch.\n";
+        out << "  Skipping patch.\n";
         return ReverseHandling::Ignore;
     }
 
@@ -335,7 +335,7 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file
         if (location.fuzz != 0 || location.offset != 0)
             all_hunks_applied_perfectly = false;
 
-        if (options.verbose || location.fuzz != 0 || offset_error != 0)
+        if (options.verbose || ((location.fuzz != 0 || offset_error != 0) && !skip_remaining_hunks))
             print_hunk_statistics(out, hunk_num, skip_remaining_hunks, location, hunk, offset_old_lines_to_new, offset_error);
 
         if (location.is_found())

@@ -413,15 +413,10 @@ rename to b
         self.assertEqual(ret.stderr, '')
         # perhaps we should have a better error here?
         self.assertEqual(ret.stdout, '''patching file main.cpp
-Unreversed patch detected! Skipping patch.
-Hunk #1 skipped at 1 with fuzz 2.
+Unreversed patch detected!  Skipping patch.
 1 out of 1 hunk ignored -- saving rejects to file main.cpp.rej
 ''')
-        self.assertFileEqual('main.cpp.orig', '''int main()
-{
-	return 0;
-}
-''')
+        self.assertFalse(os.path.exists('main.cpp.orig'))
 
         self.assertFileEqual('main.cpp.rej', '''--- main2.cpp	2022-06-11 16:34:04.240768394 +1200
 +++ main.cpp	2022-06-11 16:34:12.304745651 +1200

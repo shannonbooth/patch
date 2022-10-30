@@ -880,7 +880,7 @@ index de98044..0f673f8 100644
         ret = run_patch('patch -i diff.patch')
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')
-        self.assertEqual(ret.stderr, 'patch: **** Unable to determine patch format\n')
+        self.assertEqual(ret.stderr, 'patch: **** Only garbage was found in the patch input.\n')
 
     def test_error_when_non_existent_patch_file_given(self):
         ''' test that when patch is given a non-existent patch file is given an error is raised '''

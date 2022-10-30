@@ -279,7 +279,7 @@ int process_patch(const Options& options)
 
         if (patch.format == Format::Unknown) {
             if (first_patch)
-                throw std::invalid_argument("Unable to determine patch format");
+                throw std::invalid_argument("Only garbage was found in the patch input.");
             break;
         }
 

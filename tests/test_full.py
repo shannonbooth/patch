@@ -1052,9 +1052,9 @@ new mode 100755
 
         # windows returns in different case, we don't care.
         if os.name == 'nt':
-            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Unable to change to directory bad_directory: no such file or directory\n')
+            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Can\'t change to directory bad_directory : no such file or directory\n')
         else:
-            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Unable to change to directory bad_directory: No such file or directory\n')
+            self.assertEqual(ret.stderr, f'{PATCH_PROGRAM}: **** Can\'t change to directory bad_directory : No such file or directory\n')
 
         self.assertEqual(ret.returncode, 2)
         self.assertEqual(ret.stdout, '')

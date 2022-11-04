@@ -9,7 +9,6 @@ public:
     explicit Test(std::string name, std::function<void(const char*)> test_function)
         : m_name(std::move(name))
         , m_test_function(std::move(test_function))
-        , m_tmp_dir(Patch::filesystem::make_temp_directory())
         , m_start_dir(Patch::current_path())
     {
     }
@@ -38,6 +37,7 @@ private:
 
 void Test::setup()
 {
+    m_tmp_dir = Patch::filesystem::make_temp_directory();
     Patch::chdir(m_tmp_dir);
 }
 

@@ -234,6 +234,11 @@ static std::string format_filename(const std::string& input)
     return "'" + input + "'";
 }
 
+static const char* patch_operation(const Options& options)
+{
+    return options.dry_run ? "checking" : "patching";
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -360,12 +365,7 @@ int process_patch(const Options& options)
                 filesystem::permissions(output_file, old_permissions | write_perm_mask);
         }
 
-        if (options.dry_run)
-            out << "checking";
-        else
-            out << "patching";
-
-        out << " file " << format_filename(output_file);
+        out << patch_operation(options) << " file " << format_filename(output_file);
 
         if (patch.operation == Operation::Rename) {
             if (file_to_patch == output_file) {

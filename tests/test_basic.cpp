@@ -151,6 +151,61 @@ PATCH_TEST(less_basic_patch)
     EXPECT_FILE_EQ("x", "1\n2\n3a\n4\n5\n6\n8\n9\n");
 }
 
+PATCH_TEST(unknown_command_line)
+{
+    std::string expected_stderr = patch_path;
+    expected_stderr += ": unrecognized option '--garbage'\n";
+    expected_stderr += patch_path;
+    expected_stderr += ": Try '";
+    expected_stderr += patch_path;
+    expected_stderr += " --help' for more information.\n";
+
+    Process process(patch_path, { patch_path, "--garbage", nullptr });
+    EXPECT_EQ(process.stdout_data(), "");
+    EXPECT_EQ(process.stderr_data(), expected_stderr);
+    EXPECT_EQ(process.return_code(), 2);
+}
+
+static void read_patch_from_stdin(const char* patch_path, const std::vector<const char*>& extra_args = {})
+{
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "1\n2\n3\n4\n\n";
+        file.close();
+    }
+
+    const std::string patch = R"(--- a
++++ b
+@@ -1,5 +1,4 @@
+ 1
+ 2
+-3
+-4
+ 
++4
+)";
+
+    std::vector<const char*> args = { patch_path };
+    args.insert(args.end(), extra_args.begin(), extra_args.end());
+    args.push_back(nullptr);
+
+    Process process(patch_path, args, patch);
+
+    EXPECT_EQ(process.stdout_data(), "patching file a\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+}
+
+PATCH_TEST(read_patch_from_stdin)
+{
+    read_patch_from_stdin(patch_path);
+}
+
+PATCH_TEST(read_patch_from_stdin_dash_arg)
+{
+    read_patch_from_stdin(patch_path, { "-i", "-" });
+}
+
 PATCH_TEST(dash_filename)
 {
     {

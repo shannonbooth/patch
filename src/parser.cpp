@@ -7,34 +7,10 @@
 #include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/system.h>
+#include <patch/utils.h>
 #include <stdexcept>
 
 namespace Patch {
-
-static bool ends_with(const std::string& str, const std::string& suffix)
-{
-    return str.size() >= suffix.size() && 0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
-}
-
-static bool starts_with(const std::string& str, const std::string& prefix)
-{
-    return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
-}
-
-constexpr bool is_octal(char c)
-{
-    return c >= '0' && c <= '7';
-}
-
-constexpr bool is_digit(char c)
-{
-    return c >= '0' && c <= '9';
-}
-
-constexpr bool is_not_digit(char c)
-{
-    return !is_digit(c);
-}
 
 class Parser {
 public:

@@ -9,7 +9,7 @@
 
 class Pipe {
 public:
-    Pipe()
+    explicit Pipe(bool inherit_for_read = true)
     {
         SECURITY_ATTRIBUTES attr;
         attr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -19,10 +19,10 @@ public:
         if (!CreatePipe(&m_read_handle, &m_write_handle, &attr, 0))
             throw std::system_error(GetLastError(), std::system_category(), "Failed creating stdout pipe");
 
-        if (!SetHandleInformation(m_read_handle, HANDLE_FLAG_INHERIT, 0)) {
+        if (!SetHandleInformation(inherit_for_read ? m_read_handle : m_write_handle, HANDLE_FLAG_INHERIT, 0)) {
             CloseHandle(m_read_handle);
             CloseHandle(m_write_handle);
-            throw std::system_error(GetLastError(), std::system_category(), "Failed setting stdout handle information");
+            throw std::system_error(GetLastError(), std::system_category(), "Failed setting handle information");
         }
     }
 
@@ -106,10 +106,11 @@ static std::string read_data_from_handle(HANDLE handle)
     return data;
 }
 
-Process::Process(const char* cmd, const std::vector<const char*>& args)
+Process::Process(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data)
 {
     Pipe stdout_pipe;
     Pipe stderr_pipe;
+    Pipe stdin_pipe(false);
 
     PROCESS_INFORMATION process_info {};
     STARTUPINFOW start_info {};
@@ -117,6 +118,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
     start_info.cb = sizeof(start_info);
     start_info.hStdOutput = stdout_pipe.write_handle();
     start_info.hStdError = stderr_pipe.write_handle();
+    start_info.hStdInput = stdin_pipe.read_handle();
     start_info.dwFlags |= STARTF_USESTDHANDLES;
 
     std::wstring cmd_str = Patch::to_wide(cmd);
@@ -138,6 +140,15 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
 
     stdout_pipe.close_write_handle();
     stderr_pipe.close_write_handle();
+    stdin_pipe.close_read_handle();
+
+    if (!stdin_data.empty()) {
+        DWORD written;
+        if (WriteFile(stdin_pipe.write_handle(), stdin_data.data(), static_cast<DWORD>(stdin_data.size()), &written, nullptr) == 0)
+            throw std::system_error(errno, std::generic_category(), "Failed writing data to stdin");
+    }
+
+    stdin_pipe.close_write_handle();
 
     m_stdout_data = read_data_from_handle(stdout_pipe.read_handle());
     m_stderr_data = read_data_from_handle(stderr_pipe.read_handle());

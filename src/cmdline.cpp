@@ -182,7 +182,7 @@ void CmdLineParser::parse_long_bool(const std::string& option_string)
     });
 
     if (it == m_bool_options.end())
-        throw cmdline_parse_error("unknown commandline argument " + option_string);
+        throw cmdline_parse_error("unrecognized option '" + option_string + "'");
 }
 
 const Options& CmdLineParser::parse()

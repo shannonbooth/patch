@@ -51,10 +51,11 @@ private:
     std::array<int, 2> m_fds;
 };
 
-Process::Process(const char* cmd, const std::vector<const char*>& args)
+Process::Process(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data)
 {
     Pipe stdout_pipe;
     Pipe stderr_pipe;
+    Pipe stdin_pipe;
 
     pid_t pid = ::fork();
     if (pid < 0)
@@ -67,8 +68,12 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
         if (dup2(stderr_pipe.write_fd(), STDERR_FILENO) == -1)
             throw std::system_error(errno, std::generic_category(), "Failed duping stdout");
 
+        if (dup2(stdin_pipe.read_fd(), STDIN_FILENO) == -1)
+            throw std::system_error(errno, std::generic_category(), "Failed duping stdin");
+
         stdout_pipe.close();
         stderr_pipe.close();
+        stdin_pipe.close();
 
         ::execv(cmd, const_cast<char**>(args.data()));
         throw std::system_error(errno, std::generic_category(), "Failed to exec command");
@@ -76,6 +81,18 @@ Process::Process(const char* cmd, const std::vector<const char*>& args)
 
     stdout_pipe.close_write_fd();
     stderr_pipe.close_write_fd();
+    stdin_pipe.close_read_fd();
+
+    if (!stdin_data.empty()) {
+        ssize_t ret = ::write(stdin_pipe.write_fd(), stdin_data.data(), stdin_data.size());
+        if (ret < 0)
+            throw std::system_error(errno, std::generic_category(), "Failed writing data to stdin");
+
+        if (static_cast<size_t>(ret) != stdin_data.size())
+            throw std::system_error(errno, std::generic_category(), "Not enough data written to stdin");
+    }
+
+    stdin_pipe.close_write_fd();
 
     m_stdout_data.resize(32);
     m_stderr_data.resize(32);

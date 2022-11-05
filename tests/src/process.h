@@ -8,7 +8,7 @@
 
 class Process {
 public:
-    Process(const char* cmd, const std::vector<const char*>& args);
+    Process(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data = {});
 
     const std::string& stdout_data() const { return m_stdout_data; }
 

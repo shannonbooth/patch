@@ -174,20 +174,6 @@ static std::string output_path(const Options& options, const Patch& patch, const
     return file_to_patch;
 }
 
-static std::string backup_name(const Options& options, const std::string& output_file)
-{
-    if (!options.backup_prefix.empty() && !options.backup_suffix.empty())
-        return options.backup_prefix + output_file + options.backup_suffix;
-
-    if (!options.backup_prefix.empty())
-        return options.backup_prefix + output_file;
-
-    if (!options.backup_suffix.empty())
-        return output_file + options.backup_suffix;
-
-    return options.backup_prefix + output_file + options.backup_suffix + ".orig";
-}
-
 static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, const std::string& output_file, const Patch& patch, const Options& options)
 {
     out << " refusing to patch\n"
@@ -239,6 +225,49 @@ static const char* patch_operation(const Options& options)
     return options.dry_run ? "checking" : "patching";
 }
 
+class Backup {
+public:
+    explicit Backup(const Options& options)
+        : m_options(options)
+    {
+    }
+
+    std::string backup_name(const std::string& file_path) const
+    {
+        if (!m_options.backup_prefix.empty() && !m_options.backup_suffix.empty())
+            return m_options.backup_prefix + file_path + m_options.backup_suffix;
+
+        if (!m_options.backup_prefix.empty())
+            return m_options.backup_prefix + file_path;
+
+        if (!m_options.backup_suffix.empty())
+            return file_path + m_options.backup_suffix;
+
+        return m_options.backup_prefix + file_path + m_options.backup_suffix + ".orig";
+    }
+
+    void make_backup_for(const std::string& file_path)
+    {
+        const auto backup_file = backup_name(file_path);
+
+        // Per POSIX:
+        // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
+        if (m_backed_up_files.emplace(backup_file).second) {
+            // If the output file being backed up exists, rename name that as the backup.
+            // For a missing output file just create an empty backup file instead.
+            if (filesystem::exists(file_path))
+                filesystem::rename(file_path, backup_file);
+            else
+                File::touch(backup_file);
+        }
+    }
+
+private:
+    // to keep track in case there are multiple patches for the same file.
+    std::unordered_set<std::string> m_backed_up_files;
+    const Options& m_options;
+};
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -259,13 +288,12 @@ int process_patch(const Options& options)
     auto& out = output_to_stdout ? std::cerr : std::cout;
 
     PatchFile patch_file(options);
+    Backup backup(options);
 
     const auto format = diff_format_from_options(options);
 
     if (format == Format::Ed)
         throw std::invalid_argument("ed format patches are not supported by this version of patch");
-
-    std::unordered_set<std::string> backed_up_files; // to keep track in case there are multiple patches for the same file.
 
     bool had_failure = false;
     bool first_patch = true;
@@ -399,20 +427,8 @@ int process_patch(const Options& options)
             tmp_out_file.write_entire_contents_to(stdout);
         } else {
             if (!options.dry_run) {
-                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped)) {
-                    const auto backup_file = backup_name(options, output_file);
-
-                    // Per POSIX:
-                    // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
-                    if (backed_up_files.emplace(backup_file).second) {
-                        // If the output file being backed up exists, rename name that as the backup.
-                        // For a missing output file just create an empty backup file instead.
-                        if (filesystem::exists(output_file))
-                            filesystem::rename(output_file, backup_file);
-                        else
-                            File::touch(backup_file);
-                    }
-                }
+                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped))
+                    backup.make_backup_for(output_file);
 
                 // Ensure that parent directories exist if we are adding a file.
                 if (looks_like_adding_file)

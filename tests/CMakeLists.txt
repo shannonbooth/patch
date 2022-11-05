@@ -85,5 +85,9 @@ if(GNU_PATCH)
   endif()
 endif()
 
+add_executable(test_sb_patch_specific test_newlines.cpp test_misc.cpp)
+target_link_libraries(test_sb_patch_specific PRIVATE patch_test)
+add_test(NAME Patch.Newlines COMMAND test_sb_patch_specific $<TARGET_FILE:sb_patch>)
+
 find_package(Python3 REQUIRED)
 add_test(NAME Python.Full COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_full.py $<TARGET_FILE:sb_patch>)

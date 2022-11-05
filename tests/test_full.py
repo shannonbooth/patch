@@ -322,8 +322,8 @@ patching file a (renamed from b)
         ''' test error on unknown command line argument '''
         ret = run_patch('patch --garbage')
         self.assertEqual(ret.returncode, 2)
-        self.assertEqual(ret.stderr, f'''{PATCH_PROGRAM}: **** unknown commandline argument --garbage
-Try '{PATCH_PROGRAM} --help' for more information.
+        self.assertEqual(ret.stderr, f'''{PATCH_PROGRAM}: unrecognized option '--garbage'
+{PATCH_PROGRAM}: Try '{PATCH_PROGRAM} --help' for more information.
 ''')
         self.assertEqual(ret.stdout, '')
 

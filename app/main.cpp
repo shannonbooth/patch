@@ -16,8 +16,8 @@ int main(int argc, const char* const* argv)
         std::cerr << argv[0] << ": **** out of memory\n";
         return 2;
     } catch (const Patch::cmdline_parse_error& e) {
-        std::cerr << argv[0] << ": **** " << e.what() << '\n'
-                  << "Try '" << argv[0] << " --help' for more information.\n";
+        std::cerr << argv[0] << ": " << e.what() << '\n'
+                  << argv[0] << ": Try '" << argv[0] << " --help' for more information.\n";
         return 2;
     } catch (const std::exception& e) {
         std::cerr << argv[0] << ": **** " << e.what() << '\n';

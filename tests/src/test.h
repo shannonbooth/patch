@@ -49,6 +49,12 @@
         EXPECT_EQ(file_data, rhs);                                                        \
     } while (false)
 
+#define EXPECT_FILE_BINARY_EQ(file, rhs)                                                                          \
+    do {                                                                                                          \
+        const auto file_data = Patch::File(file, std::ios_base::in | std::ios_base::binary).read_all_as_string(); \
+        EXPECT_EQ(file_data, rhs);                                                                                \
+    } while (false)
+
 void register_test(std::string name, std::function<void(const char*)> test);
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

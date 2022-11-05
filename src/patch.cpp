@@ -174,6 +174,11 @@ static std::string output_path(const Options& options, const Patch& patch, const
     return file_to_patch;
 }
 
+static std::string reject_path(const Options& options, const std::string& output_file)
+{
+    return options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
+}
+
 static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, const std::string& output_file, const Patch& patch, const Options& options)
 {
     out << " refusing to patch\n"
@@ -183,9 +188,9 @@ static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, con
     out << " ignored";
 
     if (!options.dry_run) {
-        const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
-        out << " -- saving rejects to file " << reject_path;
-        File file(reject_path, mode | std::ios::trunc);
+        const auto reject_file = reject_path(options, output_file);
+        out << " -- saving rejects to file " << reject_file;
+        File file(reject_file, mode | std::ios::trunc);
 
         RejectWriter reject_writer(patch, file, options.reject_format);
         for (const auto& hunk : patch.hunks)
@@ -454,10 +459,10 @@ int process_patch(const Options& options)
                     out << 's';
                 out << reason;
                 if (!options.dry_run) {
-                    const auto reject_path = options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
-                    out << " -- saving rejects to file " << reject_path;
+                    const auto reject_file = reject_path(options, output_file);
+                    out << " -- saving rejects to file " << reject_file;
 
-                    File file(reject_path, mode | std::ios::trunc);
+                    File file(reject_file, mode | std::ios::trunc);
                     tmp_reject_file.write_entire_contents_to(file);
                 }
                 out << '\n';

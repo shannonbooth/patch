@@ -59,7 +59,7 @@ endif()
 
 if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
   add_executable(test_pty test_pty.cpp src/pty_spawn.cpp)
-  target_link_libraries(test_pty PRIVATE patch util)
+  target_link_libraries(test_pty PRIVATE patch_test util)
   target_include_directories(test_pty PRIVATE src)
   add_test(NAME Patch.Pty COMMAND test_pty $<TARGET_FILE:sb_patch>)
 endif()

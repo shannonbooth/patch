@@ -2,14 +2,10 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <array>
-#include <iostream>
-#include <patch/file.h>
-#include <patch/system.h>
 #include <pty_spawn.h>
-#include <stdexcept>
 #include <test.h>
 
-static void test(const char* patch_path)
+PATCH_TEST(pty_basic)
 {
     std::array<const char*, 4> cmd { patch_path, "-i", "diff.patch", nullptr };
 
@@ -42,25 +38,4 @@ static void test(const char* patch_path)
 
     EXPECT_EQ(out, R"(patching file a
 Reversed (or previously applied) patch detected! Assume -R? [n] )");
-}
-
-int main(int argc, const char* const* argv)
-{
-    if (argc != 2) {
-        std::cerr << argc << " - Wrong number of arguments given\n";
-        return 1;
-    }
-
-    std::string tmp_dir = Patch::filesystem::make_temp_directory();
-    Patch::chdir(tmp_dir);
-
-    try {
-        test(argv[1]);
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << '\n';
-
-        std::string command = "rm -rf " + tmp_dir;
-        std::system(command.c_str());
-        return 1;
-    }
 }

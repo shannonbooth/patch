@@ -38,7 +38,7 @@ public:
     {
         if (m_read_handle) {
             CloseHandle(m_read_handle);
-            m_write_handle = nullptr;
+            m_read_handle = nullptr;
         }
     }
 

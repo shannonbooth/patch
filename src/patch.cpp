@@ -5,6 +5,7 @@
 #include <cassert>
 #include <climits>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <patch/applier.h>
@@ -274,6 +275,32 @@ private:
     const Options& m_options;
 };
 
+class DeferredWriter {
+public:
+    void deferred_write(File&& file, const std::string& destination_path, std::function<void(const std::string&)> permission_callback)
+    {
+        m_deferred_writes.push_back(FileWrite { std::move(file), destination_path, std::move(permission_callback) });
+    }
+
+    void finalize()
+    {
+        for (auto& deferred_write : m_deferred_writes) {
+            File file(deferred_write.destination_path, std::ios_base::out | std::ios::trunc);
+            deferred_write.source.write_entire_contents_to(file);
+            deferred_write.permission_callback(deferred_write.destination_path);
+        }
+    }
+
+private:
+    struct FileWrite {
+        File source;
+        std::string destination_path;
+        std::function<void(const std::string&)> permission_callback;
+    };
+
+    std::vector<FileWrite> m_deferred_writes;
+};
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -303,6 +330,8 @@ int process_patch(const Options& options)
 
     bool had_failure = false;
     bool first_patch = true;
+
+    DeferredWriter deferred_writer;
 
     // Continue parsing patches from the input file and applying them.
     while (true) {
@@ -440,15 +469,30 @@ int process_patch(const Options& options)
                 if (looks_like_adding_file)
                     ensure_parent_directories(output_file);
 
-                File file(output_file, mode | std::ios::trunc);
-                tmp_out_file.write_entire_contents_to(file);
+                const auto new_mode_copy = patch.new_file_mode;
 
-                if (patch.new_file_mode != 0) {
-                    auto perms = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
-                    filesystem::permissions(output_file, perms);
-                } else if (fix_permissions) {
-                    // Restore permissions to before they were changed.
-                    filesystem::permissions(output_file, old_permissions);
+                auto permission_callback = [fix_permissions, old_permissions, new_mode_copy](const std::string& path) {
+                    if (new_mode_copy != 0) {
+                        auto perms = static_cast<filesystem::perms>(new_mode_copy) & filesystem::perms::mask;
+                        filesystem::permissions(path, perms);
+                    } else if (fix_permissions) {
+                        // Restore permissions to before they were changed.
+                        filesystem::permissions(path, old_permissions);
+                    }
+                };
+
+                // A git commit may consist of many different patches changing multiple files.
+                // This is special in that the entire collection of changes to every file is
+                // intended to be one atomic change. This is problematic as patch otherwise
+                // patches individual patches one after another. To solve this problem and
+                // implement atomic changes for a git style collection of patches, we defer
+                // writing to any output file until all patches have finished applying.
+                if (patch.format == Format::Git) {
+                    deferred_writer.deferred_write(std::move(tmp_out_file), output_file, std::move(permission_callback));
+                } else {
+                    File file(output_file, mode | std::ios::trunc);
+                    tmp_out_file.write_entire_contents_to(file);
+                    permission_callback(output_file);
                 }
             }
 
@@ -485,6 +529,8 @@ int process_patch(const Options& options)
             }
         }
     }
+
+    deferred_writer.finalize();
 
     return had_failure ? 1 : 0;
 }

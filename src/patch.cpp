@@ -53,6 +53,7 @@ std::string to_string(Format format)
         return "ed";
     case Format::Normal:
         return "normal";
+    case Format::Git:
     case Format::Unified:
         return "unified";
     case Format::Unknown:

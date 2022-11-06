@@ -590,6 +590,9 @@ bool parse_patch_header(Patch& patch, File& file, PatchHeaderInfo& header_info, 
         }
     }
 
+    if (is_git_patch)
+        patch.format = Format::Git;
+
     file.clear();
     file.seekg(header_info.patch_start);
 
@@ -801,7 +804,7 @@ Patch parse_context_patch(Patch& patch, File& file)
 
 void parse_patch_body(Patch& patch, File& file)
 {
-    if (patch.format == Format::Unified)
+    if (patch.format == Format::Unified || patch.format == Format::Git)
         parse_unified_patch(patch, file);
     else if (patch.format == Format::Context)
         parse_context_patch(patch, file);

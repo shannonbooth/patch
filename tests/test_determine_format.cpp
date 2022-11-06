@@ -51,7 +51,7 @@ index 5047a34..a46866d 100644
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
     Patch::parse_patch_header(patch, patch_file, info, -1);
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
 
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
@@ -78,7 +78,7 @@ rename to another_new
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
     Patch::parse_patch_header(patch, patch_file, info, -1);
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.operation, Patch::Operation::Rename);
     EXPECT_EQ(patch.old_file_path, "new_file");
     EXPECT_EQ(patch.new_file_path, "another_new");
@@ -120,7 +120,7 @@ index 71ac1b5..fc3102f 100644
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
     Patch::parse_patch_header(patch, patch_file, info, -1);
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.operation, Patch::Operation::Rename);
     EXPECT_EQ(patch.old_file_path, "thing");
     EXPECT_EQ(patch.new_file_path, "test");
@@ -172,7 +172,7 @@ HcmV?d00001
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
     Patch::parse_patch_header(patch, patch_file, info, -1);
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.old_file_path, "a.txt");
     EXPECT_EQ(patch.new_file_path, "a.txt");
     EXPECT_EQ(patch.operation, Patch::Operation::Binary);

@@ -405,7 +405,7 @@ rename to "b\nc"
     EXPECT_EQ(patch.operation, Patch::Operation::Rename);
     EXPECT_EQ(patch.hunks.size(), 0);
     EXPECT_EQ(patch.index_file_path, "");
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
 }
 
 TEST(Parser, GitRenameWithStripZero)
@@ -436,7 +436,7 @@ rename to b
     EXPECT_EQ(patch.operation, Patch::Operation::Rename);
     EXPECT_EQ(patch.hunks.size(), 0);
     EXPECT_EQ(patch.index_file_path, "");
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
 }
 
 TEST(Parser, GitChangeMode)
@@ -465,7 +465,7 @@ new mode 100755
     EXPECT_EQ(patch.operation, Patch::Operation::Change);
     EXPECT_EQ(patch.hunks.size(), 0);
     EXPECT_EQ(patch.index_file_path, "");
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.new_file_mode, 0100755);
     EXPECT_EQ(patch.old_file_mode, 0100644);
 }
@@ -484,7 +484,7 @@ new mode 100755
     EXPECT_EQ(patch.operation, Patch::Operation::Change);
     EXPECT_EQ(patch.hunks.size(), 0);
     EXPECT_EQ(patch.index_file_path, "");
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.new_file_mode, 0100755);
     EXPECT_EQ(patch.old_file_mode, 0100644);
 }
@@ -503,7 +503,7 @@ new mode 100644
     EXPECT_EQ(patch.operation, Patch::Operation::Change);
     EXPECT_EQ(patch.hunks.size(), 0);
     EXPECT_EQ(patch.index_file_path, "");
-    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.old_file_mode, 0100755);
     EXPECT_EQ(patch.new_file_mode, 0100644);
 }

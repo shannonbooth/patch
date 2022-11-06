@@ -21,6 +21,7 @@ struct Range {
 enum class Format {
     Context,
     Unified,
+    Git,
     Ed,
     Normal,
     Unknown,

@@ -1845,3 +1845,45 @@ PATCH_TEST(read_only_file_fail)
     const auto new_mode = Patch::filesystem::get_permissions("a");
     EXPECT_TRUE(old_mode == new_mode);
 }
+
+PATCH_TEST(git_swap_files)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+diff --git a/a b/b
+rename from a
+rename to b
+diff --git a/b b/a
+rename from b
+rename to a
+)";
+        file.close();
+    }
+
+    const std::string a_content = "a\nb\nc\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << a_content;
+        file.close();
+    }
+
+    const std::string b_content = "1\n2\n3\n";
+    {
+        Patch::File file("b", std::ios_base::out);
+        file << b_content;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(patching file b (renamed from a)
+patching file a (renamed from b)
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("a", b_content);
+    EXPECT_FILE_EQ("b", a_content);
+}

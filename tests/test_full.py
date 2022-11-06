@@ -54,7 +54,6 @@ class TestPatch(unittest.TestCase):
         self.assertEqual(file_content, content)
 
 
-    @unittest.expectedFailure
     def test_git_swap_files(self):
         ''' test that git patch swapping files is correctly applied '''
         patch = '''\

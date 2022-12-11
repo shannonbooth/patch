@@ -86,7 +86,7 @@ TEST(CmdLine, NoInput)
     EXPECT_EQ(options.patch_file_path, "");
 }
 
-TEST(CmdLine, UnkownInput)
+TEST(CmdLine, UnknownInput)
 {
     const std::vector<const char*> dummy_args {
         "./patch",

@@ -89,17 +89,30 @@ bool CmdLineParser::parse_string(char short_opt, const char* long_opt, std::stri
     return false;
 }
 
+int CmdLineParser::stoi(const std::string& str, const char* long_name)
+{
+    int value;
+    size_t pos;
+
+    try {
+        value = std::stoi(str, &pos);
+    } catch (const std::invalid_argument&) {
+        throw cmdline_parse_error("unable to parse cmdline option '" + str + "' as integer for: " + std::string(long_name));
+    }
+
+    if (pos != str.size())
+        throw cmdline_parse_error(str + " is not a number");
+
+    return value;
+}
+
 bool CmdLineParser::parse_int(char short_opt, const char* long_opt, int& option)
 {
     std::string option_as_str;
     if (!parse_string(short_opt, long_opt, option_as_str))
         return false;
 
-    try {
-        option = std::stoi(option_as_str);
-    } catch (const std::invalid_argument&) {
-        throw cmdline_parse_error("unable to parse cmdline option '" + option_as_str + "' as integer for: " + std::string(long_opt));
-    }
+    option = stoi(option_as_str, long_opt);
 
     return true;
 }

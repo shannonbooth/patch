@@ -52,6 +52,7 @@ public:
 private:
     bool parse_string(char short_opt, const char* long_opt, std::string& option);
     bool parse_int(char short_opt, const char* long_opt, int& option);
+    static int stoi(const std::string& option, const char* long_name);
 
     void parse_long_bool(const std::string& option);
     void parse_short_bool(const std::string& option);

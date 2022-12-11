@@ -356,6 +356,29 @@ TEST(CmdLine, DISABLED_BooleanFollowedByIntegerInSingleArg)
     EXPECT_EQ(options.strip_size, 0);
 }
 
+TEST(CmdLine, LongOptionInteger)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        "--strip=3",
+        nullptr,
+    };
+
+    auto options = parse_cmdline(dummy_args.size() - 1, dummy_args.data());
+    EXPECT_EQ(options.strip_size, 3);
+}
+
+TEST(CmdLine, LongOptionIntegerBadValue)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        "--strip=3p",
+        nullptr,
+    };
+
+    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+}
+
 TEST(CmdLine, BooleanFollowedByIntegerThenAlphaInSingleArg)
 {
     const std::vector<const char*> dummy_args {

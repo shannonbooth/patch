@@ -50,8 +50,8 @@ public:
     const Options& parse();
 
 private:
-    bool parse_string(char short_opt, const char* long_opt, std::string& option);
-    bool parse_int(char short_opt, const char* long_opt, int& option);
+    bool parse_long_string(const char* long_opt, std::string& option);
+    bool parse_long_int(const char* long_opt, int& option);
     static int stoi(const std::string& option, const char* long_name);
 
     void parse_long_bool(const std::string& option);
@@ -61,6 +61,8 @@ private:
     void handle_read_only(const std::string& handling);
     void handle_reject_format(const std::string& format);
 
+    std::string consume_next_argument();
+
     int i { 1 };
     int m_argc { 0 };
     int m_positional_arguments_found { 0 };
@@ -68,6 +70,32 @@ private:
     const char* const* m_argv { nullptr };
     Options m_options;
 
+    struct IntOption {
+        char short_name;
+        const char* long_name;
+        int& value;
+    };
+
+    std::array<IntOption, 2> m_int_options { {
+        { 'p', "--strip", m_options.strip_size },
+        { 'F', "--fuzz", m_options.max_fuzz },
+    } };
+
+    struct StringOption {
+        char short_name;
+        const char* long_name;
+        std::string& value;
+    };
+
+    std::array<StringOption, 7> m_string_options { {
+        { 'i', "--input", m_options.patch_file_path },
+        { 'd', "--directory", m_options.patch_directory_path },
+        { 'D', "--ifdef", m_options.define_macro },
+        { 'o', "--output", m_options.out_file_path },
+        { 'r', "--reject-file", m_options.reject_file_path },
+        { 'B', "--prefix", m_options.backup_prefix },
+        { 'z', "--suffix", m_options.backup_suffix },
+    } };
     struct BoolOption {
         char short_name;
         const char* long_name;

@@ -42,9 +42,18 @@ CmdLine::CmdLine(int argc, const char* const* argv)
 #endif
 }
 
-bool CmdLineParser::parse_string(char short_opt, const char* long_opt, std::string& option)
+std::string CmdLineParser::consume_next_argument()
 {
-    auto parse_value_as_next_arg = [&]() {
+    const char* c = m_argv[i + 1];
+    if (!c)
+        throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
+    ++i;
+    return c;
+}
+
+bool CmdLineParser::parse_long_string(const char* long_opt, std::string& option)
+{
+    auto parse_value_as_next_arg = [&] {
         const char* c = m_argv[i + 1];
         if (!c)
             throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
@@ -52,15 +61,6 @@ bool CmdLineParser::parse_string(char short_opt, const char* long_opt, std::stri
         ++i;
         return true;
     };
-
-    // Check if we've got the short option
-    if (m_argv[i][0] == '-' && m_argv[i][1] == short_opt) {
-        if (m_argv[i][2] == '\0')
-            return parse_value_as_next_arg();
-
-        option = m_argv[i] + 2;
-        return true;
-    }
 
     // Check if the token is equal to the long option.
     const char* argument = m_argv[i];
@@ -106,10 +106,10 @@ int CmdLineParser::stoi(const std::string& str, const char* long_name)
     return value;
 }
 
-bool CmdLineParser::parse_int(char short_opt, const char* long_opt, int& option)
+bool CmdLineParser::parse_long_int(const char* long_opt, int& option)
 {
     std::string option_as_str;
-    if (!parse_string(short_opt, long_opt, option_as_str))
+    if (!parse_long_string(long_opt, option_as_str))
         return false;
 
     option = stoi(option_as_str, long_opt);
@@ -179,23 +179,63 @@ void CmdLineParser::parse_short_bool(const std::string& option_string)
             return true;
         });
 
-        if (matched_option_it == m_bool_options.end())
-            throw cmdline_parse_error("unknown commandline argument " + std::string(1, c));
+        if (matched_option_it != m_bool_options.end())
+            continue;
+
+        auto consume_argument = [&] {
+            // At the end of the option, must be in next argv
+            if (it + 1 == option_string.end())
+                return consume_next_argument();
+
+            // Still more in this option, must be until the end of this string.
+            return std::string(it + 1, option_string.end());
+        };
+
+        for (auto& option : m_int_options) {
+            if (c != option.short_name)
+                continue;
+
+            option.value = stoi(consume_argument(), option.long_name);
+            return;
+        }
+
+        for (auto& option : m_string_options) {
+            if (c != option.short_name)
+                continue;
+
+            option.value = consume_argument();
+            return;
+        }
+
+        throw cmdline_parse_error("unknown commandline argument " + std::string(1, c));
     }
 }
 
 void CmdLineParser::parse_long_bool(const std::string& option_string)
 {
-    auto it = std::find_if(m_bool_options.begin(), m_bool_options.end(), [&](BoolOption& option) {
+    for (auto& option : m_bool_options) {
         if (option_string != option.long_name)
-            return false;
+            continue;
 
         option.enabled = true;
-        return true;
-    });
+        return;
+    }
 
-    if (it == m_bool_options.end())
-        throw cmdline_parse_error("unrecognized option '" + option_string + "'");
+    for (auto& option : m_int_options) {
+        if (!parse_long_int(option.long_name, option.value))
+            continue;
+
+        return;
+    }
+
+    for (auto& option : m_string_options) {
+        if (!parse_long_string(option.long_name, option.value))
+            continue;
+
+        return;
+    }
+
+    throw cmdline_parse_error("unrecognized option '" + option_string + "'");
 }
 
 const Options& CmdLineParser::parse()
@@ -222,44 +262,17 @@ const Options& CmdLineParser::parse()
 
         // By this stage, we know that this arg is some option.
         // Now we need to work out which one it is.
-        if (parse_string('i', "--input", m_options.patch_file_path))
-            continue;
-
-        if (parse_string('d', "--directory", m_options.patch_directory_path))
-            continue;
-
-        if (parse_string('D', "--ifdef", m_options.define_macro))
-            continue;
-
-        if (parse_string('o', "--output", m_options.out_file_path))
-            continue;
-
-        if (parse_string('r', "--reject-file", m_options.reject_file_path))
-            continue;
-
-        if (parse_string('B', "--prefix", m_options.backup_prefix))
-            continue;
-
-        if (parse_string('z', "--suffix", m_options.backup_suffix))
-            continue;
-
-        if (parse_int('p', "--strip", m_options.strip_size))
-            continue;
-
-        if (parse_int('F', "--fuzz", m_options.max_fuzz))
-            continue;
-
-        if (parse_string('\0', "--newline-output", m_buffer)) {
+        if (parse_long_string("--newline-output", m_buffer)) {
             handle_newline_strategy(m_buffer);
             continue;
         }
 
-        if (parse_string('\0', "--read-only", m_buffer)) {
+        if (parse_long_string("--read-only", m_buffer)) {
             handle_read_only(m_buffer);
             continue;
         }
 
-        if (parse_string('\0', "--reject-format", m_buffer)) {
+        if (parse_long_string("--reject-format", m_buffer)) {
             handle_reject_format(m_buffer);
             continue;
         }

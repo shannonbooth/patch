@@ -723,3 +723,28 @@ TEST(Parse, NormalDiffSpaceBeforeNormalCommand)
     EXPECT_EQ(lines.at(0).operation, '+');
     EXPECT_EQ(lines.at(0).line.content, "a");
 }
+
+TEST(Parse, DISABLED_MalformedRangeLineSucceeds)
+{
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
+--- /dev/null	2022-12-24 13:56:41.421181954 +1300
++++ a	2022-12-27 15:23:05.525596290 +1300
+@@ -0,0 +1,1 @
++1
+)");
+    auto patch = Patch::parse_patch(patch_file);
+    const auto& lines = patch.hunks.at(0).lines;
+    EXPECT_EQ(lines.size(), 1);
+    EXPECT_EQ(lines.at(0).operation, '+');
+    EXPECT_EQ(lines.at(0).line.content, "1");
+}
+
+TEST(Parse, MalformedRangeLineFails)
+{
+    Patch::File patch_file = Patch::File::create_temporary_with_content(
+        "--- /dev/null	2022-12-24 13:56:41.421181954 +1300\n"
+        "+++ a	2022-12-27 15:23:05.525596290 +1300\n"
+        "@@ -0,0 +1,1 \n"
+        "+1\n");
+    EXPECT_THROW(Patch::parse_patch(patch_file), std::runtime_error);
+}

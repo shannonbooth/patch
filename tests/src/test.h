@@ -8,6 +8,19 @@
 #include <patch/file.h>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+
+template<class T, typename std::enable_if<!std::is_enum<T> {}>::type* = nullptr>
+void patch_test_error_format(const T& a)
+{
+    std::cerr << a;
+}
+
+template<class T, typename std::enable_if<std::is_enum<T> {}>::type* = nullptr>
+void patch_test_error_format(const T& a)
+{
+    std::cerr << static_cast<typename std::underlying_type<T>::type>(a);
+}
 
 #define EXPECT_TRUE(condition)                            \
     do {                                                  \
@@ -25,22 +38,30 @@
         }                                                  \
     } while (false)
 
-#define EXPECT_NE(lhs, rhs)                                        \
-    do {                                                           \
-        /* NOLINTNEXTLINE(readability-container-size-empty) */     \
-        if ((lhs) == (rhs)) {                                      \
-            std::cerr << "FAIL: " << lhs << " == " << rhs << '\n'; \
-            throw std::runtime_error("Test failed");               \
-        }                                                          \
+#define EXPECT_NE(lhs, rhs)                                    \
+    do {                                                       \
+        /* NOLINTNEXTLINE(readability-container-size-empty) */ \
+        if ((lhs) == (rhs)) {                                  \
+            std::cerr << "FAIL: ";                             \
+            patch_test_error_format(lhs);                      \
+            std::cerr << " == ";                               \
+            patch_test_error_format(rhs);                      \
+            std::cerr << '\n';                                 \
+            throw std::runtime_error("Test failed");           \
+        }                                                      \
     } while (false)
 
-#define EXPECT_EQ(lhs, rhs)                                        \
-    do {                                                           \
-        /* NOLINTNEXTLINE(readability-container-size-empty) */     \
-        if ((lhs) != (rhs)) {                                      \
-            std::cerr << "FAIL: " << lhs << " != " << rhs << '\n'; \
-            throw std::runtime_error("Test failed");               \
-        }                                                          \
+#define EXPECT_EQ(lhs, rhs)                                    \
+    do {                                                       \
+        /* NOLINTNEXTLINE(readability-container-size-empty) */ \
+        if ((lhs) != (rhs)) {                                  \
+            std::cerr << "FAIL: ";                             \
+            patch_test_error_format(lhs);                      \
+            std::cerr << " != ";                               \
+            patch_test_error_format(rhs);                      \
+            std::cerr << '\n';                                 \
+            throw std::runtime_error("Test failed");           \
+        }                                                      \
     } while (false)
 
 #define EXPECT_THROW(statement, expected_exception)                         \

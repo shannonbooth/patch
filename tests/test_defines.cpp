@@ -4,8 +4,8 @@
 #include <patch/applier.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
+#include <patch/test.h>
 #include <sstream>
-#include <test.h>
 
 TEST(defines_add_one_line)
 {

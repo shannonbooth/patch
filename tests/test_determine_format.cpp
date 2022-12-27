@@ -5,8 +5,8 @@
 #include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
+#include <patch/test.h>
 #include <sstream>
-#include <test.h>
 
 TEST(determine_format_unified)
 {

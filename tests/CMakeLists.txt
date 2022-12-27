@@ -10,22 +10,27 @@ if(NOT HAVE_FORKPTY_PTY)
 endif()
 unset(CMAKE_REQUIRED_LIBRARIES)
 
-configure_file(src/config.h.in src/config.h)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
+configure_file(lib/src/config.h.in lib/src/config.h)
 
-add_library(patch_test src/test.cpp)
+add_library(patch_test lib/src/test.cpp)
 target_link_libraries(patch_test PUBLIC patch)
-target_include_directories(patch_test PUBLIC src)
+target_include_directories(patch_test
+  PUBLIC
+    lib/include
+  PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/lib/src
+)
+
 if(WIN32)
-  target_sources(patch_test PRIVATE src/windows_process.cpp)
+  target_sources(patch_test PRIVATE lib/src/windows_process.cpp)
 else()
-  target_sources(patch_test PRIVATE src/unix_process.cpp)
+  target_sources(patch_test PRIVATE lib/src/unix_process.cpp)
 endif()
 
 if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
-  add_executable(test_pty test_pty.cpp src/pty_spawn.cpp)
+  add_executable(test_pty test_pty.cpp lib/src/pty_spawn.cpp)
   target_link_libraries(test_pty PRIVATE patch_test util)
-  target_include_directories(test_pty PRIVATE src)
+  target_include_directories(test_pty PRIVATE lib/src ${CMAKE_CURRENT_BINARY_DIR}/lib/src)
   add_test(NAME Patch.Pty COMMAND test_pty $<TARGET_FILE:sb_patch>)
 endif()
 

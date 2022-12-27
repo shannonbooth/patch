@@ -4,7 +4,7 @@
 #include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/system.h>
-#include <test.h>
+#include <patch/test.h>
 
 TEST(parser_simple)
 {

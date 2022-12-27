@@ -6,7 +6,7 @@
 #include <patch/hunk.h>
 #include <patch/patch.h>
 #include <patch/system.h>
-#include <test.h>
+#include <patch/test.h>
 
 TEST(formatter_change_lines)
 {

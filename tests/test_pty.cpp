@@ -2,8 +2,8 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <array>
-#include <pty_spawn.h>
-#include <test.h>
+#include <patch/pty_spawn.h>
+#include <patch/test.h>
 
 PATCH_TEST(pty_basic)
 {

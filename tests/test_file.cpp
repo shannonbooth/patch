@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/file.h>
+#include <test.h>
 
-TEST(File, GetLineLF)
+TEST(file_get_line_lf)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(
         "first line\n"
@@ -31,7 +31,7 @@ TEST(File, GetLineLF)
     EXPECT_EQ(line, "");
 }
 
-TEST(File, LFMissingAtEndOfFile)
+TEST(file_lf_missing_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(
         "first line\n"
@@ -58,7 +58,7 @@ TEST(File, LFMissingAtEndOfFile)
     EXPECT_EQ(line, "");
 }
 
-TEST(File, NewLineCRLF)
+TEST(file_new_line_crlf)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(
         "first line\r\n"
@@ -85,7 +85,7 @@ TEST(File, NewLineCRLF)
     EXPECT_EQ(line, "");
 }
 
-TEST(File, CRLFMissingAtEndOfFile)
+TEST(file_crlf_missing_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(
         "first line\r\n"
@@ -112,7 +112,7 @@ TEST(File, CRLFMissingAtEndOfFile)
     EXPECT_EQ(line, "");
 }
 
-TEST(File, MixedNewLines)
+TEST(file_mixed_new_lines)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(
         "lf line\n"

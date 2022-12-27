@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <istream>
 #include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
+#include <sstream>
+#include <test.h>
 
-TEST(DetermineFormat, Unified)
+TEST(determine_format_unified)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(--- a.cpp	2022-03-20 12:42:14.665007336 +1300
 +++ b.cpp	2022-03-20 12:42:20.772998512 +1300
@@ -35,7 +36,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, Git)
+TEST(determine_format_git)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(diff --git a/b.cpp b/b.cpp
 index 5047a34..a46866d 100644
@@ -67,7 +68,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, GitExtendedRenameNoHunk)
+TEST(determine_format_git_extended_rename_no_hunk)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(diff --git a/new_file b/another_new
 similarity index 100%
@@ -98,7 +99,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, GitExtendedRenameWithHunk)
+TEST(determine_format_git_extended_rename_with_hunk)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(diff --git a/file b/test
 similarity index 87%
@@ -143,7 +144,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, GitBinary)
+TEST(determine_format_git_binary)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
 From: Shannon Booth <shannon.ml.booth@gmail.com>
@@ -201,7 +202,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, Context)
+TEST(determine_format_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(*** a.cpp	2022-04-03 18:41:54.611014944 +1200
 --- c.cpp	2022-04-03 18:42:00.850801875 +1200
@@ -231,7 +232,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, ContextWithUnifiedRangeInHeader)
+TEST(determine_format_context_with_unified_range_in_header)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 Some text
@@ -274,7 +275,7 @@ The text leading up to this was:
 )");
 }
 
-TEST(DetermineFormat, Normal)
+TEST(determine_format_normal)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3
 > 	return 0;
@@ -289,7 +290,7 @@ TEST(DetermineFormat, Normal)
     EXPECT_EQ(output.str(), "Hmm...  Looks like a normal diff to me...\n");
 }
 
-TEST(DetermineFormat, NormalWithFromAndToFileLines)
+TEST(determine_format_normal_with_from_and_to_file_lines)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(Index: thing
 +++ a.cpp
@@ -319,7 +320,7 @@ The text leading up to this was:
     EXPECT_EQ(patch.old_file_path, "");
 }
 
-TEST(DetermineFormat, LooksLikeNormalCommand)
+TEST(determine_format_looks_like_normal_command)
 {
     Patch::Hunk hunk;
 
@@ -350,7 +351,7 @@ TEST(DetermineFormat, LooksLikeNormalCommand)
     EXPECT_FALSE(Patch::parse_normal_range(hunk, ""));
 }
 
-TEST(DetermineFormat, LooksLikeUnifiedRange)
+TEST(determine_format_looks_like_unified_range)
 {
     Patch::Hunk hunk;
     EXPECT_TRUE(Patch::parse_unified_range(hunk, "@@ -1,3 +1,4 @@"));
@@ -376,7 +377,7 @@ TEST(DetermineFormat, LooksLikeUnifiedRange)
     EXPECT_FALSE(Patch::parse_unified_range(hunk, "@@ -5,1a +9,8 @@"));
 }
 
-TEST(DetermineFormat, StringToUint32)
+TEST(determine_format_string_to_uint32)
 {
     Patch::LineNumber output = 0;
     EXPECT_TRUE((Patch::string_to_line_number("2", output)));

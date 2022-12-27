@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
-#include <iostream>
 #include <patch/hunk.h>
 #include <patch/locator.h>
 #include <patch/patch.h>
 #include <patch/system.h>
 #include <sstream>
+#include <test.h>
 
-TEST(Locator, MatchesIgnoringWhitespace)
+TEST(locator_matches_ignoring_whitespace)
 {
     EXPECT_FALSE(Patch::matches_ignoring_whitespace("c", " c"));
     EXPECT_FALSE(Patch::matches_ignoring_whitespace(" c", "c"));
@@ -40,7 +39,7 @@ TEST(Locator, MatchesIgnoringWhitespace)
     EXPECT_FALSE(Patch::matches_ignoring_whitespace("a b c d", "abcd"));
 }
 
-TEST(Locator, Matches)
+TEST(locator_matches)
 {
     // Matching content, changing newlines.
     EXPECT_TRUE(Patch::matches(Patch::Line("some content", Patch::NewLine::LF), Patch::Line("some content", Patch::NewLine::LF), false));
@@ -62,7 +61,7 @@ TEST(Locator, Matches)
     EXPECT_TRUE(Patch::matches(Patch::Line("some\tcontent", Patch::NewLine::LF), Patch::Line("some content", Patch::NewLine::LF), true));
 }
 
-TEST(Locator, FindsHunkPerfectMatch)
+TEST(locator_finds_hunk_perfect_match)
 {
     const std::vector<Patch::Line> file_content = {
         { "int add(int a, int b)", Patch::NewLine::LF },
@@ -106,7 +105,7 @@ TEST(Locator, FindsHunkPerfectMatch)
     EXPECT_EQ(location.offset, 0);
 }
 
-TEST(Locator, FindsHunkOffsetOneIncrease)
+TEST(locator_finds_hunk_offset_one_increase)
 {
     const std::vector<Patch::Line> file_content = {
         { "int add(int a, int b)", Patch::NewLine::LF },
@@ -151,7 +150,7 @@ TEST(Locator, FindsHunkOffsetOneIncrease)
     EXPECT_EQ(location.offset, 1);
 }
 
-TEST(Locator, FindsHunkOffsetOneDecrease)
+TEST(locator_finds_hunk_offset_one_decrease)
 {
     const std::vector<Patch::Line> file_content = {
         { "int add(int a, int b)", Patch::NewLine::LF },
@@ -195,7 +194,7 @@ TEST(Locator, FindsHunkOffsetOneDecrease)
     EXPECT_EQ(location.offset, -1);
 }
 
-TEST(Locator, FindsHunkUsingFuzzOne)
+TEST(locator_finds_hunk_using_fuzz_one)
 {
     const std::vector<Patch::Line> file_content = {
         { "int main()", Patch::NewLine::LF },
@@ -226,7 +225,7 @@ TEST(Locator, FindsHunkUsingFuzzOne)
     EXPECT_EQ(location.offset, 0);
 }
 
-TEST(Locator, FindsHunkUsingFuzzTwo)
+TEST(locator_finds_hunk_using_fuzz_two)
 {
     const std::vector<Patch::Line> file_content = {
         { "int main() // some comment for first fuzz", Patch::NewLine::LF },
@@ -258,7 +257,7 @@ TEST(Locator, FindsHunkUsingFuzzTwo)
     EXPECT_EQ(location.offset, 0);
 }
 
-TEST(Locator, AsymmetricHunkLessSuffix)
+TEST(locator_asymmetric_hunk_less_suffix)
 {
     // Test a behavioral difference found by testing against GNU patch
     // where a patch with less trailing context was only resulting in a
@@ -292,7 +291,7 @@ TEST(Locator, AsymmetricHunkLessSuffix)
     EXPECT_EQ(location.offset, 0);
 }
 
-TEST(Locator, RemoveFileDoesNotApply)
+TEST(LocatorRemoveFileDoesNotApply)
 {
     // Test a regression where a removal patch was always returning
     // successfully located due to the locator incorrectly assuming
@@ -320,7 +319,7 @@ TEST(Locator, RemoveFileDoesNotApply)
     EXPECT_FALSE(location.is_found());
 }
 
-TEST(Locator, DISABLED_AdditionPatchIsLocatingAgainstPreexistingFile)
+TEST(DISABLED_addition_patch_is_locating_against_preexisting_file)
 {
     // Test a behavioral difference found by testing against GNU patch
     // for the situation that a patch that is creating a file already
@@ -349,7 +348,7 @@ TEST(Locator, DISABLED_AdditionPatchIsLocatingAgainstPreexistingFile)
     EXPECT_FALSE(location.is_found());
 }
 
-TEST(Locator, HunkAtBeginningOfFileIsOffset)
+TEST(locator_hunk_at_beginning_of_file_is_offset)
 {
     // Test a behavioral difference that was noticed between this implementation
     // and GNU patch where GNU patch seems to be saying that fuzz needs to be

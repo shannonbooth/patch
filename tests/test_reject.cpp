@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/applier.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
 #include <sstream>
+#include <test.h>
 
-TEST(Reject, UnifiedRemoveLineNoOffset)
+TEST(reject_unified_remove_line_no_offset)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- 1	2022-04-24 12:58:33.100280281 +1200
@@ -57,7 +57,7 @@ TEST(Reject, UnifiedRemoveLineNoOffset)
 )");
 }
 
-TEST(Reject, ContextRemoveLine)
+TEST(reject_context_remove_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** a.cpp	2022-04-25 10:47:18.388073392 +1200
@@ -101,7 +101,7 @@ TEST(Reject, ContextRemoveLine)
 )");
 }
 
-TEST(Reject, OffsetInPreviousHunkAppliesToReject)
+TEST(reject_offset_in_previous_hunk_applies_to_reject)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main.cpp	2022-06-07 20:08:07.722685716 +1200

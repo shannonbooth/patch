@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/system.h>
+#include <test.h>
 
-TEST(Parser, Simple)
+TEST(parser_simple)
 {
     Patch::Hunk hunk;
     Patch::parse_unified_range(hunk, "@@ -1,3 +1,4 @@");
@@ -16,7 +16,7 @@ TEST(Parser, Simple)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 4);
 }
 
-TEST(Parser, OneContextLine)
+TEST(parser_one_context_line)
 {
     Patch::Hunk hunk;
     Patch::parse_unified_range(hunk, "@@ -2,0 +3 @@");
@@ -26,7 +26,7 @@ TEST(Parser, OneContextLine)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
 }
 
-TEST(Parser, NormalDiffHeader)
+TEST(parser_normal_diff_header)
 {
     Patch::Hunk hunk;
     EXPECT_TRUE(Patch::parse_normal_range(hunk, "2a3"));
@@ -36,13 +36,13 @@ TEST(Parser, NormalDiffHeader)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
 }
 
-TEST(Parser, NormalDiffSimple)
+TEST(parser_normal_diff_simple)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3
 > 	return 0;
 )");
     auto patch = Patch::parse_patch(patch_file, Patch::Format::Normal);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.format, Patch::Format::Normal);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(hunk.old_file_range.number_of_lines, 0);
@@ -51,7 +51,7 @@ TEST(Parser, NormalDiffSimple)
     EXPECT_EQ(hunk.new_file_range.start_line, 3);
 }
 
-TEST(Parser, OneHunk)
+TEST(parser_one_hunk)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/only_add_return.cpp
@@ -64,7 +64,7 @@ TEST(Parser, OneHunk)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.format, Patch::Format::Unified);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "only_add_return.cpp");
@@ -75,7 +75,7 @@ TEST(Parser, OneHunk)
     EXPECT_EQ(hunk.new_file_range.start_line, 1);
 }
 
-TEST(Parser, OneHunkAddNoContext)
+TEST(parser_one_hunk_add_no_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-08-21 14:35:06.584242817 +1200
@@ -86,7 +86,7 @@ TEST(Parser, OneHunkAddNoContext)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Unified);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_path, "main2.cpp");
@@ -96,7 +96,7 @@ TEST(Parser, OneHunkAddNoContext)
     EXPECT_EQ(hunk.new_file_range.start_line, 3);
 }
 
-TEST(Parser, OneUnifiedHunkRemoveNoContext)
+TEST(parser_one_unified_hunk_remove_no_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-01-04 13:29:06.799930273 +1300
@@ -107,7 +107,7 @@ TEST(Parser, OneUnifiedHunkRemoveNoContext)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Unified);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_path, "main2.cpp");
@@ -117,7 +117,7 @@ TEST(Parser, OneUnifiedHunkRemoveNoContext)
     EXPECT_EQ(hunk.new_file_range.start_line, 2);
 }
 
-TEST(Parser, OneContextHunkNoContextRemoveLine)
+TEST(parser_one_context_hunk_no_context_remove_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** main1.cpp	2022-01-04 13:29:06.799930273 +1300
@@ -130,7 +130,7 @@ TEST(Parser, OneContextHunkNoContextRemoveLine)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Context);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_path, "main2.cpp");
@@ -140,7 +140,7 @@ TEST(Parser, OneContextHunkNoContextRemoveLine)
     EXPECT_EQ(hunk.new_file_range.start_line, 2);
 }
 
-TEST(Parser, OneContextHunkNoContextAddLine)
+TEST(parser_one_context_hunk_no_context_add_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** main1.cpp	2022-08-21 14:35:06.584242817 +1200
@@ -153,7 +153,7 @@ TEST(Parser, OneContextHunkNoContextAddLine)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Context);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_path, "main2.cpp");
@@ -163,7 +163,7 @@ TEST(Parser, OneContextHunkNoContextAddLine)
     EXPECT_EQ(hunk.new_file_range.start_line, 3);
 }
 
-TEST(Parser, UnifiedNoNewlineAtEndOfFile)
+TEST(parser_unified_no_newline_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- no_newline1.cpp	2022-01-30 13:57:31.173528027 +1300
@@ -179,7 +179,7 @@ TEST(Parser, UnifiedNoNewlineAtEndOfFile)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Unified);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "no_newline1.cpp");
     EXPECT_EQ(patch.new_file_path, "no_newline2.cpp");
@@ -191,7 +191,7 @@ TEST(Parser, UnifiedNoNewlineAtEndOfFile)
     EXPECT_EQ(patch.hunks.back().lines.back().line.newline, Patch::NewLine::None);
 }
 
-TEST(Parser, NoNewlineInMiddleOfHunk)
+TEST(parser_no_newline_in_middle_of_hunk)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a.cpp	2022-05-08 14:42:02.601222193 +1200
@@ -206,14 +206,14 @@ TEST(Parser, NoNewlineInMiddleOfHunk)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
 
     const auto& lines = patch.hunks.back().lines;
-    ASSERT_EQ(lines.size(), 5);
+    EXPECT_EQ(lines.size(), 5);
     EXPECT_EQ(lines[2].line.newline, Patch::NewLine::None);
 }
 
-TEST(Parser, ContextNoNewlineAtEndOfFileBothSides)
+TEST(parser_context_no_newline_at_end_of_file_both_sides)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** no_newline1.cpp	2022-01-31 12:26:11.209333486 +1300
@@ -235,7 +235,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileBothSides)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Context);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "no_newline1.cpp");
     EXPECT_EQ(patch.new_file_path, "no_newline2.cpp");
@@ -244,7 +244,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileBothSides)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 4);
     EXPECT_EQ(hunk.new_file_range.start_line, 1);
 
-    ASSERT_EQ(hunk.lines.size(), 5);
+    EXPECT_EQ(hunk.lines.size(), 5);
 
     // Both the last from and to line have no newline at the end of the file.
     const auto& last_line = hunk.lines.back();
@@ -253,7 +253,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileBothSides)
     EXPECT_EQ(last_line.line.newline, Patch::NewLine::None);
 }
 
-TEST(Parser, SpaceSeparatedFilenameAndTimestamp)
+TEST(parser_space_separated_filename_and_timestamp)
 {
     // Inspired by an editor which mangled the tabs to spaces and patch was not
     // parsing this correctly. GNU patch could parse this correctly, so now
@@ -267,7 +267,7 @@ TEST(Parser, SpaceSeparatedFilenameAndTimestamp)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Unified);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "file");
     EXPECT_EQ(patch.new_file_path, "file");
@@ -277,7 +277,7 @@ TEST(Parser, SpaceSeparatedFilenameAndTimestamp)
     EXPECT_EQ(hunk.new_file_range.start_line, 0);
 }
 
-TEST(Parser, ContextNoNewlineAtEndOfFileOneSide)
+TEST(parser_context_no_newline_at_end_of_file_one_side)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** no_newline1.cpp	2022-01-31 12:26:11.209333486 +1300
@@ -298,7 +298,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileOneSide)
 
     auto patch = Patch::parse_patch(patch_file);
     EXPECT_EQ(patch.format, Patch::Format::Context);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     auto& hunk = patch.hunks[0];
     EXPECT_EQ(patch.old_file_path, "no_newline1.cpp");
     EXPECT_EQ(patch.new_file_path, "no_newline2.cpp");
@@ -307,7 +307,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileOneSide)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 4);
     EXPECT_EQ(hunk.new_file_range.start_line, 1);
 
-    ASSERT_EQ(hunk.lines.size(), 6);
+    EXPECT_EQ(hunk.lines.size(), 6);
 
     // The last 'from-line' has no newline for it's last line.
     const auto& last_old_line = hunk.lines[3];
@@ -322,7 +322,7 @@ TEST(Parser, ContextNoNewlineAtEndOfFileOneSide)
     EXPECT_EQ(last_to_line.line.newline, Patch::NewLine::LF);
 }
 
-TEST(Parser, TwoHunks)
+TEST(parser_two_hunks)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/only_add_return.cpp
@@ -347,12 +347,12 @@ TEST(Parser, TwoHunks)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 2);
+    EXPECT_EQ(patch.hunks.size(), 2);
     EXPECT_EQ(patch.old_file_path, "only_add_return.cpp");
     EXPECT_EQ(patch.new_file_path, "only_add_return.cpp");
 }
 
-TEST(Parser, OneHunkNameInTimestamp)
+TEST(parser_one_hunk_name_in_timestamp)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-06-06 10:19:48.246931254 +1200
@@ -365,12 +365,12 @@ TEST(Parser, OneHunkNameInTimestamp)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_path, "main2.cpp");
 }
 
-TEST(Parser, GitDiffSimple)
+TEST(parser_git_diff_simple)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/main.cpp b/main.cpp
@@ -385,12 +385,12 @@ index 5047a34..905869d 100644
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.old_file_path, "main.cpp");
     EXPECT_EQ(patch.new_file_path, "main.cpp");
 }
 
-TEST(Parser, GitRenameWithQuotedFilename)
+TEST(parser_Git_rename_with_quoted_filename)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/a.txt "b/b\nc"
@@ -408,7 +408,7 @@ rename to "b\nc"
     EXPECT_EQ(patch.format, Patch::Format::Git);
 }
 
-TEST(Parser, GitRenameWithStripZero)
+TEST(parser_git_rename_with_strip_zero)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 From 89629b257f091dd0ff78509ca0ad626089defaa7 Mon Sep 17 00:00:00 2001
@@ -439,7 +439,7 @@ rename to b
     EXPECT_EQ(patch.format, Patch::Format::Git);
 }
 
-TEST(Parser, GitChangeMode)
+TEST(parser_Git_change_mode)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 From e8e9fc10f0915e2dfa02db34cce97aa7e66b4d61 Mon Sep 17 00:00:00 2001
@@ -470,7 +470,7 @@ new mode 100755
     EXPECT_EQ(patch.old_file_mode, 0100644);
 }
 
-TEST(Parser, GitChangeModeWithTabbedFilename)
+TEST(parser_Git_change_mode_with_tabbed_filename)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git "a/some\tname" "b/some\tname"
@@ -489,7 +489,7 @@ new mode 100755
     EXPECT_EQ(patch.old_file_mode, 0100644);
 }
 
-TEST(Parser, GitChangeModeWithSpacedFilename)
+TEST(parser_git_change_mode_with_spaced_filename)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/with space b/with space
@@ -508,7 +508,7 @@ new mode 100644
     EXPECT_EQ(patch.new_file_mode, 0100644);
 }
 
-TEST(Parser, TestWithTabInTimestampHeader)
+TEST(parser_test_with_tab_in_timestamp_header)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- ../test/main2.cpp	2022-06-06 15:47:25.948226810 +1200
@@ -521,7 +521,7 @@ TEST(Parser, TestWithTabInTimestampHeader)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.old_file_path, "main2.cpp");
     EXPECT_EQ(patch.new_file_path, "main1.cpp");
     EXPECT_EQ(patch.hunks[0].old_file_range.number_of_lines, 4);
@@ -531,7 +531,7 @@ TEST(Parser, TestWithTabInTimestampHeader)
     EXPECT_FALSE(patch.hunks[0].lines.empty());
 }
 
-TEST(Parser, WithIndexHeader)
+TEST(parser_with_index_header)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 Index: test/Makefile
@@ -551,7 +551,7 @@ Index: test/Makefile
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.old_file_path, "Makefile");
     EXPECT_EQ(patch.new_file_path, "Makefile");
     EXPECT_EQ(patch.index_file_path, "Makefile");
@@ -562,7 +562,7 @@ Index: test/Makefile
     EXPECT_FALSE(patch.hunks[0].lines.empty());
 }
 
-TEST(Parser, ContextDiff)
+TEST(parser_context_diff)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** test1_input.cpp	2022-06-19 17:14:31.743526819 +1200
@@ -577,7 +577,7 @@ TEST(Parser, ContextDiff)
 )");
 
     auto patch = Patch::parse_patch(patch_file);
-    ASSERT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks.size(), 1);
     EXPECT_EQ(patch.old_file_path, "test1_input.cpp");
     EXPECT_EQ(patch.new_file_path, "test1_output.cpp");
     EXPECT_EQ(patch.hunks[0].old_file_range.number_of_lines, 3);
@@ -587,7 +587,7 @@ TEST(Parser, ContextDiff)
     EXPECT_FALSE(patch.hunks[0].lines.empty());
 }
 
-TEST(Parse, ComplexContextDiff)
+TEST(parser_complex_context_diff)
 {
     std::string patch_file_str = R"(
 *** main2.cpp	2022-06-26 15:43:50.743831486 +1200
@@ -616,7 +616,7 @@ TEST(Parse, ComplexContextDiff)
   }
 --- 14,17 ----
 )";
-    ASSERT_EQ(patch_file_str.size(), 447); // keep trailing whitespace
+    EXPECT_EQ(patch_file_str.size(), 447); // keep trailing whitespace
     Patch::File patch_file = Patch::File::create_temporary_with_content(patch_file_str);
 
     auto patch = Patch::parse_patch(patch_file);
@@ -626,7 +626,7 @@ TEST(Parse, ComplexContextDiff)
     EXPECT_EQ(patch.new_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_time, "2022-06-26 15:44:36.224763329 +1200");
 
-    ASSERT_EQ(patch.hunks.size(), 2);
+    EXPECT_EQ(patch.hunks.size(), 2);
 
     EXPECT_EQ(patch.hunks[0].old_file_range.number_of_lines, 12);
     EXPECT_EQ(patch.hunks[0].old_file_range.start_line, 5);
@@ -641,7 +641,7 @@ TEST(Parse, ComplexContextDiff)
     EXPECT_FALSE(patch.hunks[1].lines.empty());
 }
 
-TEST(Parse, ContextDiffWithChangedLine)
+TEST(parser_context_diff_with_changed_line)
 {
     std::string patch_file_str = R"(
 *** main1.cpp	2022-07-14 17:02:39.711744921 +1200
@@ -671,7 +671,7 @@ TEST(Parse, ContextDiffWithChangedLine)
 ! 	return 1;
   }
 )";
-    ASSERT_EQ(patch_file_str.size(), 364); // keep trailing whitespace
+    EXPECT_EQ(patch_file_str.size(), 364); // keep trailing whitespace
 
     Patch::File patch_file = Patch::File::create_temporary_with_content(patch_file_str);
     auto patch = Patch::parse_patch(patch_file);
@@ -679,7 +679,7 @@ TEST(Parse, ContextDiffWithChangedLine)
     EXPECT_EQ(patch.old_file_path, "main1.cpp");
     EXPECT_EQ(patch.new_file_path, "main2.cpp");
 
-    ASSERT_EQ(patch.hunks.size(), 2);
+    EXPECT_EQ(patch.hunks.size(), 2);
 
     EXPECT_EQ(patch.hunks[0].old_file_range.number_of_lines, 3);
     EXPECT_EQ(patch.hunks[0].old_file_range.start_line, 1);
@@ -694,7 +694,7 @@ TEST(Parse, ContextDiffWithChangedLine)
     EXPECT_FALSE(patch.hunks[1].lines.empty());
 }
 
-TEST(Parse, NormalDiffNoNewLineAtEndOfFile)
+TEST(parser_normal_diff_no_new_line_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(0a1
 > a
@@ -710,7 +710,7 @@ TEST(Parse, NormalDiffNoNewLineAtEndOfFile)
     EXPECT_EQ(lines.at(0).line.newline, Patch::NewLine::None);
 }
 
-TEST(Parse, NormalDiffSpaceBeforeNormalCommand)
+TEST(parser_normal_diff_space_before_normal_command)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 0a1
@@ -724,7 +724,7 @@ TEST(Parse, NormalDiffSpaceBeforeNormalCommand)
     EXPECT_EQ(lines.at(0).line.content, "a");
 }
 
-TEST(Parse, DISABLED_MalformedRangeLineSucceeds)
+TEST(DISABLED_parser_malformed_range_line_succeeds)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- /dev/null	2022-12-24 13:56:41.421181954 +1300
@@ -739,7 +739,7 @@ TEST(Parse, DISABLED_MalformedRangeLineSucceeds)
     EXPECT_EQ(lines.at(0).line.content, "1");
 }
 
-TEST(Parse, MalformedRangeLineFails)
+TEST(parser_malformed_range_line_fails)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(
         "--- /dev/null	2022-12-24 13:56:41.421181954 +1300\n"

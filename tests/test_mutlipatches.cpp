@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/hunk.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
+#include <test.h>
 
-TEST(MultiPatchParse, UnifiedPatchSimple)
+TEST(multi_patch_parse_unified_patch_simple)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
@@ -61,7 +61,7 @@ diff -u -r a/main2.cpp b/main2.cpp
     }
 }
 
-TEST(MultiPatchParse, UnifiedPatchSimpleWithoutHeader)
+TEST(multi_patch_parse_unified_patch_simple_without_header)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
@@ -115,7 +115,7 @@ diff -u -r a/main1.cpp b/main1.cpp
     }
 }
 
-TEST(MultiPatchParse, UnifiedPatchWithEmptySpaceHeaderAfterFirstPatch)
+TEST(multi_patch_parse_unified_patch_with_empty_space_header_after_first_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
@@ -172,7 +172,7 @@ actually part of the header of the following patch :^)
     }
 }
 
-TEST(MultiPatchParse, UnifiedPatchFollowedByContextPatch)
+TEST(multi_patch_parse_unified_patch_followed_by_context_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -u -r a/main1.cpp b/main1.cpp
@@ -240,7 +240,7 @@ diff -rc a/main2.cpp b/main2.cpp
     }
 }
 
-TEST(MultiPatchParse, ContextDiffSimple)
+TEST(multi_patch_parse_context_diff_simple)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff -rc a/main1.cpp b/main1.cpp
@@ -300,7 +300,7 @@ diff -rc a/main2.cpp b/main2.cpp
     }
 }
 
-TEST(MultiPatchParse, GitDiffRenameAndCopy)
+TEST(multi_patch_parse_git_diff_rename_and_copy)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/b b/copy

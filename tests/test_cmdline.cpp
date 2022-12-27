@@ -2,10 +2,10 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <array>
-#include <gtest/gtest.h>
 #include <patch/cmdline.h>
 #include <patch/options.h>
 #include <stdexcept>
+#include <test.h>
 
 static Patch::Options parse_cmdline(size_t argc, const char* const* argv)
 {
@@ -13,7 +13,7 @@ static Patch::Options parse_cmdline(size_t argc, const char* const* argv)
     return cmdline.parse();
 }
 
-TEST(CmdLine, InputFileLongArg)
+TEST(cmdline_input_file_long_arg)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -28,7 +28,7 @@ TEST(CmdLine, InputFileLongArg)
     EXPECT_FALSE(options.show_help);
 }
 
-TEST(CmdLine, InputFileShortArg)
+TEST(cmdline_input_file_short_arg)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -43,7 +43,7 @@ TEST(CmdLine, InputFileShortArg)
     EXPECT_FALSE(options.show_help);
 }
 
-TEST(CmdLine, InputFileShortArgCombined)
+TEST(cmdline_input_file_short_arg_combined)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -57,7 +57,7 @@ TEST(CmdLine, InputFileShortArgCombined)
     EXPECT_FALSE(options.show_help);
 }
 
-TEST(CmdLine, ShowHelp)
+TEST(cmdline_show_help)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -73,7 +73,7 @@ TEST(CmdLine, ShowHelp)
     EXPECT_TRUE(options.show_help);
 }
 
-TEST(CmdLine, NoInput)
+TEST(cmdline_no_input)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -86,7 +86,7 @@ TEST(CmdLine, NoInput)
     EXPECT_EQ(options.patch_file_path, "");
 }
 
-TEST(CmdLine, UnknownInput)
+TEST(cmdline_unknown_input)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -97,7 +97,7 @@ TEST(CmdLine, UnknownInput)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, FlagWithMissingOperand)
+TEST(cmdline_flag_with_missing_operand)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -108,7 +108,7 @@ TEST(CmdLine, FlagWithMissingOperand)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, WithStripOptionSet)
+TEST(cmdline_with_strip_option_set)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -123,7 +123,7 @@ TEST(CmdLine, WithStripOptionSet)
     EXPECT_EQ(options.strip_size, 5);
 }
 
-TEST(CmdLine, StripOptionSetCombined)
+TEST(cmdline_strip_option_set_combined)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -137,7 +137,7 @@ TEST(CmdLine, StripOptionSetCombined)
     EXPECT_EQ(options.strip_size, 2);
 }
 
-TEST(CmdLine, WithInvalidStripOptionSet)
+TEST(cmdline_with_invalid_strip_option_set)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -149,7 +149,7 @@ TEST(CmdLine, WithInvalidStripOptionSet)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, WithLongOptSetWithEqualSign)
+TEST(cmdline_with_long_opt_set_with_equal_sign)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -163,7 +163,7 @@ TEST(CmdLine, WithLongOptSetWithEqualSign)
     EXPECT_EQ(options.patch_file_path, "new_file.txt");
 }
 
-TEST(CmdLine, WithLongOptSetWithEqualSignAndNoArgument)
+TEST(cmdline_with_long_opt_set_with_equal_sign_and_no_argument)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -174,7 +174,7 @@ TEST(CmdLine, WithLongOptSetWithEqualSignAndNoArgument)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, WithMultipleShortOptions)
+TEST(cmdline_with_multiple_short_options)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -189,7 +189,7 @@ TEST(CmdLine, WithMultipleShortOptions)
     EXPECT_FALSE(options.show_help);
 }
 
-TEST(CmdLine, UnknownShortArgument)
+TEST(cmdline_unknown_short_argument)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -200,7 +200,7 @@ TEST(CmdLine, UnknownShortArgument)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, PosixPositionalArgument)
+TEST(cmdline_posix_positional_argument)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -213,7 +213,7 @@ TEST(CmdLine, PosixPositionalArgument)
     EXPECT_EQ(options.file_to_patch, "/usr/bin/getsubmodules.py");
 }
 
-TEST(CmdLine, GnuSupportedFileToPatch)
+TEST(cmdline_gnu_supported_file_to_patch)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -228,7 +228,7 @@ TEST(CmdLine, GnuSupportedFileToPatch)
     EXPECT_EQ(options.patch_file_path, "fix_get_submodules.patch");
 }
 
-TEST(CmdLine, GnuExtensionSupportPositionalArgsAtBeginning)
+TEST(cmdline_gnu_extension_support_positional_args_at_beginning)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -245,7 +245,7 @@ TEST(CmdLine, GnuExtensionSupportPositionalArgsAtBeginning)
     EXPECT_TRUE(options.verbose);
 }
 
-TEST(CmdLine, UsingDelimeter)
+TEST(cmdline_using_delimeter)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -263,7 +263,7 @@ TEST(CmdLine, UsingDelimeter)
     EXPECT_TRUE(options.interpret_as_context);
 }
 
-TEST(CmdLine, UsingDashAsStdin)
+TEST(cmdline_using_dash_as_stdin)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -281,7 +281,7 @@ TEST(CmdLine, UsingDashAsStdin)
     EXPECT_TRUE(options.interpret_as_context);
 }
 
-TEST(CmdLine, ShortAttachedOptionFollowedByAnotherOption)
+TEST(cmdline_short_attached_option_followed_by_another_option)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -301,7 +301,7 @@ TEST(CmdLine, ShortAttachedOptionFollowedByAnotherOption)
     EXPECT_EQ(options.newline_output, Patch::Options::NewlineOutput::Native);
 }
 
-TEST(CmdLine, PartialLongOption)
+TEST(cmdline_partial_long_option)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -312,7 +312,7 @@ TEST(CmdLine, PartialLongOption)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, NewlineHandlingLF)
+TEST(cmdline_newline_handling_lF)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -326,7 +326,7 @@ TEST(CmdLine, NewlineHandlingLF)
     EXPECT_EQ(options.newline_output, Patch::Options::NewlineOutput::LF);
 }
 
-TEST(CmdLine, TooManyOperands)
+TEST(cmdline_too_many_operands)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
@@ -342,7 +342,7 @@ TEST(CmdLine, TooManyOperands)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, BooleanFollowedByIntegerInSingleArg)
+TEST(cmdline_boolean_followed_by_integer_in_single_arg)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -356,7 +356,7 @@ TEST(CmdLine, BooleanFollowedByIntegerInSingleArg)
     EXPECT_EQ(options.strip_size, 0);
 }
 
-TEST(CmdLine, LongOptionInteger)
+TEST(cmdline_long_option_integer)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -368,7 +368,7 @@ TEST(CmdLine, LongOptionInteger)
     EXPECT_EQ(options.strip_size, 3);
 }
 
-TEST(CmdLine, LongOptionIntegerBadValue)
+TEST(cmdline_long_option_integer_bad_value)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -379,7 +379,7 @@ TEST(CmdLine, LongOptionIntegerBadValue)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, BooleanFollowedByIntegerThenAlphaInSingleArg)
+TEST(cmdline_boolean_followed_by_integer_then_alpha_in_single_arg)
 {
     const std::vector<const char*> dummy_args {
         "patch",
@@ -390,7 +390,7 @@ TEST(CmdLine, BooleanFollowedByIntegerThenAlphaInSingleArg)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, BooleanFollowedByStringInSingleArg)
+TEST(cmdline_boolean_followed_by_string_in_single_arg)
 {
     const std::vector<const char*> dummy_args {
         "patch",

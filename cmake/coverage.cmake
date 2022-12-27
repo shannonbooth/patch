@@ -19,7 +19,7 @@ function(add_coverage_target)
     message(FATAL_ERROR "gcovr not found, unable to run code coverage!")
   endif()
 
-  set(EXCLUDES --exclude ${FETCHCONTENT_BASE_DIR} --exclude ${PROJECT_SOURCE_DIR}/tests --exclude ${PROJECT_BINARY_DIR}/CMakeFiles)
+  set(EXCLUDES --exclude ${PROJECT_SOURCE_DIR}/tests --exclude ${PROJECT_BINARY_DIR}/CMakeFiles)
   add_custom_target(coverage
     COMMAND ${GCOVR} --exclude-unreachable-branches --xml coverage.xml -r ${PROJECT_SOURCE_DIR} ${EXCLUDES}
     COMMAND ${CMAKE_COMMAND} -E make_directory coverage

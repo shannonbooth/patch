@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/file.h>
 #include <patch/formatter.h>
 #include <patch/hunk.h>
 #include <patch/patch.h>
 #include <patch/system.h>
+#include <test.h>
 
-TEST(Formatter, ChangeLines)
+TEST(formatter_change_lines)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -53,7 +53,7 @@ TEST(Formatter, ChangeLines)
 )");
 }
 
-TEST(Formatter, AddLine)
+TEST(formatter_add_line)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -88,7 +88,7 @@ TEST(Formatter, AddLine)
 )");
 }
 
-TEST(Formatter, RemoveLine)
+TEST(formatter_remove_line)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -123,7 +123,7 @@ TEST(Formatter, RemoveLine)
 )");
 }
 
-TEST(Formatter, MoreComplexPatch)
+TEST(formatter_more_complex_patch)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -178,7 +178,7 @@ TEST(Formatter, MoreComplexPatch)
 )");
 }
 
-TEST(Formatter, OnlyOneLineInFromFiles)
+TEST(formatter_only_one_line_in_from_files)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -204,7 +204,7 @@ TEST(Formatter, OnlyOneLineInFromFiles)
 )");
 }
 
-TEST(Formatter, NoNewLineAtEndOfFileBothSides)
+TEST(formatter_no_new_line_at_end_of_file_both_sides)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -242,7 +242,7 @@ TEST(Formatter, NoNewLineAtEndOfFileBothSides)
 )");
 }
 
-TEST(Formatter, NoNewLineAtEndOfFileForToFile)
+TEST(formatter_no_new_line_at_end_of_file_for_to_file)
 {
     Patch::Hunk hunk;
     hunk.lines = {
@@ -285,7 +285,7 @@ TEST(Formatter, NoNewLineAtEndOfFileForToFile)
 )");
 }
 
-TEST(Formatter, NoNewLineAtEndOfFileForOldFile)
+TEST(formatter_no_new_line_at_end_of_file_for_old_file)
 {
     Patch::Hunk hunk;
     hunk.lines = {

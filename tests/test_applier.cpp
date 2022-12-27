@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/applier.h>
 #include <patch/options.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
 #include <sstream>
+#include <test.h>
 
-TEST(Applier, AddOnelinePatch)
+TEST(applier_add_oneline_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/only_add_return.cpp
@@ -44,7 +44,7 @@ TEST(Applier, AddOnelinePatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, AddOnelineNormalPatch)
+TEST(applier_add_oneline_normal_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3
 >     return 0;
@@ -74,7 +74,7 @@ TEST(Applier, AddOnelineNormalPatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, RemoveOnelineNormalPatch)
+TEST(applier_remove_oneline_normal_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(3d2
 <     return 0;
@@ -104,7 +104,7 @@ TEST(Applier, RemoveOnelineNormalPatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, AddOnelinePatchNoContext)
+TEST(applier_add_oneline_patch_no_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-08-21 14:35:06.584242817 +1200
@@ -137,7 +137,7 @@ TEST(Applier, AddOnelinePatchNoContext)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, RemoveOnelinePatchTwoLinesContext)
+TEST(applier_remove_oneline_patch_two_lines_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main2.cpp	2022-09-18 14:35:15.923795777 +1200
@@ -172,7 +172,7 @@ TEST(Applier, RemoveOnelinePatchTwoLinesContext)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, MySecond1234567)
+TEST(applier_my_second1234567)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- 1	2022-09-18 15:44:34.900520464 +1200
@@ -217,7 +217,7 @@ TEST(Applier, MySecond1234567)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, TwoLinesRemovedWithNoContext)
+TEST(applier_two_lines_removed_with_no_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- /tmp/1.txt	2022-09-19 11:24:50.305063358 +1200
@@ -261,7 +261,7 @@ TEST(Applier, TwoLinesRemovedWithNoContext)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, TwoLinesAddedWithNoContext)
+TEST(applier_two_lines_added_with_no_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- /tmp/2.txt	2022-09-19 11:24:40.285189350 +1200
@@ -305,7 +305,7 @@ TEST(Applier, TwoLinesAddedWithNoContext)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, My1234567)
+TEST(applier_my_1234567)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(--- 1	2022-09-18 15:44:34.900520464 +1200
 +++ 2	2022-09-18 15:44:50.319066119 +1200
@@ -347,7 +347,7 @@ TEST(Applier, My1234567)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, RemoveOnelinePatchNoContext)
+TEST(applier_remove_oneline_patch_no_context)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main2.cpp	2022-08-21 14:19:47.509561172 +1200
@@ -380,7 +380,7 @@ TEST(Applier, RemoveOnelinePatchNoContext)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, AddTwoLinePatch)
+TEST(applier_add_two_line_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/add_two_lines.cpp
@@ -418,7 +418,7 @@ TEST(Applier, AddTwoLinePatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, RemoveOneLinePatch)
+TEST(applier_remove_one_line_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/only_remove_return.cpp
@@ -454,7 +454,7 @@ TEST(Applier, RemoveOneLinePatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, RemoveTwoLinePatch)
+TEST(applier_remove_two_line_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/remove_two_lines.cpp
@@ -492,7 +492,7 @@ TEST(Applier, RemoveTwoLinePatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, NormalDiffRemoveTwoLines)
+TEST(applier_normal_diff_remove_two_lines)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(3d2
 < 3
@@ -533,7 +533,7 @@ TEST(Applier, NormalDiffRemoveTwoLines)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, NormalDiffChangeLines)
+TEST(applier_normal_diff_change_lines)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(3c3
 < 3
@@ -577,7 +577,7 @@ TEST(Applier, NormalDiffChangeLines)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, AddOneRemoveOnePatch)
+TEST(applier_add_one_remove_one_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/add_one_remove_one.cpp
@@ -615,7 +615,7 @@ TEST(Applier, AddOneRemoveOnePatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, MultipleHunks)
+TEST(applier_multiple_hunks)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/two_hunks1.cpp	2022-06-06 10:24:53.821028961 +1200
@@ -679,7 +679,7 @@ int subtract(int x, int y)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, MultipleHunksWithoutSpace)
+TEST(applier_multiple_hunks_without_space)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a/two_hunks1.cpp	2022-06-06 10:24:53.821028961 +1200
@@ -743,7 +743,7 @@ int subtract(int x, int y)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, ContextPatch)
+TEST(applier_context_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** test1_input.cpp	2022-06-19 17:14:31.743526819 +1200
@@ -781,7 +781,7 @@ TEST(Applier, ContextPatch)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, MultiContextPatch)
+TEST(applier_multi_context_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** main2.cpp	2022-06-26 15:43:50.743831486 +1200
@@ -869,7 +869,7 @@ int main()
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, ContextDiffWithChangedLine)
+TEST(applier_context_diff_with_changed_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 *** main1.cpp	2022-07-14 17:02:39.711744921 +1200
@@ -940,7 +940,7 @@ int main()
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, ContextDiffWithOffset)
+TEST(applier_context_diff_with_offset)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- a.c	2022-10-23 21:25:13.856207590 +1300
@@ -981,7 +981,7 @@ int main()
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, UnifiedDiffWithOnlyWhitespaceChangeIgnoreWhitespace)
+TEST(applier_unified_diff_with_only_whitespace_change_ignore_whitespace)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-01-29 16:51:39.296260776 +1300
@@ -1022,7 +1022,7 @@ TEST(Applier, UnifiedDiffWithOnlyWhitespaceChangeIgnoreWhitespace)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, UnifiedDiffIgnoreWhitespace)
+TEST(applier_unified_diff_ignore_whitespace)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main1.cpp	2022-01-29 16:54:43.523734499 +1300
@@ -1068,7 +1068,7 @@ TEST(Applier, UnifiedDiffIgnoreWhitespace)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, UnifiedDiffMissingNewLineAtEndOfFile)
+TEST(applier_unified_diff_missing_new_line_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- no_newline1.cpp	2022-01-30 13:57:31.173528027 +1300
@@ -1105,7 +1105,7 @@ TEST(Applier, UnifiedDiffMissingNewLineAtEndOfFile)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, SingleLineAdditionFromEmptyFile)
+TEST(applier_single_line_addition_from_empty_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- test1	2022-05-28 16:16:12.487752844 +1200
@@ -1132,7 +1132,7 @@ TEST(Applier, SingleLineAdditionFromEmptyFile)
     EXPECT_EQ(reject_writer.rejected_hunks(), 0);
 }
 
-TEST(Applier, MultiLineAdditionFromEmptyFile)
+TEST(applier_multi_line_addition_from_empty_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- /dev/null	2022-05-27 08:55:08.788091961 +1200

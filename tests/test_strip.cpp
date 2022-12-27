@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/parser.h>
 #include <stdexcept>
+#include <test.h>
 
-TEST(Strip, Linuxpath)
+TEST(strip_linux_path)
 {
     EXPECT_EQ(Patch::strip_path("/my/path/for/test/purposes.txt", 0), "/my/path/for/test/purposes.txt");
     EXPECT_EQ(Patch::strip_path("/my/path/for/test/purposes.txt", 1), "my/path/for/test/purposes.txt");
@@ -16,7 +16,7 @@ TEST(Strip, Linuxpath)
     EXPECT_EQ(Patch::strip_path("/my/path/for/test/purposes.txt", 6), "");
 }
 
-TEST(Strip, RemoveAllLeading)
+TEST(strip_remove_all_leading)
 {
     EXPECT_EQ(Patch::strip_path("/my/path/for/test/purposes.txt", -1), "purposes.txt");
     EXPECT_EQ(Patch::strip_path("/usr/bin/cat", -1), "cat");
@@ -27,13 +27,13 @@ TEST(Strip, RemoveAllLeading)
     EXPECT_EQ(Patch::strip_path("2018\\thing.xlsx", -1), "thing.xlsx");
 }
 
-TEST(Strip, MultiSlash)
+TEST(strip_multi_slash)
 {
     EXPECT_EQ(Patch::strip_path("/path//with/multiple/slashes", 3), "multiple/slashes");
     EXPECT_EQ(Patch::strip_path("C:\\Users\\\\Shannon\\another.txt", 2), "Shannon\\another.txt");
 }
 
-TEST(Strip, Windowspath)
+TEST(strip_windows_path)
 {
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 0), "C:\\Users\\Shannon\\test.pdf");
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 1), "Users\\Shannon\\test.pdf");
@@ -42,7 +42,7 @@ TEST(Strip, Windowspath)
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 4), "");
 }
 
-TEST(Strip, QuotedStringBad)
+TEST(strip_quoted_string_bad)
 {
     std::string path;
 
@@ -51,7 +51,7 @@ TEST(Strip, QuotedStringBad)
     EXPECT_THROW(Patch::parse_file_line("\"badEscapeChar\\l\"", -1, path), std::invalid_argument);
 }
 
-TEST(Strip, QuotedStringGood)
+TEST(strip_quoted_string_good)
 {
     std::string path;
     std::string timestamp;
@@ -100,7 +100,7 @@ TEST(Strip, QuotedStringGood)
     EXPECT_EQ(timestamp, "\t2022-06-10 19:28:11.018017172 +1200"); // NOTE: in future we may want leading space trimmed.
 }
 
-TEST(Strip, StandardPath)
+TEST(strip_standard_path)
 {
     std::string path;
     std::string timestamp;

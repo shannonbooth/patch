@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <gtest/gtest.h>
 #include <patch/applier.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
 #include <sstream>
+#include <test.h>
 
-TEST(Defines, AddOneLine)
+TEST(defines_add_one_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file.cpp	2022-01-30 13:57:31.173528027 +1300
@@ -47,7 +47,7 @@ TEST(Defines, AddOneLine)
     EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
-TEST(Defines, RemoveOneLine)
+TEST(defines_remove_one_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file.cpp	2022-01-30 13:57:31.173528027 +1300
@@ -88,7 +88,7 @@ TEST(Defines, RemoveOneLine)
     EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
-TEST(Defines, Mix)
+TEST(defines_mix)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- file.cpp	2022-01-30 13:57:31.173528027 +1300
@@ -132,7 +132,7 @@ TEST(Defines, Mix)
     EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
-TEST(Defines, ChangesAtEndOfFile)
+TEST(defines_changes_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- main.cpp	2022-02-20 19:38:33.685996435 +1300
@@ -178,7 +178,7 @@ TEST(Defines, ChangesAtEndOfFile)
     EXPECT_EQ(reject.read_all_as_string(), "");
 }
 
-TEST(Defines, MoreComplexPatch)
+TEST(defines_more_complex_patch)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 --- add.cpp	2022-02-26 13:15:21.624635744 +1300

@@ -342,7 +342,7 @@ TEST(CmdLine, TooManyOperands)
     EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
 }
 
-TEST(CmdLine, DISABLED_BooleanFollowedByIntegerInSingleArg)
+TEST(CmdLine, BooleanFollowedByIntegerInSingleArg)
 {
     const std::vector<const char*> dummy_args {
         "patch",

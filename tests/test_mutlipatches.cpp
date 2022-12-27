@@ -28,22 +28,36 @@ diff -u -r a/main2.cpp b/main2.cpp
 )");
     {
         auto patch1 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch1.hunks.size(), 1);
-        ASSERT_EQ(patch1.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch1.hunks[0].lines[0], " int main()");
-        EXPECT_EQ(patch1.hunks[0].lines[1], " {");
-        EXPECT_EQ(patch1.hunks[0].lines[2], "+	return 0;");
-        EXPECT_EQ(patch1.hunks[0].lines[3], " }");
+        EXPECT_EQ(patch1.hunks.size(), 1);
+
+        const auto& lines = patch1.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "int main()");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "{");
+        EXPECT_EQ(lines[1].operation, ' ');
+        EXPECT_EQ(lines[2].line.content, "	return 0;");
+        EXPECT_EQ(lines[2].operation, '+');
+        EXPECT_EQ(lines[3].line.content, "}");
+        EXPECT_EQ(lines[3].operation, ' ');
     }
 
     {
         auto patch2 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch2.hunks.size(), 1);
-        ASSERT_EQ(patch2.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch2.hunks[0].lines[0], " //");
-        EXPECT_EQ(patch2.hunks[0].lines[1], "-// just a main with a comment");
-        EXPECT_EQ(patch2.hunks[0].lines[2], "-//");
-        EXPECT_EQ(patch2.hunks[0].lines[3], "+// just a main with a changed comment");
+        EXPECT_EQ(patch2.hunks.size(), 1);
+
+        const auto& lines = patch2.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "//");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "// just a main with a comment");
+        EXPECT_EQ(lines[1].operation, '-');
+        EXPECT_EQ(lines[2].line.content, "//");
+        EXPECT_EQ(lines[2].operation, '-');
+        EXPECT_EQ(lines[3].line.content, "// just a main with a changed comment");
+        EXPECT_EQ(lines[3].operation, '+');
     }
 }
 
@@ -68,22 +82,36 @@ diff -u -r a/main1.cpp b/main1.cpp
 )");
     {
         auto patch1 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch1.hunks.size(), 1);
-        ASSERT_EQ(patch1.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch1.hunks[0].lines[0], " int main()");
-        EXPECT_EQ(patch1.hunks[0].lines[1], " {");
-        EXPECT_EQ(patch1.hunks[0].lines[2], "+	return 0;");
-        EXPECT_EQ(patch1.hunks[0].lines[3], " }");
+        EXPECT_EQ(patch1.hunks.size(), 1);
+
+        const auto& lines = patch1.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "int main()");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "{");
+        EXPECT_EQ(lines[1].operation, ' ');
+        EXPECT_EQ(lines[2].line.content, "	return 0;");
+        EXPECT_EQ(lines[2].operation, '+');
+        EXPECT_EQ(lines[3].line.content, "}");
+        EXPECT_EQ(lines[3].operation, ' ');
     }
 
     {
         auto patch2 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch2.hunks.size(), 1);
-        ASSERT_EQ(patch2.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch2.hunks[0].lines[0], " //");
-        EXPECT_EQ(patch2.hunks[0].lines[1], "-// just a main with a comment");
-        EXPECT_EQ(patch2.hunks[0].lines[2], "-//");
-        EXPECT_EQ(patch2.hunks[0].lines[3], "+// just a main with a changed comment");
+        EXPECT_EQ(patch2.hunks.size(), 1);
+
+        const auto& lines = patch2.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "//");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "// just a main with a comment");
+        EXPECT_EQ(lines[1].operation, '-');
+        EXPECT_EQ(lines[2].line.content, "//");
+        EXPECT_EQ(lines[2].operation, '-');
+        EXPECT_EQ(lines[3].line.content, "// just a main with a changed comment");
+        EXPECT_EQ(lines[3].operation, '+');
     }
 }
 
@@ -111,22 +139,36 @@ actually part of the header of the following patch :^)
 )");
     {
         auto patch1 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch1.hunks.size(), 1);
-        ASSERT_EQ(patch1.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch1.hunks[0].lines[0], " int main()");
-        EXPECT_EQ(patch1.hunks[0].lines[1], " {");
-        EXPECT_EQ(patch1.hunks[0].lines[2], "+	return 0;");
-        EXPECT_EQ(patch1.hunks[0].lines[3], " }");
+        EXPECT_EQ(patch1.hunks.size(), 1);
+
+        const auto lines = patch1.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "int main()");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "{");
+        EXPECT_EQ(lines[1].operation, ' ');
+        EXPECT_EQ(lines[2].line.content, "	return 0;");
+        EXPECT_EQ(lines[2].operation, '+');
+        EXPECT_EQ(lines[3].line.content, "}");
+        EXPECT_EQ(lines[3].operation, ' ');
     }
 
     {
         auto patch2 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch2.hunks.size(), 1);
-        ASSERT_EQ(patch2.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch2.hunks[0].lines[0], " //");
-        EXPECT_EQ(patch2.hunks[0].lines[1], "-// just a main with a comment");
-        EXPECT_EQ(patch2.hunks[0].lines[2], "-//");
-        EXPECT_EQ(patch2.hunks[0].lines[3], "+// just a main with a changed comment");
+        EXPECT_EQ(patch2.hunks.size(), 1);
+
+        const auto& lines = patch2.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "//");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "// just a main with a comment");
+        EXPECT_EQ(lines[1].operation, '-');
+        EXPECT_EQ(lines[2].line.content, "//");
+        EXPECT_EQ(lines[2].operation, '-');
+        EXPECT_EQ(lines[3].line.content, "// just a main with a changed comment");
+        EXPECT_EQ(lines[3].operation, '+');
     }
 }
 
@@ -155,12 +197,19 @@ diff -rc a/main2.cpp b/main2.cpp
 )");
     {
         auto patch1 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch1.hunks.size(), 1);
-        ASSERT_EQ(patch1.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch1.hunks[0].lines[0], " int main()");
-        EXPECT_EQ(patch1.hunks[0].lines[1], " {");
-        EXPECT_EQ(patch1.hunks[0].lines[2], "+	return 0;");
-        EXPECT_EQ(patch1.hunks[0].lines[3], " }");
+        EXPECT_EQ(patch1.hunks.size(), 1);
+
+        const auto& lines = patch1.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "int main()");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "{");
+        EXPECT_EQ(lines[1].operation, ' ');
+        EXPECT_EQ(lines[2].line.content, "	return 0;");
+        EXPECT_EQ(lines[2].operation, '+');
+        EXPECT_EQ(lines[3].line.content, "}");
+        EXPECT_EQ(lines[3].operation, ' ');
     }
 
     // This doesn't work as the determination of the patch format will
@@ -175,12 +224,19 @@ diff -rc a/main2.cpp b/main2.cpp
     // There may be a more generic way of handling this?
     {
         auto patch2 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch2.hunks.size(), 1);
-        ASSERT_EQ(patch2.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch2.hunks[0].lines[0], " //");
-        EXPECT_EQ(patch2.hunks[0].lines[1], "-// just a main with a comment");
-        EXPECT_EQ(patch2.hunks[0].lines[2], "-//");
-        EXPECT_EQ(patch2.hunks[0].lines[3], "+// just a main with a changed comment");
+        EXPECT_EQ(patch2.hunks.size(), 1);
+
+        const auto& lines = patch2.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "//");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "// just a main with a comment");
+        EXPECT_EQ(lines[1].operation, '-');
+        EXPECT_EQ(lines[2].line.content, "//");
+        EXPECT_EQ(lines[2].operation, '-');
+        EXPECT_EQ(lines[3].line.content, "// just a main with a changed comment");
+        EXPECT_EQ(lines[3].operation, '+');
     }
 }
 
@@ -211,22 +267,36 @@ diff -rc a/main2.cpp b/main2.cpp
 )");
     {
         auto patch1 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch1.hunks.size(), 1);
-        ASSERT_EQ(patch1.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch1.hunks[0].lines[0], " int main()");
-        EXPECT_EQ(patch1.hunks[0].lines[1], " {");
-        EXPECT_EQ(patch1.hunks[0].lines[2], "+	return 0;");
-        EXPECT_EQ(patch1.hunks[0].lines[3], " }");
+        EXPECT_EQ(patch1.hunks.size(), 1);
+
+        const auto& lines = patch1.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "int main()");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "{");
+        EXPECT_EQ(lines[1].operation, ' ');
+        EXPECT_EQ(lines[2].line.content, "	return 0;");
+        EXPECT_EQ(lines[2].operation, '+');
+        EXPECT_EQ(lines[3].line.content, "}");
+        EXPECT_EQ(lines[3].operation, ' ');
     }
 
     {
         auto patch2 = Patch::parse_patch(patch_file);
-        ASSERT_EQ(patch2.hunks.size(), 1);
-        ASSERT_EQ(patch2.hunks[0].lines.size(), 4);
-        EXPECT_EQ(patch2.hunks[0].lines[0], " //");
-        EXPECT_EQ(patch2.hunks[0].lines[1], "-// just a main with a comment");
-        EXPECT_EQ(patch2.hunks[0].lines[2], "-//");
-        EXPECT_EQ(patch2.hunks[0].lines[3], "+// just a main with a changed comment");
+        EXPECT_EQ(patch2.hunks.size(), 1);
+
+        const auto& lines = patch2.hunks[0].lines;
+        EXPECT_EQ(lines.size(), 4);
+
+        EXPECT_EQ(lines[0].line.content, "//");
+        EXPECT_EQ(lines[0].operation, ' ');
+        EXPECT_EQ(lines[1].line.content, "// just a main with a comment");
+        EXPECT_EQ(lines[1].operation, '-');
+        EXPECT_EQ(lines[2].line.content, "//");
+        EXPECT_EQ(lines[2].operation, '-');
+        EXPECT_EQ(lines[3].line.content, "// just a main with a changed comment");
+        EXPECT_EQ(lines[3].operation, '+');
     }
 }
 

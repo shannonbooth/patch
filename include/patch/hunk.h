@@ -75,16 +75,6 @@ struct PatchLine {
     Line line;
 };
 
-inline bool operator==(const PatchLine& lhs, const std::string& rhs)
-{
-    return lhs.operation + lhs.line.content == rhs;
-}
-
-inline bool operator==(const std::string& lhs, const PatchLine& rhs)
-{
-    return lhs == rhs.operation + rhs.line.content;
-}
-
 struct Hunk {
     Range old_file_range;
     Range new_file_range;

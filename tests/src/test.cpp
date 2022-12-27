@@ -155,6 +155,13 @@ void register_test(std::string name, std::function<void(const char*)> test_funct
     runner().register_test(std::move(name), std::move(test_function));
 }
 
+void register_test(std::string name, const std::function<void()>& test_function)
+{
+    runner().register_test(std::move(name), [=](const char*) {
+        test_function();
+    });
+}
+
 int main(int argc, const char* const* argv)
 {
     auto& r = runner();

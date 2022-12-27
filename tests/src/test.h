@@ -55,6 +55,7 @@
         EXPECT_EQ(file_data, rhs);                                                                                \
     } while (false)
 
+void register_test(std::string name, const std::function<void()>& test);
 void register_test(std::string name, std::function<void(const char*)> test);
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -75,3 +76,16 @@ void register_test(std::string name, std::function<void(const char*)> test);
     };                                                                  \
     static const TEST_REGISTER_HELPER(name) TEST_REGISTER_HELPER(name); \
     static void TEST_FUNCTION_NAME(name)(const char* patch_path)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TEST(name)                                                      \
+    static void TEST_FUNCTION_NAME(name)();                             \
+    struct TEST_REGISTER_HELPER(name) {                                 \
+        TEST_REGISTER_HELPER(name)                                      \
+        ()                                                              \
+        {                                                               \
+            register_test(#name, TEST_FUNCTION_NAME(name));             \
+        }                                                               \
+    };                                                                  \
+    static const TEST_REGISTER_HELPER(name) TEST_REGISTER_HELPER(name); \
+    static void TEST_FUNCTION_NAME(name)()

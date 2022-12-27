@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <patch/process.h>
 #include <patch/system.h>
-#include <process.h>
 #include <stdexcept>
 #include <system_error>
 #include <windows.h>

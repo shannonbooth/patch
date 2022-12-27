@@ -5,8 +5,8 @@
 #include <patch/options.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
+#include <patch/test.h>
 #include <sstream>
-#include <test.h>
 
 TEST(applier_add_oneline_patch)
 {

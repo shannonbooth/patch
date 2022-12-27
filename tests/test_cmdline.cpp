@@ -4,8 +4,8 @@
 #include <array>
 #include <patch/cmdline.h>
 #include <patch/options.h>
+#include <patch/test.h>
 #include <stdexcept>
-#include <test.h>
 
 static Patch::Options parse_cmdline(size_t argc, const char* const* argv)
 {

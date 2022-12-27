@@ -5,9 +5,9 @@
 #include <config.h>
 #include <cstdlib>
 #include <patch/file.h>
+#include <patch/pty_spawn.h>
 #include <patch/system.h>
 #include <poll.h>
-#include <pty_spawn.h>
 #include <stdexcept>
 #include <system_error>
 #include <unistd.h>

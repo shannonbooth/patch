@@ -2,7 +2,7 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
-#include <test.h>
+#include <patch/test.h>
 
 TEST(file_get_line_lf)
 {

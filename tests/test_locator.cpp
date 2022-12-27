@@ -5,8 +5,8 @@
 #include <patch/locator.h>
 #include <patch/patch.h>
 #include <patch/system.h>
+#include <patch/test.h>
 #include <sstream>
-#include <test.h>
 
 TEST(locator_matches_ignoring_whitespace)
 {

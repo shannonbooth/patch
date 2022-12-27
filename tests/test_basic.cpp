@@ -2,9 +2,9 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
+#include <patch/process.h>
 #include <patch/system.h>
-#include <process.h>
-#include <test.h>
+#include <patch/test.h>
 
 PATCH_TEST(basic)
 {

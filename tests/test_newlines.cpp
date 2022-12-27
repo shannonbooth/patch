@@ -2,8 +2,8 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
-#include <process.h>
-#include <test.h>
+#include <patch/process.h>
+#include <patch/test.h>
 
 PATCH_TEST(both_patch_and_input_as_crlf_output_keep)
 {

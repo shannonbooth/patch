@@ -43,6 +43,17 @@
         }                                                          \
     } while (false)
 
+#define EXPECT_THROW(statement, expected_exception)                         \
+    try {                                                                   \
+        (statement);                                                        \
+    } catch (const expected_exception&) {                                   \
+        /* nothing to do */                                                 \
+    } catch (...) {                                                         \
+        std::cerr << "FAIL: " #statement " throws an exception of type "    \
+                  << #expected_exception ", but threw a different type.\n"; \
+        throw std::runtime_error("Test failed");                            \
+    }
+
 #define EXPECT_FILE_EQ(file, rhs)                                                         \
     do {                                                                                  \
         const auto file_data = Patch::File(file, std::ios_base::in).read_all_as_string(); \

@@ -2,6 +2,7 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/system.h>
+#include <patch/utils.h>
 #include <test.h>
 
 class Test {
@@ -25,6 +26,14 @@ public:
     const std::string& name() const { return m_name; }
 
     bool run(const char* patch_path);
+
+    enum class ExpectedResult {
+        Pass,
+        Disabled,
+        ExpectedFail,
+    };
+
+    ExpectedResult expected_result() const;
 
 private:
     std::function<void(const char*)> m_test_function;
@@ -56,6 +65,12 @@ void Test::tear_down()
 
 bool Test::run(const char* patch_path)
 {
+    const auto expected = expected_result();
+    if (expected == ExpectedResult::Disabled) {
+        std::cout << m_name << " DISABLED\n";
+        return true;
+    }
+
     bool success = true;
 
     setup();
@@ -63,14 +78,29 @@ bool Test::run(const char* patch_path)
     try {
         test(patch_path);
     } catch (const std::exception& e) {
-        std::cerr << e.what() << '\n';
-        std::cerr << m_name << " FAILED!\n";
-        success = false;
+        if (expected == ExpectedResult::ExpectedFail) {
+            std::cout << m_name << " XFAIL\n";
+        } else {
+            std::cerr << e.what() << '\n';
+            std::cerr << m_name << " FAILED!\n";
+            success = false;
+        }
     }
 
     tear_down();
 
     return success;
+}
+
+Test::ExpectedResult Test::expected_result() const
+{
+    if (Patch::starts_with(m_name, "DISABLED_"))
+        return ExpectedResult::Disabled;
+
+    if (Patch::starts_with(m_name, "XFAIL_"))
+        return ExpectedResult::ExpectedFail;
+
+    return ExpectedResult::Pass;
 }
 
 class TestRunner {

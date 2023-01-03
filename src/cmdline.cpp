@@ -29,7 +29,7 @@ struct Option {
     HasArgument has_argument;
 };
 
-const std::array<Option, 24> s_switches { {
+const std::array<Option, 25> s_switches { {
     { 'B', "--prefix", HasArgument::Yes },
     { 'D', "--ifdef", HasArgument::Yes },
     { 'F', "--fuzz", HasArgument::Yes },
@@ -47,6 +47,7 @@ const std::array<Option, 24> s_switches { {
     { 'o', "--output", HasArgument::Yes },
     { 'p', "--strip", HasArgument::Yes },
     { 'r', "--reject-file", HasArgument::Yes },
+    { 'u', "--unified", HasArgument::No },
     { 'v', "--version", HasArgument::No },
     { 'z', "--suffix", HasArgument::Yes },
     { CHAR_MAX + 1, "--newline-output", HasArgument::Yes },
@@ -337,6 +338,9 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         break;
     case 'r':
         m_options.reject_file_path = value;
+        break;
+    case 'u':
+        m_options.interpret_as_unified = true;
         break;
     case 'v':
         m_options.show_version = true;

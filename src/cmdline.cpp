@@ -53,15 +53,6 @@ std::string CmdLineParser::consume_next_argument()
 
 bool CmdLineParser::parse_long_string(const char* long_opt, std::string& option)
 {
-    auto parse_value_as_next_arg = [&] {
-        const char* c = m_argv[i + 1];
-        if (!c)
-            throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
-        option = c;
-        ++i;
-        return true;
-    };
-
     // Check if the token is equal to the long option.
     const char* argument = m_argv[i];
     while (*long_opt && *argument) {
@@ -72,8 +63,10 @@ bool CmdLineParser::parse_long_string(const char* long_opt, std::string& option)
     }
 
     // If we're at the end of the long option - the operand must be in the next position.
-    if (*argument == '\0')
-        return parse_value_as_next_arg();
+    if (*argument == '\0') {
+        option = consume_next_argument();
+        return true;
+    }
 
     // Otherwise, if we're at the end of the argument and the next character in the argument is a '='
     // then the operand must be whatever is after the = in the argument.

@@ -129,6 +129,7 @@ bool TestRunner::run_test(const char* patch_path, const char* test_name)
             return test.run(patch_path);
     }
 
+    std::cerr << "Unable to find test " << test_name << '\n';
     return false;
 }
 

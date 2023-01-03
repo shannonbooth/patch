@@ -27,8 +27,7 @@ TEST(determine_format_unified)
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a unified diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |--- a.cpp	2022-03-20 12:42:14.665007336 +1300
 |+++ b.cpp	2022-03-20 12:42:20.772998512 +1300
@@ -57,8 +56,7 @@ index 5047a34..a46866d 100644
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a unified diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |diff --git a/b.cpp b/b.cpp
 |index 5047a34..a46866d 100644
@@ -88,8 +86,7 @@ rename to another_new
     Patch::print_header_info(patch_file, info, output);
 
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a unified diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |diff --git a/new_file b/another_new
 |similarity index 100%
@@ -130,8 +127,7 @@ index 71ac1b5..fc3102f 100644
     Patch::print_header_info(patch_file, info, output);
 
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a unified diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |diff --git a/file b/test
 |similarity index 87%
@@ -182,8 +178,7 @@ HcmV?d00001
     Patch::print_header_info(patch_file, info, output);
 
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a unified diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |From f933cb15f717a43ef1961d797874ca4a5650ff08 Mon Sep 17 00:00:00 2001
 |From: Shannon Booth <shannon.ml.booth@gmail.com>
@@ -223,8 +218,7 @@ TEST(determine_format_context)
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a context diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |*** a.cpp	2022-04-03 18:41:54.611014944 +1200
 |--- c.cpp	2022-04-03 18:42:00.850801875 +1200
@@ -262,8 +256,7 @@ Some text
     std::cout << "----------------------------------------------------------------\n";
 
     EXPECT_EQ(output.str(),
-        R"(Hmm...  Looks like a context diff to me...
-The text leading up to this was:
+        R"(The text leading up to this was:
 --------------------------
 |
 |Some text
@@ -287,7 +280,7 @@ TEST(determine_format_normal)
     EXPECT_EQ(patch.format, Patch::Format::Normal);
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
-    EXPECT_EQ(output.str(), "Hmm...  Looks like a normal diff to me...\n");
+    EXPECT_EQ(output.str(), "");
 }
 
 TEST(determine_format_normal_with_from_and_to_file_lines)
@@ -306,8 +299,7 @@ TEST(determine_format_normal_with_from_and_to_file_lines)
     EXPECT_EQ(patch.format, Patch::Format::Normal);
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
-    EXPECT_EQ(output.str(), R"(Hmm...  Looks like a normal diff to me...
-The text leading up to this was:
+    EXPECT_EQ(output.str(), R"(The text leading up to this was:
 --------------------------
 |Index: thing
 |+++ a.cpp

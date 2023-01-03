@@ -234,7 +234,7 @@ static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, con
     }
 
     // Otherwise we need to the user whether we should reverse it.
-    if (check_with_user(" Assume -R?", out, Default::False))
+    if (check_with_user("  Assume -R?", out, Default::False))
         return ReverseHandling::Reverse;
 
     if (check_with_user("Apply anyway?", out, Default::False))

@@ -27,7 +27,6 @@ namespace Patch {
 void print_header_info(File& patch, const PatchHeaderInfo& header_info, std::ostream& out)
 {
     patch.seekg(header_info.patch_start);
-    out << "Hmm...  Looks like a " << to_string(header_info.format) << " diff to me...\n";
 
     if (header_info.lines_till_first_hunk > 1) {
         out << "The text leading up to this was:\n"
@@ -376,6 +375,14 @@ int process_patch(const Options& options)
             out << "File " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ": git binary diffs are not supported.\n";
             had_failure = true;
             continue;
+        }
+
+        if (options.verbose)
+            out << "Hmm...  Looks like a " << to_string(info.format) << " diff to me...\n";
+
+        if (file_to_patch.empty()) {
+            out << "can't find file to patch at input line " << info.lines_till_first_hunk
+                << "\nPerhaps you should have used the -p or --strip option?\n";
         }
 
         if (options.verbose || file_to_patch.empty())

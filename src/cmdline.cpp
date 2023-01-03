@@ -2,8 +2,9 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
+#include <array>
+#include <climits>
 #include <cstring>
-#include <new>
 #include <patch/cmdline.h>
 #include <patch/options.h>
 #include <patch/system.h>
@@ -14,6 +15,48 @@
 #endif
 
 namespace Patch {
+
+namespace {
+
+enum class HasArgument {
+    Yes,
+    No,
+};
+
+struct Option {
+    int short_name;
+    const char* long_name;
+    HasArgument has_argument;
+};
+
+const std::array<Option, 24> s_switches { {
+    { 'B', "--prefix", HasArgument::Yes },
+    { 'D', "--ifdef", HasArgument::Yes },
+    { 'F', "--fuzz", HasArgument::Yes },
+    { 'N', "--forward", HasArgument::No },
+    { 'R', "--reverse", HasArgument::No },
+    { 'b', "--backup", HasArgument::No },
+    { 'c', "--context", HasArgument::No },
+    { 'd', "--directory", HasArgument::Yes },
+    { 'e', "--ed", HasArgument::No },
+    { 'f', "--force", HasArgument::No },
+    { 'h', "--help", HasArgument::No },
+    { 'i', "--input", HasArgument::Yes },
+    { 'l', "--ignore-whitespace", HasArgument::No },
+    { 'n', "--normal", HasArgument::No },
+    { 'o', "--output", HasArgument::Yes },
+    { 'p', "--strip", HasArgument::Yes },
+    { 'r', "--reject-file", HasArgument::Yes },
+    { 'v', "--version", HasArgument::No },
+    { 'z', "--suffix", HasArgument::Yes },
+    { CHAR_MAX + 1, "--newline-output", HasArgument::Yes },
+    { CHAR_MAX + 2, "--read-only", HasArgument::Yes },
+    { CHAR_MAX + 3, "--reject-format", HasArgument::Yes },
+    { CHAR_MAX + 4, "--verbose", HasArgument::No },
+    { CHAR_MAX + 5, "--dry-run", HasArgument::No },
+} };
+
+} // namespace
 
 CmdLine::CmdLine(int argc, const char* const* argv)
 #ifndef _WIN32
@@ -99,17 +142,6 @@ int CmdLineParser::stoi(const std::string& str, const char* long_name)
     return value;
 }
 
-bool CmdLineParser::parse_long_int(const char* long_opt, int& option)
-{
-    std::string option_as_str;
-    if (!parse_long_string(long_opt, option_as_str))
-        return false;
-
-    option = stoi(option_as_str, long_opt);
-
-    return true;
-}
-
 void CmdLineParser::parse_operand()
 {
     // We only support two positional arguments.
@@ -160,20 +192,10 @@ void CmdLineParser::handle_reject_format(const std::string& format)
         throw cmdline_parse_error("unrecognized reject format " + format);
 }
 
-void CmdLineParser::parse_short_bool(const std::string& option_string)
+void CmdLineParser::parse_short_option(const std::string& option_string)
 {
     for (auto it = option_string.begin() + 1; it != option_string.end(); ++it) {
         char c = *it;
-        auto matched_option_it = std::find_if(m_bool_options.begin(), m_bool_options.end(), [&](BoolOption& option) {
-            if (c != option.short_name)
-                return false;
-
-            option.enabled = true;
-            return true;
-        });
-
-        if (matched_option_it != m_bool_options.end())
-            continue;
 
         auto consume_argument = [&] {
             // At the end of the option, must be in next argv
@@ -184,47 +206,41 @@ void CmdLineParser::parse_short_bool(const std::string& option_string)
             return std::string(it + 1, option_string.end());
         };
 
-        for (auto& option : m_int_options) {
+        bool should_continue = false;
+
+        for (const auto& option : s_switches) {
             if (c != option.short_name)
                 continue;
 
-            option.value = stoi(consume_argument(), option.long_name);
-            return;
+            if (option.has_argument == HasArgument::Yes) {
+                process_option(option.short_name, consume_argument());
+                return;
+            }
+
+            process_option(option.short_name, "");
+            should_continue = true;
         }
 
-        for (auto& option : m_string_options) {
-            if (c != option.short_name)
-                continue;
-
-            option.value = consume_argument();
-            return;
-        }
+        if (should_continue)
+            continue;
 
         throw cmdline_parse_error("unknown commandline argument " + std::string(1, c));
     }
 }
 
-void CmdLineParser::parse_long_bool(const std::string& option_string)
+void CmdLineParser::parse_long_option(const std::string& option_string)
 {
-    for (auto& option : m_bool_options) {
-        if (option_string != option.long_name)
-            continue;
-
-        option.enabled = true;
-        return;
-    }
-
-    for (auto& option : m_int_options) {
-        if (!parse_long_int(option.long_name, option.value))
-            continue;
-
-        return;
-    }
-
-    for (auto& option : m_string_options) {
-        if (!parse_long_string(option.long_name, option.value))
-            continue;
-
+    for (const auto& option : s_switches) {
+        if (option.has_argument == HasArgument::Yes) {
+            std::string value;
+            if (!parse_long_string(option.long_name, value))
+                continue;
+            process_option(option.short_name, value);
+        } else {
+            if (option_string != option.long_name)
+                continue;
+            process_option(option.short_name, "");
+        }
         return;
     }
 
@@ -255,32 +271,97 @@ const Options& CmdLineParser::parse()
 
         // By this stage, we know that this arg is some option.
         // Now we need to work out which one it is.
-        if (parse_long_string("--newline-output", m_buffer)) {
-            handle_newline_strategy(m_buffer);
-            continue;
-        }
-
-        if (parse_long_string("--read-only", m_buffer)) {
-            handle_read_only(m_buffer);
-            continue;
-        }
-
-        if (parse_long_string("--reject-format", m_buffer)) {
-            handle_reject_format(m_buffer);
-            continue;
-        }
-
         std::string option_string = m_argv[i];
 
         bool is_long_option = option_string[1] == '-';
 
         if (is_long_option)
-            parse_long_bool(option_string);
+            parse_long_option(option_string);
         else
-            parse_short_bool(option_string);
+            parse_short_option(option_string);
     }
 
     return m_options;
+}
+
+void CmdLineParser::process_option(int short_name, const std::string& value)
+{
+    switch (short_name) {
+    case 'B':
+        m_options.backup_prefix = value;
+        break;
+    case 'D':
+        m_options.define_macro = value;
+        break;
+    case 'F':
+        m_options.max_fuzz = stoi(value, "--fuzz");
+        break;
+    case 'N':
+        m_options.ignore_reversed = true;
+        break;
+    case 'R':
+        m_options.reverse_patch = true;
+        break;
+    case 'b':
+        m_options.save_backup = true;
+        break;
+    case 'c':
+        m_options.interpret_as_context = true;
+        break;
+    case 'd':
+        m_options.patch_directory_path = value;
+        break;
+    case 'e':
+        m_options.interpret_as_ed = true;
+        break;
+    case 'f':
+        m_options.force = true;
+        break;
+    case 'h':
+        m_options.show_help = true;
+        break;
+    case 'i':
+        m_options.patch_file_path = value;
+        break;
+    case 'l':
+        m_options.ignore_whitespace = true;
+        break;
+    case 'n':
+        m_options.interpret_as_normal = true;
+        break;
+    case 'o':
+        m_options.out_file_path = value;
+        break;
+    case 'p':
+        m_options.strip_size = stoi(value, "--strip");
+        break;
+    case 'r':
+        m_options.reject_file_path = value;
+        break;
+    case 'v':
+        m_options.show_version = true;
+        break;
+    case 'z':
+        m_options.backup_suffix = value;
+        break;
+    case CHAR_MAX + 1:
+        handle_newline_strategy(value);
+        break;
+    case CHAR_MAX + 2:
+        handle_read_only(value);
+        break;
+    case CHAR_MAX + 3:
+        handle_reject_format(value);
+        break;
+    case CHAR_MAX + 4:
+        m_options.verbose = true;
+        break;
+    case CHAR_MAX + 5:
+        m_options.dry_run = true;
+        break;
+    default:
+        break;
+    }
 }
 
 void show_version(std::ostream& out)

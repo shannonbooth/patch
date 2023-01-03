@@ -453,6 +453,9 @@ int process_patch(const Options& options)
         }
         out << '\n';
 
+        if (options.verbose)
+            out << "Using Plan A...\n";
+
         File input_file;
         if (!looks_like_adding_file || filesystem::exists(file_to_patch)) {
             input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::ios_base::in);

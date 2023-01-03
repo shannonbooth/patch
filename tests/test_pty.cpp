@@ -70,6 +70,45 @@ File to patch: patching file file
     EXPECT_EQ(term.return_code(), 0);
 }
 
+PATCH_TEST(pty_file_not_found_verbose)
+{
+    {
+        Patch::File file("file", std::ios_base::out);
+        file << "1\n2\n3\n";
+        file.close();
+    }
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- a	2023-01-03 11:23:35.634966282 +1300
++++ b	2023-01-03 11:23:41.598960625 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
++b
+ 3
+)";
+        file.close();
+    }
+
+    PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", "--verbose", nullptr }, "file\n");
+    EXPECT_EQ(term.output(), R"(Hmm...  Looks like a unified diff to me...
+can't find file to patch at input line 3
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a	2023-01-03 11:23:35.634966282 +1300
+|+++ b	2023-01-03 11:23:41.598960625 +1300
+--------------------------
+File to patch: patching file file
+Using Plan A...
+Hunk #1 succeeded at 1.
+done
+)");
+    EXPECT_EQ(term.return_code(), 0);
+}
+
 PATCH_TEST(pty_file_not_found_strip_option_given)
 {
     {

@@ -122,7 +122,7 @@ static std::string prompt_for_filepath(std::ostream& out)
             out << '\n';
         }
 
-        if (check_with_user("Skip this patch", out, Default::True))
+        if (check_with_user("Skip this patch?", out, Default::True))
             return "";
     }
 }
@@ -393,13 +393,18 @@ int process_patch(const Options& options)
         if (file_to_patch.empty())
             file_to_patch = prompt_for_filepath(out);
 
-        if (file_to_patch.empty()) {
-            out << "Skipping patch.\n";
-            continue;
-        }
-
         if (should_parse_body)
             parse_patch_body(patch, patch_file.file());
+
+        if (file_to_patch.empty()) {
+            out << "Skipping patch.\n"
+                << patch.hunks.size() << " out of " << patch.hunks.size() << " hunk";
+            if (patch.hunks.size() > 1)
+                out << 's';
+            out << " ignored\n";
+            had_failure = true;
+            continue;
+        }
 
         const auto output_file = output_path(options, patch, file_to_patch);
 

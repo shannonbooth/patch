@@ -141,4 +141,36 @@ The text leading up to this was:
 --------------------------
 File to patch: patching file file
 )");
+    EXPECT_EQ(term.return_code(), 0);
+}
+
+PATCH_TEST(pty_file_not_found_skip_patch)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- a/a	2023-01-03 11:23:35.634966282 +1300
++++ b/b	2023-01-03 11:23:41.598960625 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
++b
+ 3
+)";
+        file.close();
+    }
+
+    PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", nullptr }, "some file name that does not exist!\ny\n");
+    EXPECT_EQ(term.output(), R"(can't find file to patch at input line 3
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/a	2023-01-03 11:23:35.634966282 +1300
+|+++ b/b	2023-01-03 11:23:41.598960625 +1300
+--------------------------
+File to patch: some file name that does not exist!: No such file or directory
+Skip this patch? [y] Skipping patch.
+1 out of 1 hunk ignored
+)");
+    EXPECT_EQ(term.return_code(), 1);
 }

@@ -382,7 +382,9 @@ int process_patch(const Options& options)
 
         if (file_to_patch.empty()) {
             out << "can't find file to patch at input line " << info.lines_till_first_hunk
-                << "\nPerhaps you should have used the -p or --strip option?\n";
+                << "\nPerhaps you "
+                << (options.strip_size == -1 ? "should have used the" : "used the wrong")
+                << " -p or --strip option?\n";
         }
 
         if (options.verbose || file_to_patch.empty())

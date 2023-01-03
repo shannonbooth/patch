@@ -9,6 +9,7 @@
 #include <patch/system.h>
 #include <poll.h>
 #include <stdexcept>
+#include <sys/wait.h>
 #include <system_error>
 #include <unistd.h>
 
@@ -20,9 +21,8 @@
 #    error "Unknown include for forkpty"
 #endif
 
-PtySpawn::PtySpawn(int argc, char** argv)
+PtySpawn::PtySpawn(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data)
 {
-    (void)argc;
     pid_t pid = forkpty(&m_master, nullptr, nullptr, nullptr);
 
     if (pid < 0)
@@ -31,12 +31,24 @@ PtySpawn::PtySpawn(int argc, char** argv)
     // Child process runs patch command.
     if (pid == 0) {
         ::setsid();
-        ::execv(argv[0], argv);
+        ::execv(cmd, const_cast<char**>(args.data()));
         throw std::system_error(errno, std::generic_category(), "Failed to exec command");
     }
 
     // Turn off terminal echo so that we do not get back from the spawned process what we have sent it.
     disable_echo(m_master);
+
+    write(stdin_data);
+    m_output = read();
+
+    pid = ::waitpid(pid, &m_return_code, 0);
+    if (pid == -1)
+        throw std::system_error(errno, std::generic_category(), "Failed to waiting command to finish executing");
+
+    if (!WIFEXITED(m_return_code))
+        throw std::runtime_error("Process did not terminate normally");
+
+    m_return_code = WEXITSTATUS(m_return_code);
 }
 
 void PtySpawn::write(const std::string& data)

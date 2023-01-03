@@ -5,22 +5,21 @@
 
 #include <chrono>
 #include <string>
+#include <vector>
 
 class PtySpawn {
 public:
-    PtySpawn(int argc, const char* const* argv)
-        : PtySpawn(argc, const_cast<char**>(argv)) // NOLINT(cppcoreguidelines-pro-type-const-cast)
-    {
-    }
+    PtySpawn(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data = {});
 
-    PtySpawn(int argc, char** argv);
-
-    void write(const std::string& data);
-
-    std::string read(std::chrono::milliseconds timeout = std::chrono::seconds(2));
+    const std::string& output() const { return m_output; }
+    int return_code() const { return m_return_code; }
 
 private:
+    void write(const std::string& data);
+    std::string read(std::chrono::milliseconds timeout = std::chrono::seconds(2));
     static void disable_echo(int fd);
 
+    std::string m_output;
+    int m_return_code;
     int m_master;
 };

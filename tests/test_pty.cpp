@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <array>
 #include <patch/pty_spawn.h>
 #include <patch/test.h>
 
-PATCH_TEST(pty_basic)
+PATCH_TEST(pty_reversed_patch)
 {
-    std::array<const char*, 4> cmd { patch_path, "-i", "diff.patch", nullptr };
-
     {
         Patch::File file("a", std::ios_base::out);
         file << "1\nb\n3\n";
@@ -30,12 +27,10 @@ PATCH_TEST(pty_basic)
         file.close();
     }
 
-    PtySpawn term(static_cast<int>(cmd.size()), cmd.data());
+    PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", nullptr }, "y\n");
 
-    term.write("y\n");
-
-    const auto out = term.read();
-
-    EXPECT_EQ(out, R"(patching file a
-Reversed (or previously applied) patch detected! Assume -R? [n] )");
+    EXPECT_EQ(term.output(), R"(patching file a
+Reversed (or previously applied) patch detected!  Assume -R? [n] )");
+    EXPECT_FILE_EQ("a", "1\n2\n3\n");
+    EXPECT_EQ(term.return_code(), 0);
 }

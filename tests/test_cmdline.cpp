@@ -94,7 +94,8 @@ TEST(cmdline_unknown_input)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "unrecognized option '--unknown-flag'");
 }
 
 TEST(cmdline_flag_with_missing_operand)
@@ -105,7 +106,8 @@ TEST(cmdline_flag_with_missing_operand)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "option missing operand for --input");
 }
 
 TEST(cmdline_with_strip_option_set)
@@ -146,7 +148,20 @@ TEST(cmdline_with_invalid_strip_option_set)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "strip count q is not a number");
+}
+
+TEST(cmdline_with_invalid_fuzz_option_set)
+{
+    const std::vector<const char*> dummy_args {
+        "./patch",
+        "--fuzz=thingy",
+        nullptr,
+    };
+
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "fuzz factor thingy is not a number");
 }
 
 TEST(cmdline_with_long_opt_set_with_equal_sign)
@@ -194,11 +209,12 @@ TEST(cmdline_unknown_short_argument)
 {
     const std::vector<const char*> dummy_args {
         "./patch",
-        "-te",
+        "-ye",
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "invalid option -- 'y'");
 }
 
 TEST(cmdline_posix_positional_argument)
@@ -310,7 +326,8 @@ TEST(cmdline_partial_long_option)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "unrecognized option '--def=thing'");
 }
 
 TEST(cmdline_newline_handling_lF)
@@ -340,7 +357,8 @@ TEST(cmdline_too_many_operands)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "third-positional-arg: extra operand");
 }
 
 TEST(cmdline_boolean_followed_by_integer_in_single_arg)
@@ -377,7 +395,8 @@ TEST(cmdline_long_option_integer_bad_value)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "strip count 3p is not a number");
 }
 
 TEST(cmdline_boolean_followed_by_integer_then_alpha_in_single_arg)
@@ -388,7 +407,8 @@ TEST(cmdline_boolean_followed_by_integer_then_alpha_in_single_arg)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "strip count 0b is not a number");
 }
 
 TEST(cmdline_boolean_followed_by_string_in_single_arg)
@@ -413,7 +433,8 @@ TEST(cmdline_boolean_followed_by_equal)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "option '--help' doesn't allow an argument");
 }
 
 TEST(cmdline_long_option_only_partially_specified_unambiguous)

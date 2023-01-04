@@ -49,7 +49,7 @@ public:
     const Options& parse();
 
 private:
-    static int stoi(const std::string& option, const char* long_name);
+    static int stoi(const std::string& option, const std::string& description);
 
     void parse_long_option(const std::string& option);
     void parse_short_option(const std::string& option);

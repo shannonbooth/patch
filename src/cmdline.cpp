@@ -97,7 +97,7 @@ std::string CmdLineParser::consume_next_argument()
     return c;
 }
 
-int CmdLineParser::stoi(const std::string& str, const char* long_name)
+int CmdLineParser::stoi(const std::string& str, const std::string& description)
 {
     int value;
     size_t pos;
@@ -105,11 +105,11 @@ int CmdLineParser::stoi(const std::string& str, const char* long_name)
     try {
         value = std::stoi(str, &pos);
     } catch (const std::invalid_argument&) {
-        throw cmdline_parse_error("unable to parse cmdline option '" + str + "' as integer for: " + std::string(long_name));
+        throw cmdline_parse_error(description + " " + str + " is not a number");
     }
 
     if (pos != str.size())
-        throw cmdline_parse_error(str + " is not a number");
+        throw cmdline_parse_error(description + " " + str + " is not a number");
 
     return value;
 }
@@ -118,7 +118,7 @@ void CmdLineParser::parse_operand()
 {
     // We only support two positional arguments.
     if (m_positional_arguments_found == 2)
-        throw cmdline_parse_error("extra operand " + std::string(m_argv[i]));
+        throw cmdline_parse_error(std::string(m_argv[i]) + ": extra operand");
 
     if (m_positional_arguments_found == 0)
         m_options.file_to_patch = m_argv[i];
@@ -196,7 +196,7 @@ void CmdLineParser::parse_short_option(const std::string& option_string)
         if (should_continue)
             continue;
 
-        throw cmdline_parse_error("unknown commandline argument " + std::string(1, c));
+        throw cmdline_parse_error("invalid option -- '" + std::string(1, c) + "'");
     }
 }
 
@@ -303,7 +303,7 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         m_options.define_macro = value;
         break;
     case 'F':
-        m_options.max_fuzz = stoi(value, "--fuzz");
+        m_options.max_fuzz = stoi(value, "fuzz factor");
         break;
     case 'N':
         m_options.ignore_reversed = true;
@@ -342,7 +342,7 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         m_options.out_file_path = value;
         break;
     case 'p':
-        m_options.strip_size = stoi(value, "--strip");
+        m_options.strip_size = stoi(value, "strip count");
         break;
     case 'r':
         m_options.reject_file_path = value;

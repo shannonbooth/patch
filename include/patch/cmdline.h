@@ -49,7 +49,6 @@ public:
     const Options& parse();
 
 private:
-    bool parse_long_string(const char* long_opt, std::string& option);
     static int stoi(const std::string& option, const char* long_name);
 
     void parse_long_option(const std::string& option);

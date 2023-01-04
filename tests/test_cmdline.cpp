@@ -171,7 +171,8 @@ TEST(cmdline_with_long_opt_set_with_equal_sign_and_no_argument)
         nullptr,
     };
 
-    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    auto options = parse_cmdline(dummy_args.size() - 1, dummy_args.data());
+    EXPECT_EQ(options.patch_file_path, "");
 }
 
 TEST(cmdline_with_multiple_short_options)
@@ -402,4 +403,62 @@ TEST(cmdline_boolean_followed_by_string_in_single_arg)
 
     EXPECT_TRUE(options.interpret_as_context);
     EXPECT_EQ(options.patch_file_path, "some input");
+}
+
+TEST(cmdline_boolean_followed_by_equal)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        "--help=",
+        nullptr,
+    };
+
+    EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+}
+
+TEST(cmdline_long_option_only_partially_specified_unambiguous)
+{
+    const std::vector<const char*> version_options {
+        "--help",
+        "--hel",
+        "--he",
+        "--h",
+    };
+
+    for (const char* option : version_options) {
+        const std::vector<const char*> dummy_args {
+            "patch",
+            option,
+            nullptr,
+        };
+
+        auto options = parse_cmdline(dummy_args.size() - 1, dummy_args.data());
+
+        EXPECT_TRUE(options.show_help);
+    }
+}
+
+TEST(cmdline_long_option_only_partially_specified_ambiguous)
+{
+    const std::vector<const char*> ambiguous_option {
+        "--reject-f",
+        "--reject-",
+        "--reject",
+        "--rejec",
+        "--reje",
+        "--rej",
+        "--re",
+        "--r",
+    };
+
+    for (const char* option : ambiguous_option) {
+        const std::vector<const char*> dummy_args {
+            "patch",
+            option,
+            "context",
+            nullptr,
+        };
+
+        EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+    }
 }

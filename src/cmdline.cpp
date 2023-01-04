@@ -8,6 +8,8 @@
 #include <patch/cmdline.h>
 #include <patch/options.h>
 #include <patch/system.h>
+#include <patch/utils.h>
+#include <sstream>
 #include <stdexcept>
 
 #ifdef _WIN32
@@ -93,37 +95,6 @@ std::string CmdLineParser::consume_next_argument()
         throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
     ++i;
     return c;
-}
-
-bool CmdLineParser::parse_long_string(const char* long_opt, std::string& option)
-{
-    // Check if the token is equal to the long option.
-    const char* argument = m_argv[i];
-    while (*long_opt && *argument) {
-        if (*long_opt != *argument)
-            break;
-        ++long_opt;
-        ++argument;
-    }
-
-    // If we're at the end of the long option - the operand must be in the next position.
-    if (*argument == '\0') {
-        option = consume_next_argument();
-        return true;
-    }
-
-    // Otherwise, if we're at the end of the argument and the next character in the argument is a '='
-    // then the operand must be whatever is after the = in the argument.
-    if (!*long_opt && *argument == '=') {
-        const char* c = argument + 1;
-        if (*c == '\0')
-            throw cmdline_parse_error("option missing operand for " + std::string(m_argv[i]));
-        option = c;
-        ++i;
-        return true;
-    }
-
-    return false;
 }
 
 int CmdLineParser::stoi(const std::string& str, const char* long_name)
@@ -231,21 +202,58 @@ void CmdLineParser::parse_short_option(const std::string& option_string)
 
 void CmdLineParser::parse_long_option(const std::string& option_string)
 {
-    for (const auto& option : s_switches) {
-        if (option.has_argument == HasArgument::Yes) {
-            std::string value;
-            if (!parse_long_string(option.long_name, value))
-                continue;
-            process_option(option.short_name, value);
-        } else {
-            if (option_string != option.long_name)
-                continue;
+    const auto equal_pos = option_string.find_first_of('=');
+    const bool has_separator = equal_pos != std::string::npos;
+    const auto& key = has_separator ? option_string.substr(0, equal_pos) : option_string;
+
+    auto handle_option = [&](const Option& option) {
+        // Found a matching option. If it doesn't have a boolean, just use that.
+        if (option.has_argument == HasArgument::No) {
+            if (has_separator)
+                throw cmdline_parse_error("option '" + key + "' doesn't allow an argument");
+
             process_option(option.short_name, "");
+        } else {
+            const auto value = has_separator ? option_string.substr(equal_pos + 1) : consume_next_argument();
+            process_option(option.short_name, value);
         }
+    };
+
+    for (const auto& option : s_switches) {
+        if (option.long_name != key)
+            continue;
+
+        handle_option(option);
         return;
     }
 
-    throw cmdline_parse_error("unrecognized option '" + option_string + "'");
+    const Option* active_option = nullptr;
+
+    // No exact match, try find a non ambiguous partial match with a long option.
+    for (auto option_it = s_switches.begin(); option_it != s_switches.end(); ++option_it) {
+        if (!starts_with(option_it->long_name, key))
+            continue;
+
+        // Found more than one option. Error out, and show all possible options which it could have been.
+        if (active_option) {
+            std::ostringstream ss;
+            ss << "option '" << key << "' is ambiguous; possibilities: '" << active_option->long_name << "' '" << option_it->long_name << '\'';
+            for (; option_it != s_switches.end(); ++option_it) {
+                if (starts_with(option_it->long_name, key))
+                    ss << " '" << option_it->long_name << '\'';
+            }
+
+            throw cmdline_parse_error(ss.str());
+        }
+
+        active_option = &(*option_it);
+    }
+
+    // Still haven't found any partial match - error out this time.
+    if (!active_option)
+        throw cmdline_parse_error("unrecognized option '" + option_string + "'");
+
+    handle_option(*active_option);
 }
 
 const Options& CmdLineParser::parse()

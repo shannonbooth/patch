@@ -461,25 +461,29 @@ TEST(cmdline_long_option_only_partially_specified_unambiguous)
 
 TEST(cmdline_long_option_only_partially_specified_ambiguous)
 {
-    const std::vector<const char*> ambiguous_option {
-        "--reject-f",
-        "--reject-",
-        "--reject",
-        "--rejec",
-        "--reje",
-        "--rej",
-        "--re",
-        "--r",
+    struct TestData {
+        const char* input;
+        const char* error;
+    };
+    const std::vector<TestData> test_data {
+        { "--reject-f", "option '--reject-f' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
+        { "--reject-", "option '--reject-' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
+        { "--reject", "option '--reject' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
+        { "--rejec", "option '--rejec' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
+        { "--reje", "option '--reje' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
+        { "--rej", "option '--rej' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
+        { "--re", "option '--re' is ambiguous; possibilities: '--reverse' '--reject-file' '--read-only' '--reject-format'" },
+        { "--r", "option '--r' is ambiguous; possibilities: '--reverse' '--reject-file' '--read-only' '--reject-format'" },
     };
 
-    for (const char* option : ambiguous_option) {
+    for (const auto& data : test_data) {
         const std::vector<const char*> dummy_args {
             "patch",
-            option,
+            data.input,
             "context",
             nullptr,
         };
 
-        EXPECT_THROW(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error);
+        EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error, data.error);
     }
 }

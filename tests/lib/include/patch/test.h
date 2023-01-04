@@ -64,16 +64,24 @@ void patch_test_error_format(const T& a)
         }                                                      \
     } while (false)
 
-#define EXPECT_THROW(statement, expected_exception)                         \
-    try {                                                                   \
-        (statement);                                                        \
-    } catch (const expected_exception&) {                                   \
-        /* nothing to do */                                                 \
-    } catch (...) {                                                         \
-        std::cerr << "FAIL: " #statement " throws an exception of type "    \
-                  << #expected_exception ", but threw a different type.\n"; \
-        throw std::runtime_error("Test failed");                            \
-    }
+#define EXPECT_THROW(statement, expected_exception)                             \
+    do {                                                                        \
+        bool patch_failed_test = false;                                         \
+        try {                                                                   \
+            (statement);                                                        \
+            std::cerr << "FAIL: " #statement " expected an exception of type "  \
+                      << #expected_exception ", but none was thrown.\n";        \
+            patch_failed_test = true;                                           \
+        } catch (const expected_exception&) {                                   \
+            /* nothing to do */                                                 \
+        } catch (...) {                                                         \
+            std::cerr << "FAIL: " #statement " throws an exception of type "    \
+                      << #expected_exception ", but threw a different type.\n"; \
+            throw std::runtime_error("Test failed");                            \
+        }                                                                       \
+        if (patch_failed_test)                                                  \
+            throw std::runtime_error("Test failed");                            \
+    } while (false);
 
 #define EXPECT_FILE_EQ(file, rhs)                                                         \
     do {                                                                                  \

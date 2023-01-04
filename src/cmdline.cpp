@@ -237,7 +237,7 @@ void CmdLineParser::parse_long_option(const std::string& option_string)
         // Found more than one option. Error out, and show all possible options which it could have been.
         if (active_option) {
             std::ostringstream ss;
-            ss << "option '" << key << "' is ambiguous; possibilities: '" << active_option->long_name << "' '" << option_it->long_name << '\'';
+            ss << "option '" << key << "' is ambiguous; possibilities: '" << active_option->long_name << '\'';
             for (; option_it != s_switches.end(); ++option_it) {
                 if (starts_with(option_it->long_name, key))
                     ss << " '" << option_it->long_name << '\'';

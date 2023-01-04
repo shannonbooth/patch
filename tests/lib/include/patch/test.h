@@ -86,7 +86,7 @@ void patch_test_error_format(const T& a)
         }                                                                           \
         if (patch_failed_test)                                                      \
             throw std::runtime_error("Test failed");                                \
-        if (!expected_msg.empty() && patch_error_msg != (msg)) {                \
+        if (!expected_msg.empty() && patch_error_msg != (msg)) {                    \
             std::cerr                                                               \
                 << "FAIL: " #statement " expected an error message of: \""          \
                 << (msg) << "\", but instead got: \"" << patch_error_msg << "\"\n"; \

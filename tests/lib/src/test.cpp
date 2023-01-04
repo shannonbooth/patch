@@ -71,7 +71,7 @@ bool Test::run(const char* patch_path)
         return true;
     }
 
-    bool success = true;
+    bool success = expected != ExpectedResult::ExpectedFail;
 
     setup();
 

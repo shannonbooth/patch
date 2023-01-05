@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <chrono>
 #include <patch/system.h>
 #include <patch/test.h>
 #include <patch/utils.h>
@@ -67,13 +68,17 @@ bool Test::run(const char* patch_path)
 {
     const auto expected = expected_result();
     if (expected == ExpectedResult::Disabled) {
-        std::cout << m_name << " DISABLED\n";
+        std::cout << "[ DISABLED ] " << m_name << '\n';
         return true;
     }
 
     bool success = expected != ExpectedResult::ExpectedFail;
 
     setup();
+
+    std::cout << "[ RUN      ] " << m_name << '\n';
+
+    const auto test_start = std::chrono::high_resolution_clock::now();
 
     try {
         test(patch_path);
@@ -86,6 +91,16 @@ bool Test::run(const char* patch_path)
             success = false;
         }
     }
+
+    const auto test_finish = std::chrono::high_resolution_clock::now();
+    const auto test_time = std::chrono::duration_cast<std::chrono::milliseconds>(test_finish - test_start);
+
+    if (success)
+        std::cout << "[       OK ] " << m_name;
+    else
+        std::cout << "[  FAILED  ] " << m_name;
+
+    std::cout << " (" << test_time.count() << " ms)\n";
 
     tear_down();
 
@@ -135,14 +150,36 @@ bool TestRunner::run_test(const char* patch_path, const char* test_name)
 
 bool TestRunner::run_all_tests(const char* patch_path)
 {
-    bool success = true;
+    std::cout << "[==========] Running " << m_tests.size() << " tests.\n";
+
+    size_t passed_tests = 0;
+    std::vector<std::string> failed_test_names;
+
+    const auto overall_start = std::chrono::high_resolution_clock::now();
 
     for (Test& test : m_tests) {
-        if (!test.run(patch_path))
-            success = false;
+        if (test.run(patch_path))
+            ++passed_tests;
+        else
+            failed_test_names.emplace_back(test.name());
     }
 
-    return success;
+    const auto overall_finish = std::chrono::high_resolution_clock::now();
+    const auto overall_time = std::chrono::duration_cast<std::chrono::milliseconds>(overall_finish - overall_start);
+
+    std::cout << "\n[==========] " << m_tests.size() << " tests ran. (" << overall_time.count() << " ms total)\n"
+              << "[  PASSED  ] " << passed_tests << " tests.\n";
+
+    if (!failed_test_names.empty()) {
+        std::cout << "[  FAILED  ] " << failed_test_names.size() << " test";
+        if (failed_test_names.size() != 1)
+            std::cout << 's';
+        std::cout << ", listed below:\n";
+        for (const auto& test_name : failed_test_names)
+            std::cout << "[  FAILED  ] " << test_name << '\n';
+    }
+
+    return failed_test_names.empty();
 }
 
 static TestRunner& runner()

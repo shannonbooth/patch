@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <patch/process.h>
 #include <poll.h>
 #include <stdexcept>
@@ -51,6 +52,12 @@ private:
     std::array<int, 2> m_fds;
 };
 
+static void write_c_str_ignore_error(int fd, const char* msg)
+{
+    ssize_t ret = ::write(fd, msg, strlen(msg));
+    (void)ret;
+}
+
 Process::Process(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data)
 {
     Pipe stdout_pipe;
@@ -75,8 +82,22 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
         stderr_pipe.close();
         stdin_pipe.close();
 
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         ::execv(cmd, const_cast<char**>(args.data()));
-        throw std::system_error(errno, std::generic_category(), "Failed to exec command");
+
+        // Not much we can do here. Let's make a best effort to write some data to stdout/stderr
+        // to communicate the error to the parent process and abort to let it know that something
+        // went terribly wrong!
+        const char* error = std::strerror(errno);
+        write_c_str_ignore_error(STDERR_FILENO, "Failed to execv");
+        if (cmd) {
+            write_c_str_ignore_error(STDERR_FILENO, " '");
+            write_c_str_ignore_error(STDERR_FILENO, cmd);
+            write_c_str_ignore_error(STDERR_FILENO, "'");
+        }
+        write_c_str_ignore_error(STDERR_FILENO, ": ");
+        write_c_str_ignore_error(STDERR_FILENO, error);
+        std::abort();
     }
 
     stdout_pipe.close_write_fd();
@@ -165,8 +186,9 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
     if (pid == -1)
         throw std::system_error(errno, std::generic_category(), "Failed to waiting command to finish executing");
 
+    // Show stderr data in here just incase there is something useful
     if (!WIFEXITED(m_return_code))
-        throw std::runtime_error("Process did not terminate normally");
+        throw std::runtime_error("Process did not terminate normally -- " + m_stderr_data);
 
     m_return_code = WEXITSTATUS(m_return_code);
 }

@@ -390,7 +390,7 @@ index 5047a34..905869d 100644
     EXPECT_EQ(patch.new_file_path, "main.cpp");
 }
 
-TEST(parser_Git_rename_with_quoted_filename)
+TEST(parser_git_rename_with_quoted_filename)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git a/a.txt "b/b\nc"
@@ -439,7 +439,7 @@ rename to b
     EXPECT_EQ(patch.format, Patch::Format::Git);
 }
 
-TEST(parser_Git_change_mode)
+TEST(parser_git_change_mode)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 From e8e9fc10f0915e2dfa02db34cce97aa7e66b4d61 Mon Sep 17 00:00:00 2001
@@ -470,7 +470,7 @@ new mode 100755
     EXPECT_EQ(patch.old_file_mode, 0100644);
 }
 
-TEST(parser_Git_change_mode_with_tabbed_filename)
+TEST(parser_git_change_mode_with_tabbed_filename)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
 diff --git "a/some\tname" "b/some\tname"

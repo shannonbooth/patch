@@ -1640,7 +1640,7 @@ PATCH_TEST(write_output_to_some_file)
     EXPECT_FILE_EQ("some-file", "a\nd\nc\n");
 }
 
-PATCH_TEST(errro_when_invalid_patch_given)
+PATCH_TEST(error_when_invalid_patch_given)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

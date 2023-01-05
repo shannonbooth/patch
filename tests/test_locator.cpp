@@ -291,7 +291,7 @@ TEST(locator_asymmetric_hunk_less_suffix)
     EXPECT_EQ(location.offset, 0);
 }
 
-TEST(LocatorRemoveFileDoesNotApply)
+TEST(locator_remove_file_does_not_apply)
 {
     // Test a regression where a removal patch was always returning
     // successfully located due to the locator incorrectly assuming

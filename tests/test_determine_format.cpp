@@ -251,10 +251,6 @@ Some text
     std::stringstream output;
     Patch::print_header_info(patch_file, info, output);
 
-    std::cout << "----------------------------------------------------------------\n";
-    std::cout << output.str() << "\n";
-    std::cout << "----------------------------------------------------------------\n";
-
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
 --------------------------

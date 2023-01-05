@@ -45,12 +45,12 @@ function(read_test_names_for_file filename test_names)
   set(${test_names} ${found_tests} PARENT_SCOPE)
 endfunction()
 
-function(patch_add_tests target_name test_compat_gnu_patch)
+function(patch_add_tests target_name patch_target test_compat_gnu_patch)
   get_target_property(files ${target_name} SOURCES)
   foreach(file ${files})
     read_test_names_for_file(${file} tests)
     foreach(test ${tests})
-      add_test(NAME ${test} COMMAND ${target_name} $<TARGET_FILE:sb_patch> ${test})
+      add_test(NAME ${test} COMMAND ${target_name} $<TARGET_FILE:${patch_target}> ${test})
       if(test_compat_gnu_patch AND GNU_PATCH)
         add_test(NAME compat.${test} COMMAND ${target_name} ${GNU_PATCH} ${test})
       endif()
@@ -72,7 +72,7 @@ if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
   add_executable(test_pty test_pty.cpp lib/src/pty_spawn.cpp)
   target_link_libraries(test_pty PRIVATE patch_test util)
   target_include_directories(test_pty PRIVATE lib/src ${CMAKE_CURRENT_BINARY_DIR}/lib/src)
-  patch_add_tests(test_pty ON)
+  patch_add_tests(test_pty sb_patch ON)
 endif()
 
 add_executable(patch_oom
@@ -81,11 +81,13 @@ add_executable(patch_oom
 )
 target_include_directories(patch_oom PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-add_test(NAME Patch.Oom COMMAND ${CMAKE_COMMAND} -DPATCH=$<TARGET_FILE:patch_oom> -P "${CMAKE_CURRENT_SOURCE_DIR}/test_oom.cmake")
+add_executable(test_oom test_oom.cpp)
+target_link_libraries(test_oom PRIVATE patch_test)
+patch_add_tests(test_oom patch_oom OFF)
 
 add_executable(test_basic test_basic.cpp)
 target_link_libraries(test_basic PRIVATE patch_test)
-patch_add_tests(test_basic ON)
+patch_add_tests(test_basic sb_patch ON)
 
 add_executable(test_unit
   test_applier.cpp
@@ -103,4 +105,4 @@ add_executable(test_unit
   test_strip.cpp
 )
 target_link_libraries(test_unit PRIVATE patch_test)
-patch_add_tests(test_unit OFF)
+patch_add_tests(test_unit sb_patch OFF)

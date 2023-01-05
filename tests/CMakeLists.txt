@@ -21,6 +21,47 @@ target_include_directories(patch_test
     ${CMAKE_CURRENT_BINARY_DIR}/lib/src
 )
 
+find_program(GNU_PATCH patch)
+if(GNU_PATCH)
+  execute_process(COMMAND ${GNU_PATCH} --version OUTPUT_VARIABLE patch_version)
+  if(patch_version MATCHES "GNU patch 2.7.6")
+    message(STATUS "Will test for compatibility with GNU patch 2.7.6")
+  else()
+    set(GNU_PATCH FALSE) # not of the correct version, remove it.
+  endif()
+endif()
+
+function(read_test_names_for_file filename test_names)
+  file(STRINGS ${filename} contents NEWLINE_CONSUME)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${filename})
+  set(found_tests)
+  # FIXME: there are a bunch of scenarios where this parsing may go wrong.
+  string(REGEX MATCHALL "(PATCH_TEST|TEST)\\(([_a-zA-Z][_a-zA-Z0-9]*)\\)" tests "${contents}")
+  foreach(test ${tests})
+    string(REGEX MATCHALL "(PATCH_TEST|TEST)\\(([_a-zA-Z][_a-zA-Z0-9]*)\\)" dummy "${test}")
+    set(test_name ${CMAKE_MATCH_2})
+    list(APPEND found_tests ${test_name})
+  endforeach()
+  set(${test_names} ${found_tests} PARENT_SCOPE)
+endfunction()
+
+function(patch_add_tests target_name test_compat_gnu_patch)
+  get_target_property(files ${target_name} SOURCES)
+  foreach(file ${files})
+    read_test_names_for_file(${file} tests)
+    foreach(test ${tests})
+      add_test(NAME ${test} COMMAND ${target_name} $<TARGET_FILE:sb_patch> ${test})
+      if(test_compat_gnu_patch AND GNU_PATCH)
+        add_test(NAME compat.${test} COMMAND ${target_name} ${GNU_PATCH} ${test})
+      endif()
+
+      if (${test} MATCHES "^DISABLED_" AND ${CMAKE_VERSION} VERSION_GREATER "3.9")
+        set_tests_properties("${test}" PROPERTIES DISABLED ON)
+      endif()
+    endforeach()
+  endforeach()
+endfunction()
+
 if(WIN32)
   target_sources(patch_test PRIVATE lib/src/windows_process.cpp)
 else()
@@ -31,7 +72,7 @@ if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
   add_executable(test_pty test_pty.cpp lib/src/pty_spawn.cpp)
   target_link_libraries(test_pty PRIVATE patch_test util)
   target_include_directories(test_pty PRIVATE lib/src ${CMAKE_CURRENT_BINARY_DIR}/lib/src)
-  add_test(NAME Patch.Pty COMMAND test_pty $<TARGET_FILE:sb_patch>)
+  patch_add_tests(test_pty ON)
 endif()
 
 add_executable(patch_oom
@@ -44,16 +85,7 @@ add_test(NAME Patch.Oom COMMAND ${CMAKE_COMMAND} -DPATCH=$<TARGET_FILE:patch_oom
 
 add_executable(test_basic test_basic.cpp)
 target_link_libraries(test_basic PRIVATE patch_test)
-add_test(NAME Patch.Basic COMMAND test_basic $<TARGET_FILE:sb_patch>)
-
-find_program(GNU_PATCH patch)
-if(GNU_PATCH)
-  execute_process(COMMAND ${GNU_PATCH} --version OUTPUT_VARIABLE patch_version)
-  if(patch_version MATCHES "GNU patch 2.7.6")
-    message(STATUS "Test for compatibility with GNU patch 2.7.6")
-    add_test(NAME Patch.Compat COMMAND test_basic ${GNU_PATCH})
-  endif()
-endif()
+patch_add_tests(test_basic ON)
 
 add_executable(test_unit
   test_applier.cpp
@@ -71,4 +103,4 @@ add_executable(test_unit
   test_strip.cpp
 )
 target_link_libraries(test_unit PRIVATE patch_test)
-add_test(NAME Patch.UnitTest COMMAND test_unit $<TARGET_FILE:sb_patch>)
+patch_add_tests(test_unit OFF)

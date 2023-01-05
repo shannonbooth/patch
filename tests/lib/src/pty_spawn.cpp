@@ -4,6 +4,7 @@
 #include <chrono>
 #include <config.h>
 #include <cstdlib>
+#include <cstring>
 #include <patch/file.h>
 #include <patch/pty_spawn.h>
 #include <patch/system.h>
@@ -21,6 +22,12 @@
 #    error "Unknown include for forkpty"
 #endif
 
+static void write_c_str_ignore_error(int fd, const char* msg)
+{
+    ssize_t ret = ::write(fd, msg, strlen(msg));
+    (void)ret;
+}
+
 PtySpawn::PtySpawn(const char* cmd, const std::vector<const char*>& args, const std::string& stdin_data)
 {
     pid_t pid = forkpty(&m_master, nullptr, nullptr, nullptr);
@@ -31,8 +38,19 @@ PtySpawn::PtySpawn(const char* cmd, const std::vector<const char*>& args, const 
     // Child process runs patch command.
     if (pid == 0) {
         ::setsid();
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         ::execv(cmd, const_cast<char**>(args.data()));
-        throw std::system_error(errno, std::generic_category(), "Failed to exec command");
+
+        const char* error = std::strerror(errno);
+        write_c_str_ignore_error(STDERR_FILENO, "Failed to execv");
+        if (cmd) {
+            write_c_str_ignore_error(STDERR_FILENO, " '");
+            write_c_str_ignore_error(STDERR_FILENO, cmd);
+            write_c_str_ignore_error(STDERR_FILENO, "'");
+        }
+        write_c_str_ignore_error(STDERR_FILENO, ": ");
+        write_c_str_ignore_error(STDERR_FILENO, error);
+        std::abort();
     }
 
     // Turn off terminal echo so that we do not get back from the spawned process what we have sent it.
@@ -45,8 +63,9 @@ PtySpawn::PtySpawn(const char* cmd, const std::vector<const char*>& args, const 
     if (pid == -1)
         throw std::system_error(errno, std::generic_category(), "Failed to waiting command to finish executing");
 
+    // Show ouput data in here just incase there is something useful
     if (!WIFEXITED(m_return_code))
-        throw std::runtime_error("Process did not terminate normally");
+        throw std::runtime_error("Process did not terminate normally -- " + m_output);
 
     m_return_code = WEXITSTATUS(m_return_code);
 }
@@ -55,7 +74,7 @@ void PtySpawn::write(const std::string& data)
 {
     auto ret = ::write(m_master, data.c_str(), data.size());
     if (ret != data.size())
-        throw std::system_error(errno, std::generic_category(), "Failed to exec command");
+        throw std::system_error(errno, std::generic_category(), "Failed to write data");
 }
 
 std::string PtySpawn::read(std::chrono::milliseconds timeout)

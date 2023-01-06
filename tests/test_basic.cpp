@@ -6,7 +6,7 @@
 #include <patch/system.h>
 #include <patch/test.h>
 
-PATCH_TEST(basic)
+PATCH_TEST(basic_unified_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -88,7 +88,71 @@ PATCH_TEST(basic_context_patch)
 )");
 }
 
-PATCH_TEST(basic_verbose_context_patch)
+PATCH_TEST(basic_verbose_unified_patch_with_trailing_garbage)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- to_patch	2022-06-19 16:56:12.974516527 +1200
++++ to_patch	2022-06-19 16:56:24.666877199 +1200
+@@ -1,3 +1,4 @@
+ int main()
+ {
++	return 0;
+ }
+Hmm...  Looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|
+|--- to_patch	2022-06-19 16:56:12.974516527 +1200
+|+++ to_patch	2022-06-19 16:56:24.666877199 +1200
+--------------------------
+patching file to_patch
+Using Plan A...
+Hunk #1 succeeded at 1.
+Hmm...  Ignoring the trailing garbage.
+done
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+
+        file << R"(int main()
+{
+}
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--verbose", nullptr });
+
+    EXPECT_FILE_EQ("to_patch", R"(int main()
+{
+	return 0;
+}
+)");
+
+    EXPECT_EQ(process.stdout_data(), R"(Hmm...  Looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|
+|--- to_patch	2022-06-19 16:56:12.974516527 +1200
+|+++ to_patch	2022-06-19 16:56:24.666877199 +1200
+--------------------------
+patching file to_patch
+Using Plan A...
+Hunk #1 succeeded at 1.
+Hmm...  Ignoring the trailing garbage.
+done
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+}
+
+PATCH_TEST(basic_verbose_context_patch_with_trailing_garbage)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

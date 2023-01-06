@@ -174,3 +174,52 @@ Skip this patch? [y] Skipping patch.
 )");
     EXPECT_EQ(term.return_code(), 1);
 }
+
+PATCH_TEST(pty_file_not_found_two_patches_skip_both)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- 1	2023-01-06 12:55:54.499099611 +1300
++++ 2	2023-01-06 12:56:01.379092530 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
+-3
++b
++c
+--- a	2023-01-06 12:56:26.595066547 +1300
++++ b	2023-01-06 12:56:36.727056093 +1300
+@@ -1,3 +1,3 @@
+ qwerty
+-asdfgh
++aSdFgH
+ zxcvbn
+)";
+        file.close();
+    }
+
+    PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", nullptr }, "some file name that does not exist!\ny\nanother\ny\n");
+    EXPECT_EQ(term.output(), R"(can't find file to patch at input line 3
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- 1	2023-01-06 12:55:54.499099611 +1300
+|+++ 2	2023-01-06 12:56:01.379092530 +1300
+--------------------------
+File to patch: some file name that does not exist!: No such file or directory
+Skip this patch? [y] Skipping patch.
+1 out of 1 hunk ignored
+can't find file to patch at input line 11
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a	2023-01-06 12:56:26.595066547 +1300
+|+++ b	2023-01-06 12:56:36.727056093 +1300
+--------------------------
+File to patch: another: No such file or directory
+Skip this patch? [y] Skipping patch.
+1 out of 1 hunk ignored
+)");
+    EXPECT_EQ(term.return_code(), 1);
+}

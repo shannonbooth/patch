@@ -733,16 +733,23 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
     LineNumber old_end_line = 0;
     LineNumber new_end_line = 0;
 
-    auto append_line = [](std::vector<PatchLine>& lines, const std::string& content, NewLine newline) {
+    auto append_line = [this](std::vector<PatchLine>& lines, const std::string& content, NewLine newline) {
         if (content.size() < 2)
             throw std::invalid_argument("Unexpected empty patch line");
         lines.emplace_back(content[0], Line(content.substr(2, content.size()), newline));
+
+        const auto& line = lines.back();
+        if (line.operation != ' ' && line.operation != '+' && line.operation != '-' && line.operation != '!') {
+            std::ostringstream ss;
+            ss << "malformed patch at line " << (m_line_number - 1) << ": " << content << '\n';
+            throw parser_error(ss.str());
+        }
     };
 
     auto append_content = [&](std::vector<PatchLine>& lines, LineNumber start_line, LineNumber end_line) {
         NewLine newline;
         for (LineNumber i = start_line + static_cast<LineNumber>(lines.size()); i <= end_line; ++i) {
-            if (!m_file.get_line(line, &newline))
+            if (!get_line(line, &newline))
                 throw std::runtime_error("Invalid context patch, unable to retrieve expected number of lines");
             append_line(lines, line, newline);
         }
@@ -750,7 +757,7 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
 
     auto check_for_no_newline = [&](std::vector<PatchLine>& lines) {
         if (!lines.empty() && m_file.peek() == '\\') {
-            m_file.get_line(line);
+            get_line(line);
             lines.back().line.newline = NewLine::None;
         }
     };
@@ -765,7 +772,7 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
 
     // Skip over the patch until we find the old file range.
     NewLine newline;
-    while (m_file.get_line(line, &newline)) {
+    while (get_line(line, &newline)) {
         if (line.rfind("*** ", 0) == 0 && ends_with(line, " ****")) {
             parse_context_range(old_start_line, old_end_line, line.substr(4, line.size() - 9));
             break;
@@ -784,7 +791,7 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
     //
     // If we found this, we can skip looking for any old file lines, and just
     // parse that range instead.
-    if (!m_file.get_line(line, &newline))
+    if (!get_line(line, &newline))
         throw std::runtime_error("Unable to retrieve line for context range");
 
     if (!parse_range(new_start_line, new_end_line)) {
@@ -793,11 +800,11 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
         append_content(old_lines, old_start_line, old_end_line);
         check_for_no_newline(old_lines);
 
-        m_file.get_line(line, &newline);
+        get_line(line, &newline);
         if (!parse_range(new_start_line, new_end_line))
             throw std::runtime_error("Could not parse expected range!");
 
-        m_file.get_line(line, &newline);
+        get_line(line, &newline);
         if (m_file.eof())
             return;
 
@@ -831,7 +838,7 @@ Patch Parser::parse_context_patch(Patch& patch)
 
         auto pos = m_file.tellg();
         std::string line;
-        m_file.get_line(line);
+        get_line(line);
         m_file.seekg(pos);
 
         if (!starts_with(line, "***"))

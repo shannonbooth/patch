@@ -28,7 +28,7 @@ std::string to_string(Format format)
 {
     switch (format) {
     case Format::Context:
-        return "context";
+        return "new-style context";
     case Format::Ed:
         return "ed";
     case Format::Normal:
@@ -315,13 +315,7 @@ int process_patch(const Options& options)
     Parser parser(patch_file.file());
 
     // Continue parsing patches from the input file and applying them.
-    while (true) {
-        if (parser.is_eof()) {
-            if (options.verbose)
-                out << "done\n";
-            break;
-        }
-
+    while (!parser.is_eof()) {
         Patch patch(format);
         PatchHeaderInfo info;
         bool should_parse_body = parser.parse_patch_header(patch, info, options.strip_size);
@@ -329,6 +323,8 @@ int process_patch(const Options& options)
         if (patch.format == Format::Unknown) {
             if (first_patch)
                 throw std::invalid_argument("Only garbage was found in the patch input.");
+            if (options.verbose)
+                out << "Hmm...  Ignoring the trailing garbage.\n";
             break;
         }
 
@@ -530,6 +526,9 @@ int process_patch(const Options& options)
     }
 
     deferred_writer.finalize();
+
+    if (options.verbose)
+        out << "done\n";
 
     return had_failure ? 1 : 0;
 }

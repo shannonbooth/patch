@@ -900,25 +900,19 @@ Patch Parser::parse_unified_patch(Patch& patch)
 
             if (what != '-') {
                 --to_lines_expected;
-                if (to_lines_expected == 0) {
-                    // At end of file for 'to', and found a '\ No newline at end of file'
-                    if (m_file.peek() == '\\') {
-                        hunk.lines.back().line.newline = NewLine::None;
-                        m_file.get_line(line);
-                        ++m_line_number;
-                    }
+                // At end of file for 'to', and found a '\ No newline at end of file'
+                if (to_lines_expected == 0 && m_file.peek() == '\\') {
+                    hunk.lines.back().line.newline = NewLine::None;
+                    get_line(line);
                 }
             }
 
             if (what != '+') {
                 --old_lines_expected;
-                if (old_lines_expected == 0) {
-                    // At end of file for 'old', and found a '\ No newline at end of file'
-                    if (m_file.peek() == '\\') {
-                        hunk.lines.back().line.newline = NewLine::None;
-                        m_file.get_line(line);
-                        ++m_line_number;
-                    }
+                // At end of file for 'old', and found a '\ No newline at end of file'
+                if (old_lines_expected == 0 && m_file.peek() == '\\') {
+                    hunk.lines.back().line.newline = NewLine::None;
+                    get_line(line);
                 }
             }
 

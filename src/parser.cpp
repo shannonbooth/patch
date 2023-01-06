@@ -12,9 +12,9 @@
 
 namespace Patch {
 
-class Parser {
+class LineParser {
 public:
-    explicit Parser(const std::string& line)
+    explicit LineParser(const std::string& line)
         : m_current(line.cbegin())
         , m_end(line.cend())
         , m_line(line)
@@ -174,7 +174,7 @@ void parse_file_line(const std::string& input, int strip, std::string& path, std
     auto it = input.begin();
 
     if (*it == '"') {
-        Parser parser(input);
+        LineParser parser(input);
         path = parser.parse_quoted_string();
         it = parser.current();
     } else {
@@ -253,7 +253,7 @@ bool string_to_line_number(const std::string& str, LineNumber& output)
 
 bool parse_unified_range(Hunk& hunk, const std::string& line)
 {
-    Parser parser(line);
+    LineParser parser(line);
 
     auto consume_range = [&parser](Range& range) {
         if (!parser.consume_line_number(range.start_line))
@@ -308,7 +308,7 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
         }
     };
 
-    Parser parser(line);
+    LineParser parser(line);
 
     // Ensure that the first character is an integer.
     if (!parser.consume_line_number(hunk.old_file_range.start_line))
@@ -374,7 +374,7 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
         // NOTE: we do 'strip - 1' here as the extended headers do not come with a leading
         // "a/" or "b/" prefix - strip the filename as if this part is already stripped.
         if (!name.empty() && name[0] == '"') {
-            Parser parser(name);
+            LineParser parser(name);
             output = parser.parse_quoted_string();
             output = strip_path(output, strip - 1);
         } else {
@@ -447,7 +447,7 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
 
 static void parse_git_header_name(const std::string& line, Patch& patch, int strip)
 {
-    Parser parser(line);
+    LineParser parser(line);
     if (!parser.consume_specific("diff --git "))
         return;
 
@@ -673,7 +673,7 @@ static Hunk hunk_from_context_parts(LineNumber old_start_line, const std::vector
 
 static bool parse_context_range(LineNumber& start_line, LineNumber& end_line, const std::string& context_string)
 {
-    Parser parser(context_string);
+    LineParser parser(context_string);
 
     if (!parser.consume_line_number(start_line))
         return false;

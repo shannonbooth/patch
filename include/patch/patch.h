@@ -16,8 +16,6 @@ struct PatchHeaderInfo;
 
 std::string to_string(Format format);
 
-void print_header_info(File& patch, const PatchHeaderInfo& header_info, std::ostream& out);
-
 enum class Default {
     True,
     False,

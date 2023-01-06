@@ -467,9 +467,42 @@ static void parse_git_header_name(const std::string& line, Patch& patch, int str
     patch.new_file_path = name;
 }
 
-bool parse_patch_header(Patch& patch, File& file, PatchHeaderInfo& header_info, int strip)
+Parser::Parser(File& file)
+    : m_file(file)
 {
-    header_info.patch_start = file.tellg();
+}
+
+bool Parser::get_line(std::string& line, NewLine* newline)
+{
+    if (!m_file.get_line(line, newline))
+        return false;
+    ++m_line_number;
+    return true;
+}
+
+void Parser::print_header_info(const PatchHeaderInfo& header_info, std::ostream& out)
+{
+    m_file.seekg(header_info.patch_start);
+
+    if (header_info.lines_till_first_hunk > 1) {
+        out << "The text leading up to this was:\n"
+            << "--------------------------\n";
+        size_t my_lines = header_info.lines_till_first_hunk;
+        std::string line;
+        while (my_lines > 1) {
+            --my_lines;
+            if (!m_file.get_line(line))
+                throw std::runtime_error("Failure reading line from patch outputting header info");
+
+            out << '|' << line << '\n';
+        }
+        out << "--------------------------\n";
+    }
+}
+
+bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int strip)
+{
+    header_info.patch_start = m_file.tellg();
 
     auto this_line_looks_like = Format::Unknown;
 
@@ -480,6 +513,8 @@ bool parse_patch_header(Patch& patch, File& file, PatchHeaderInfo& header_info, 
     bool should_parse_body = true;
     Hunk hunk;
 
+    auto start_line_number = m_line_number;
+
     // Iterate through the input file looking for lines that look like a context, normal or unified diff.
     // If we do not know what the format is already, we use this information as a heuristic to determine
     // what the patch should be. Even if we already are told the format of the input patch, we still need
@@ -487,9 +522,8 @@ bool parse_patch_header(Patch& patch, File& file, PatchHeaderInfo& header_info, 
     // of the hunks for later on.
     //
     // Once the format is determine, we continue parsing until the beginning of the first hunk is found.
-    while (file.get_line(line)) {
+    while (get_line(line)) {
         ++lines;
-
         auto last_line_looks_like = this_line_looks_like;
         this_line_looks_like = Format::Unknown;
 
@@ -593,14 +627,16 @@ bool parse_patch_header(Patch& patch, File& file, PatchHeaderInfo& header_info, 
     if (is_git_patch)
         patch.format = Format::Git;
 
-    file.clear();
-    file.seekg(header_info.patch_start);
+    m_file.clear();
+    m_file.seekg(header_info.patch_start);
 
+    // FIXME: This should get tidied up to something more sensible.
     header_info.format = patch.format;
+    m_line_number = start_line_number;
     size_t my_lines = header_info.lines_till_first_hunk;
     while (my_lines > 1) {
         --my_lines;
-        if (!file.get_line(line))
+        if (!get_line(line))
             throw std::runtime_error("Failure reading line from file parsing patch header");
     }
 
@@ -689,7 +725,7 @@ static bool parse_context_range(LineNumber& start_line, LineNumber& end_line, co
     return true;
 }
 
-static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& old_start_line, std::vector<PatchLine>& new_lines, LineNumber& new_start_line, File& file)
+void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& old_start_line, std::vector<PatchLine>& new_lines, LineNumber& new_start_line)
 {
     std::string line;
 
@@ -705,15 +741,15 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
     auto append_content = [&](std::vector<PatchLine>& lines, LineNumber start_line, LineNumber end_line) {
         NewLine newline;
         for (LineNumber i = start_line + lines.size(); i <= end_line; ++i) {
-            if (!file.get_line(line, &newline))
+            if (!m_file.get_line(line, &newline))
                 throw std::runtime_error("Invalid context patch, unable to retrieve expected number of lines");
             append_line(lines, line, newline);
         }
     };
 
     auto check_for_no_newline = [&](std::vector<PatchLine>& lines) {
-        if (!lines.empty() && file.peek() == '\\') {
-            file.get_line(line);
+        if (!lines.empty() && m_file.peek() == '\\') {
+            m_file.get_line(line);
             lines.back().line.newline = NewLine::None;
         }
     };
@@ -728,7 +764,7 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
 
     // Skip over the patch until we find the old file range.
     NewLine newline;
-    while (file.get_line(line, &newline)) {
+    while (m_file.get_line(line, &newline)) {
         if (line.rfind("*** ", 0) == 0 && ends_with(line, " ****")) {
             parse_context_range(old_start_line, old_end_line, line.substr(4, line.size() - 9));
             break;
@@ -737,7 +773,7 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
 
     // If we didn't find any leading hunk, there must have been some garbage
     // at the end of the patch, or we were already there.
-    if (file.eof())
+    if (m_file.eof())
         return;
 
     // We've now parse the range of the 'old-file', but do not know whether the
@@ -747,7 +783,7 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
     //
     // If we found this, we can skip looking for any old file lines, and just
     // parse that range instead.
-    if (!file.get_line(line, &newline))
+    if (!m_file.get_line(line, &newline))
         throw std::runtime_error("Unable to retrieve line for context range");
 
     if (!parse_range(new_start_line, new_end_line)) {
@@ -756,12 +792,12 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
         append_content(old_lines, old_start_line, old_end_line);
         check_for_no_newline(old_lines);
 
-        file.get_line(line, &newline);
+        m_file.get_line(line, &newline);
         if (!parse_range(new_start_line, new_end_line))
             throw std::runtime_error("Could not parse expected range!");
 
-        file.get_line(line, &newline);
-        if (file.eof())
+        m_file.get_line(line, &newline);
+        if (m_file.eof())
             return;
 
         // Check if we have a 'to-file' that has been omitted, and we have reached the next patch.
@@ -774,17 +810,17 @@ static void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& ol
     check_for_no_newline(new_lines);
 }
 
-Patch parse_context_patch(Patch& patch, File& file)
+Patch Parser::parse_context_patch(Patch& patch)
 {
     while (true) {
         std::vector<PatchLine> old_lines;
         std::vector<PatchLine> new_lines;
         LineNumber old_start_line = 0;
         LineNumber new_start_line = 0;
-        if (file.eof())
+        if (m_file.eof())
             return patch;
 
-        parse_context_hunk(old_lines, old_start_line, new_lines, new_start_line, file);
+        parse_context_hunk(old_lines, old_start_line, new_lines, new_start_line);
 
         if (old_lines.empty() && new_lines.empty())
             return patch;
@@ -792,29 +828,29 @@ Patch parse_context_patch(Patch& patch, File& file)
         Hunk hunk = hunk_from_context_parts(old_start_line, old_lines, new_start_line, new_lines);
         patch.hunks.push_back(hunk);
 
-        auto pos = file.tellg();
+        auto pos = m_file.tellg();
         std::string line;
-        file.get_line(line);
-        file.seekg(pos);
+        m_file.get_line(line);
+        m_file.seekg(pos);
 
         if (!starts_with(line, "***"))
             return patch;
     }
 }
 
-void parse_patch_body(Patch& patch, File& file)
+void Parser::parse_patch_body(Patch& patch)
 {
     if (patch.format == Format::Unified || patch.format == Format::Git)
-        parse_unified_patch(patch, file);
+        parse_unified_patch(patch);
     else if (patch.format == Format::Context)
-        parse_context_patch(patch, file);
+        parse_context_patch(patch);
     else if (patch.format == Format::Normal)
-        parse_normal_patch(patch, file);
+        parse_normal_patch(patch);
     else
         throw std::runtime_error("Unable to determine patch format");
 }
 
-Patch parse_unified_patch(Patch& patch, File& file)
+Patch Parser::parse_unified_patch(Patch& patch)
 {
     Hunk hunk;
     std::string line;
@@ -831,8 +867,8 @@ Patch parse_unified_patch(Patch& patch, File& file)
 
     while (true) {
         NewLine newline;
-        auto pos = file.tellg();
-        if (!file.get_line(line, &newline))
+        auto pos = m_file.tellg();
+        if (!get_line(line, &newline))
             break;
 
         switch (state) {
@@ -842,7 +878,8 @@ Patch parse_unified_patch(Patch& patch, File& file)
             // a better way of doing this to avoid doing tellg on each line, but for now
             // this seems simple enough.
             if (starts_with(line, "--- ")) {
-                file.seekg(pos); // reset parsing the next patch.
+                m_file.seekg(pos); // reset parsing the next patch.
+                --m_line_number;
                 return patch;
             }
 
@@ -867,9 +904,10 @@ Patch parse_unified_patch(Patch& patch, File& file)
                 --to_lines_expected;
                 if (to_lines_expected == 0) {
                     // At end of file for 'to', and found a '\ No newline at end of file'
-                    if (file.peek() == '\\') {
+                    if (m_file.peek() == '\\') {
                         hunk.lines.back().line.newline = NewLine::None;
-                        file.get_line(line);
+                        m_file.get_line(line);
+                        ++m_line_number;
                     }
                 }
             }
@@ -878,9 +916,10 @@ Patch parse_unified_patch(Patch& patch, File& file)
                 --old_lines_expected;
                 if (old_lines_expected == 0) {
                     // At end of file for 'old', and found a '\ No newline at end of file'
-                    if (file.peek() == '\\') {
+                    if (m_file.peek() == '\\') {
                         hunk.lines.back().line.newline = NewLine::None;
-                        file.get_line(line);
+                        m_file.get_line(line);
+                        ++m_line_number;
                     }
                 }
             }
@@ -916,10 +955,10 @@ Patch parse_unified_patch(Patch& patch, File& file)
     return patch;
 }
 
-Patch parse_normal_patch(Patch& patch, File& file)
+Patch Parser::parse_normal_patch(Patch& patch)
 {
     std::string patch_line;
-    if (!file.get_line(patch_line))
+    if (!get_line(patch_line))
         throw std::invalid_argument("Unable to get line for normal range");
 
     patch.hunks.emplace_back();
@@ -934,7 +973,7 @@ Patch parse_normal_patch(Patch& patch, File& file)
     // If we see something else, it is the beginning of a new patch,
     // so we parse that.
     NewLine newline;
-    while (file.get_line(patch_line, &newline)) {
+    while (get_line(patch_line, &newline)) {
         if (patch_line.empty())
             break;
 
@@ -961,11 +1000,12 @@ Patch parse_normal_patch(Patch& patch, File& file)
 
 Patch parse_patch(File& file, Format format, int strip)
 {
+    Parser parser(file);
     Patch patch(format);
     PatchHeaderInfo info;
-    bool should_parse_body = parse_patch_header(patch, file, info, strip);
+    bool should_parse_body = parser.parse_patch_header(patch, info, strip);
     if (should_parse_body)
-        parse_patch_body(patch, file);
+        parser.parse_patch_body(patch);
     return patch;
 }
 

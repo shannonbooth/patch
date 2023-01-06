@@ -24,26 +24,6 @@
 
 namespace Patch {
 
-void print_header_info(File& patch, const PatchHeaderInfo& header_info, std::ostream& out)
-{
-    patch.seekg(header_info.patch_start);
-
-    if (header_info.lines_till_first_hunk > 1) {
-        out << "The text leading up to this was:\n"
-            << "--------------------------\n";
-        size_t my_lines = header_info.lines_till_first_hunk;
-        std::string line;
-        while (my_lines > 1) {
-            --my_lines;
-            if (!patch.get_line(line))
-                throw std::runtime_error("Failure reading line from patch outputting header info");
-
-            out << '|' << line << '\n';
-        }
-        out << "--------------------------\n";
-    }
-}
-
 std::string to_string(Format format)
 {
     switch (format) {
@@ -332,9 +312,11 @@ int process_patch(const Options& options)
 
     DeferredWriter deferred_writer;
 
+    Parser parser(patch_file.file());
+
     // Continue parsing patches from the input file and applying them.
     while (true) {
-        if (patch_file.file().eof()) {
+        if (parser.is_eof()) {
             if (options.verbose)
                 out << "done\n";
             break;
@@ -342,7 +324,7 @@ int process_patch(const Options& options)
 
         Patch patch(format);
         PatchHeaderInfo info;
-        bool should_parse_body = parse_patch_header(patch, patch_file.file(), info, options.strip_size);
+        bool should_parse_body = parser.parse_patch_header(patch, info, options.strip_size);
 
         if (patch.format == Format::Unknown) {
             if (first_patch)
@@ -381,20 +363,20 @@ int process_patch(const Options& options)
             out << "Hmm...  Looks like a " << to_string(info.format) << " diff to me...\n";
 
         if (file_to_patch.empty()) {
-            out << "can't find file to patch at input line " << info.lines_till_first_hunk
+            out << "can't find file to patch at input line " << parser.line_number()
                 << "\nPerhaps you "
                 << (options.strip_size == -1 ? "should have used the" : "used the wrong")
                 << " -p or --strip option?\n";
         }
 
         if (options.verbose || file_to_patch.empty())
-            print_header_info(patch_file.file(), info, out);
+            parser.print_header_info(info, out);
 
         if (file_to_patch.empty())
             file_to_patch = prompt_for_filepath(out);
 
         if (should_parse_body)
-            parse_patch_body(patch, patch_file.file());
+            parser.parse_patch_body(patch);
 
         if (file_to_patch.empty()) {
             out << "Skipping patch.\n"

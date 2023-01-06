@@ -19,13 +19,14 @@ TEST(determine_format_unified)
  }
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info, -1);
+    parser.parse_patch_header(patch, info, -1);
     EXPECT_EQ(patch.format, Patch::Format::Unified);
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
 --------------------------
@@ -48,13 +49,14 @@ index 5047a34..a46866d 100644
  }
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info, -1);
+    parser.parse_patch_header(patch, info, -1);
     EXPECT_EQ(patch.format, Patch::Format::Git);
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
 --------------------------
@@ -74,16 +76,17 @@ rename from new_file
 rename to another_new
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info, -1);
+    parser.parse_patch_header(patch, info, -1);
     EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.operation, Patch::Operation::Rename);
     EXPECT_EQ(patch.old_file_path, "new_file");
     EXPECT_EQ(patch.new_file_path, "another_new");
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
 
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
@@ -115,16 +118,17 @@ index 71ac1b5..fc3102f 100644
  h
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info, -1);
+    parser.parse_patch_header(patch, info, -1);
     EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.operation, Patch::Operation::Rename);
     EXPECT_EQ(patch.old_file_path, "thing");
     EXPECT_EQ(patch.new_file_path, "test");
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
 
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
@@ -166,16 +170,17 @@ HcmV?d00001
 2.25.1
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info, -1);
+    parser.parse_patch_header(patch, info, -1);
     EXPECT_EQ(patch.format, Patch::Format::Git);
     EXPECT_EQ(patch.old_file_path, "a.txt");
     EXPECT_EQ(patch.new_file_path, "a.txt");
     EXPECT_EQ(patch.operation, Patch::Operation::Binary);
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
 
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
@@ -210,13 +215,14 @@ TEST(determine_format_context)
   }
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info);
+    parser.parse_patch_header(patch, info);
     EXPECT_EQ(patch.format, Patch::Format::Context);
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
 --------------------------
@@ -243,13 +249,14 @@ Some text
   }
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info);
+    parser.parse_patch_header(patch, info);
     EXPECT_EQ(patch.format, Patch::Format::Context);
 
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
 
     EXPECT_EQ(output.str(),
         R"(The text leading up to this was:
@@ -270,12 +277,13 @@ TEST(determine_format_normal)
 > 	return 0;
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info);
+    parser.parse_patch_header(patch, info);
     EXPECT_EQ(patch.format, Patch::Format::Normal);
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
     EXPECT_EQ(output.str(), "");
 }
 
@@ -289,12 +297,13 @@ TEST(determine_format_normal_with_from_and_to_file_lines)
 > 	return 0;
 )");
 
+    Patch::Parser parser(patch_file);
     Patch::Patch patch;
     Patch::PatchHeaderInfo info;
-    Patch::parse_patch_header(patch, patch_file, info);
+    parser.parse_patch_header(patch, info);
     EXPECT_EQ(patch.format, Patch::Format::Normal);
     std::stringstream output;
-    Patch::print_header_info(patch_file, info, output);
+    parser.print_header_info(info, output);
     EXPECT_EQ(output.str(), R"(The text leading up to this was:
 --------------------------
 |Index: thing

@@ -88,6 +88,60 @@ PATCH_TEST(basic_context_patch)
 )");
 }
 
+PATCH_TEST(basic_verbose_context_patch)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+*** a	2022-06-19 20:26:52.280538615 +1200
+--- b	2022-06-19 20:26:59.968648316 +1200
+***************
+*** 1,3 ****
+--- 1,4 ----
+  int main()
+  {
++     return 0;
+  }
+
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+
+        file << R"(int main()
+{
+}
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--verbose", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(Hmm...  Looks like a new-style context diff to me...
+The text leading up to this was:
+--------------------------
+|
+|*** a	2022-06-19 20:26:52.280538615 +1200
+|--- b	2022-06-19 20:26:59.968648316 +1200
+--------------------------
+patching file a
+Using Plan A...
+Hunk #1 succeeded at 1.
+Hmm...  Ignoring the trailing garbage.
+done
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", R"(int main()
+{
+    return 0;
+}
+)");
+}
+
 PATCH_TEST(normal_patch_trailing_newlines)
 {
     {

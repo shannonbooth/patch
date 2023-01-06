@@ -8,9 +8,15 @@
 #include <patch/parser.h>
 #include <patch/system.h>
 #include <patch/utils.h>
+#include <sstream>
 #include <stdexcept>
 
 namespace Patch {
+
+class parser_error : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
 
 class LineParser {
 public:
@@ -884,8 +890,11 @@ Patch Parser::parse_unified_patch(Patch& patch)
                 line = " ";
 
             char what = line.at(0);
-            if (what != ' ' && what != '-' && what != '+')
-                throw std::invalid_argument("malformed content line: " + line);
+            if (what != ' ' && what != '-' && what != '+') {
+                std::ostringstream ss;
+                ss << "malformed patch at line " << (m_line_number - 1) << ": " << line << '\n';
+                throw parser_error(ss.str());
+            }
 
             hunk.lines.emplace_back(what, Line(line.substr(1), newline));
 

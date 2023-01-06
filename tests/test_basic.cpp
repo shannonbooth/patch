@@ -2005,3 +2005,33 @@ patching file a (renamed from b)
     EXPECT_FILE_EQ("a", b_content);
     EXPECT_FILE_EQ("b", a_content);
 }
+
+PATCH_TEST(unified_patch_with_corrupted_operation_line)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- a	2023-01-06 17:48:48.711995171 +1300
++++ b	2023-01-06 17:49:12.471983923 +1300
+@@ -1,5 +1,4 @@
+ 1
+ 2
+-3
+d4
+ 4
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+
+        file << "1\n2\n3\n4\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file a\n");
+    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** malformed patch at line 7: d4\n\n");
+    EXPECT_EQ(process.return_code(), 2);
+}

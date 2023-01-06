@@ -371,10 +371,9 @@ int process_patch(const Options& options)
         if (file_to_patch.empty())
             file_to_patch = prompt_for_filepath(out);
 
-        if (should_parse_body)
-            parser.parse_patch_body(patch);
-
         if (file_to_patch.empty()) {
+            if (should_parse_body)
+                parser.parse_patch_body(patch);
             out << "Skipping patch.\n"
                 << patch.hunks.size() << " out of " << patch.hunks.size() << " hunk";
             if (patch.hunks.size() > 1)
@@ -394,6 +393,8 @@ int process_patch(const Options& options)
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
         if (!looks_like_adding_file && !filesystem::is_regular_file(file_to_patch)) {
+            if (should_parse_body)
+                parser.parse_patch_body(patch);
             out << "File " << file_to_patch << " is not a regular file --";
             refuse_to_patch(out, mode, output_file, patch, options);
             had_failure = true;
@@ -410,6 +411,8 @@ int process_patch(const Options& options)
                 if (options.read_only_handling == Options::ReadOnlyHandling::Warn) {
                     out << " trying to patch anyway\n";
                 } else {
+                    if (should_parse_body)
+                        parser.parse_patch_body(patch);
                     refuse_to_patch(out, mode, output_file, patch, options);
                     had_failure = true;
                     continue;
@@ -435,6 +438,9 @@ int process_patch(const Options& options)
             out << " (read from " << file_to_patch << ")";
         }
         out << '\n';
+
+        if (should_parse_body)
+            parser.parse_patch_body(patch);
 
         if (options.verbose)
             out << "Using Plan A...\n";

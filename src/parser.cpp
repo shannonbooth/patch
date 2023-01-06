@@ -867,22 +867,11 @@ Patch Parser::parse_unified_patch(Patch& patch)
 
     while (true) {
         NewLine newline;
-        auto pos = m_file.tellg();
         if (!get_line(line, &newline))
             break;
 
         switch (state) {
         case State::InitialHunkContext: {
-            // If we find a leading file header in here - then we are are in a new patch.
-            // unwind and return the patch which we have currently built. There is potentially
-            // a better way of doing this to avoid doing tellg on each line, but for now
-            // this seems simple enough.
-            if (starts_with(line, "--- ")) {
-                m_file.seekg(pos); // reset parsing the next patch.
-                --m_line_number;
-                return patch;
-            }
-
             if (parse_unified_range(hunk, line)) {
                 state = State::Content;
                 old_lines_expected = hunk.old_file_range.number_of_lines;
@@ -924,16 +913,24 @@ Patch Parser::parse_unified_patch(Patch& patch)
                 }
             }
 
-            // We've found everything in the hunk content that we expect.
-            // Now loop back to either looking for another hunk in the patch
-            // (@@ - ), or for another patch header, in which case we reset
-            // and return.
+            // We've found everything for the current hunk that we expect.
             if (old_lines_expected == 0 && to_lines_expected == 0) {
                 patch.hunks.push_back(hunk);
-                state = State::InitialHunkContext;
-                hunk.old_file_range = {};
-                hunk.new_file_range = {};
                 hunk.lines.clear();
+
+                // If we can spot another hunk on the next line, continue
+                // to parse the next hunk, otherwise return the end of
+                // this patch.
+                auto pos = m_file.tellg();
+                if (!get_line(line) || !parse_unified_range(hunk, line)) {
+                    --m_line_number;
+                    m_file.seekg(pos);
+                    return patch;
+                }
+
+                state = State::Content;
+                old_lines_expected = hunk.old_file_range.number_of_lines;
+                to_lines_expected = hunk.new_file_range.number_of_lines;
             }
 
             break;

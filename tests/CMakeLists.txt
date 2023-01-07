@@ -85,7 +85,10 @@ add_executable(test_oom test_oom.cpp)
 target_link_libraries(test_oom PRIVATE patch_test)
 patch_add_tests(test_oom patch_oom OFF)
 
-add_executable(test_basic test_basic.cpp)
+add_executable(test_basic
+  test_basic.cpp
+  test_normal.cpp
+)
 target_link_libraries(test_basic PRIVATE patch_test)
 patch_add_tests(test_basic sb_patch ON)
 

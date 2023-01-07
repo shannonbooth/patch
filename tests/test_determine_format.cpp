@@ -345,6 +345,9 @@ TEST(determine_format_looks_like_normal_command)
     EXPECT_FALSE(Patch::parse_normal_range(hunk, "1,2x3"));
     EXPECT_FALSE(Patch::parse_normal_range(hunk, "1a2."));
     EXPECT_FALSE(Patch::parse_normal_range(hunk, "1a~2'"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "1,"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "1"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "5,7c8,not_a_number"));
     EXPECT_FALSE(Patch::parse_normal_range(hunk, ""));
 }
 

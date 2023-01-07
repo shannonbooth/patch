@@ -41,6 +41,8 @@ public:
 
     char consume()
     {
+        if (m_current == m_end)
+            return '\0';
         char c = *m_current;
         ++m_current;
         return c;
@@ -107,11 +109,10 @@ public:
 
             // Some escaped character, peek past to determine the intended unescaped character.
             if (consume_specific('\\')) {
-                if (is_eof())
-                    throw std::invalid_argument("Invalid unterminated \\ in quoted path " + m_line);
-
                 char c = consume();
                 switch (c) {
+                case '\0':
+                    throw std::invalid_argument("Invalid unterminated \\ in quoted path " + m_line);
                 case '\\':
                     output += '\\';
                     break;
@@ -329,14 +330,8 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
         hunk.old_file_range.number_of_lines = 0;
 
     // Ensure we've now reached a valid normal command.
-    char command;
-    if (parser.consume_specific('c'))
-        command = 'c';
-    else if (parser.consume_specific('a'))
-        command = 'a';
-    else if (parser.consume_specific('d'))
-        command = 'd';
-    else
+    char command = parser.consume();
+    if (command != 'c' && command != 'a' && command != 'd')
         return false;
 
     // All of the normal commands must have an integer once we've reached this point.

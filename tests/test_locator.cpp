@@ -34,6 +34,10 @@ TEST(locator_matches_ignoring_whitespace)
     EXPECT_TRUE(Patch::matches_ignoring_whitespace(" ", ""));
     EXPECT_TRUE(Patch::matches_ignoring_whitespace("", " "));
 
+    EXPECT_FALSE(Patch::matches_ignoring_whitespace("   a", ""));
+    EXPECT_FALSE(Patch::matches_ignoring_whitespace("", "   a"));
+    EXPECT_FALSE(Patch::matches_ignoring_whitespace("", "a"));
+
     EXPECT_FALSE(Patch::matches_ignoring_whitespace("a", "b"));
     EXPECT_FALSE(Patch::matches_ignoring_whitespace("ab", "a b"));
     EXPECT_FALSE(Patch::matches_ignoring_whitespace("a b c d", "abcd"));

@@ -225,21 +225,19 @@ static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, con
     else
         out << "Reversed (or previously applied)";
 
-    out << " patch detected!";
+    out << " patch detected!  ";
 
     // Check whether we've been told to ignore this on the command line.
-    if (options.ignore_reversed) {
-        out << "  Skipping patch.\n";
-        return ReverseHandling::Ignore;
+    if (!options.ignore_reversed) {
+        // Otherwise we need to the user whether we should reverse it.
+        if (check_with_user("Assume -R?", out, Default::False))
+            return ReverseHandling::Reverse;
+
+        if (check_with_user("Apply anyway?", out, Default::False))
+            return ReverseHandling::ApplyAnyway;
     }
 
-    // Otherwise we need to the user whether we should reverse it.
-    if (check_with_user("  Assume -R?", out, Default::False))
-        return ReverseHandling::Reverse;
-
-    if (check_with_user("Apply anyway?", out, Default::False))
-        return ReverseHandling::ApplyAnyway;
-
+    out << "Skipping patch.\n";
     return ReverseHandling::Ignore;
 }
 
@@ -292,9 +290,12 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file
             reverse(hunk);
             auto reversed_location = locate_hunk(lines, hunk, options.ignore_whitespace, offset_error, options.max_fuzz);
 
-            // If the reversed hunk applied perfectly, the patch may have been reversed. Check with the user how to handle this.
+            // Consider the patch potentially reversed if:
+            //  * The reversed hunk applied perfectly.
+            //  * The non-reversed hunk could not be applied, but the reversed one can.
+            // If either of these is true, check with the user how to handle this.
             auto reverse_handling = ReverseHandling::ApplyAnyway;
-            if (reversed_location.offset == 0 && reversed_location.fuzz == 0)
+            if ((reversed_location.offset == 0 && reversed_location.fuzz == 0) || (!location.is_found() && reversed_location.is_found()))
                 reverse_handling = check_how_to_handle_reversed_patch(out, options);
 
             switch (reverse_handling) {

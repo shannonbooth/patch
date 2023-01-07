@@ -952,44 +952,53 @@ Patch Parser::parse_unified_patch(Patch& patch)
 
 Patch Parser::parse_normal_patch(Patch& patch)
 {
-    std::string patch_line;
-    if (!get_line(patch_line))
-        throw std::invalid_argument("Unable to get line for normal range");
-
-    patch.hunks.emplace_back();
-    auto* current_hunk = &patch.hunks.back();
-
-    if (!parse_normal_range(*current_hunk, patch_line))
-        throw std::invalid_argument("Unable to parse normal range command: " + patch_line);
-
-    // We can simply add up '<' as minuses and '>' as additions
-    // and skip over the separating ---
-    //
-    // If we see something else, it is the beginning of a new patch,
-    // so we parse that.
     NewLine newline;
-    while (get_line(patch_line, &newline)) {
-        if (patch_line.empty())
+    std::string patch_line;
+
+    while (get_line(patch_line)) {
+        if (m_file.eof() || patch_line.empty())
             break;
 
-        const char c = patch_line.at(0);
-        if (c == '<') {
+        patch.hunks.emplace_back();
+        auto current_hunk = &patch.hunks.back();
+        if (!parse_normal_range(*current_hunk, patch_line))
+            throw std::invalid_argument("Unable to parse normal range command: " + patch_line);
+
+        for (LineNumber i = 0; i < current_hunk->old_file_range.number_of_lines; ++i) {
+            if (!get_line(patch_line, &newline) || patch_line.empty())
+                break;
+
+            const char c = patch_line[0];
+            if (c != '<')
+                throw parser_error("'<' followed by space or tab expected at line " + std::to_string(m_line_number - 1) + " of patch");
             current_hunk->lines.emplace_back('-', Line(patch_line.substr(2, patch_line.size()), newline));
-        } else if (c == '>') {
-            current_hunk->lines.emplace_back('+', Line(patch_line.substr(2, patch_line.size()), newline));
-        } else if (c == '\\') {
-            assert(!current_hunk->lines.empty()); // precondition checked by `parse_patch_header`
+        }
+
+        if (m_file.peek() == '\\') {
+            get_line(patch_line, &newline);
             current_hunk->lines.back().line.newline = NewLine::None;
-        } else if (patch_line == "---") {
-            // do nothing
-        } else {
-            patch.hunks.emplace_back();
-            current_hunk = &patch.hunks.back();
-            if (!parse_normal_range(*current_hunk, patch_line))
-                throw std::invalid_argument("Failed parsing expected normal patch command: " + patch_line);
+        }
+
+        // Expect --- if 'c' command
+        if (m_file.peek() == '-') {
+            get_line(patch_line, &newline);
+        }
+
+        for (LineNumber i = 0; i < current_hunk->new_file_range.number_of_lines; ++i) {
+            if (!get_line(patch_line, &newline) || patch_line.empty())
+                break;
+
+            const char c = patch_line[0];
+            if (c != '>')
+                throw parser_error("'>' followed by space or tab expected at line " + std::to_string(m_line_number - 1) + " of patch");
+            current_hunk->lines.emplace_back('+', Line(patch_line.substr(2, patch_line.size()), newline));
+        }
+
+        if (m_file.peek() == '\\') {
+            get_line(patch_line, &newline);
+            current_hunk->lines.back().line.newline = NewLine::None;
         }
     }
-
     return patch;
 }
 

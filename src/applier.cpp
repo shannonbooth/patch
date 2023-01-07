@@ -82,12 +82,8 @@ static std::vector<Line> file_as_lines(File& input_file)
     std::vector<Line> lines;
     NewLine newline;
     std::string line;
-    while (input_file.get_line(line, &newline)) {
-        if (input_file.fail())
-            throw std::system_error(errno, std::generic_category(), "Failed reading from input file");
-
+    while (input_file.get_line(line, &newline))
         lines.emplace_back(line, newline);
-    }
 
     return lines;
 }

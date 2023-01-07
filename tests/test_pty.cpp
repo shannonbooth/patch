@@ -223,3 +223,36 @@ Skip this patch? [y] Skipping patch.
 )");
     EXPECT_EQ(term.return_code(), 1);
 }
+
+PATCH_TEST(pty_file_cannot_apply_forwards_but_can_reversed_with_fuzz)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- X	2023-01-06 12:55:54.499099611 +1300
++++ a	2023-01-06 12:56:01.379092530 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
+-3
++b
++c
+)";
+        file.close();
+    }
+
+    const std::string content = "a\nb\nc\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << content;
+        file.close();
+    }
+
+    PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", nullptr }, "n\nn\n");
+    EXPECT_EQ(term.output(), R"(patching file a
+Reversed (or previously applied) patch detected!  Assume -R? [n] Apply anyway? [n] Skipping patch.
+1 out of 1 hunk ignored -- saving rejects to file a.rej
+)");
+    EXPECT_EQ(term.return_code(), 1);
+}

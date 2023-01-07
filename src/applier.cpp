@@ -329,10 +329,12 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file
             reject_writer.write_reject_file(hunk);
         }
 
-        if (location.fuzz != 0 || location.offset != 0)
+        const bool hunk_applied_perfectly = location.fuzz == 0 && location.offset == 0;
+
+        if (!hunk_applied_perfectly)
             all_hunks_applied_perfectly = false;
 
-        if (options.verbose || ((location.fuzz != 0 || offset_error != 0) && !skip_remaining_hunks))
+        if (options.verbose || (!hunk_applied_perfectly && !skip_remaining_hunks))
             print_hunk_statistics(out, hunk_num, skip_remaining_hunks, location, hunk, offset_old_lines_to_new, offset_error);
 
         if (location.is_found())

@@ -256,3 +256,37 @@ Reversed (or previously applied) patch detected!  Assume -R? [n] Apply anyway? [
 )");
     EXPECT_EQ(term.return_code(), 1);
 }
+
+PATCH_TEST(pty_patch_is_reversed_apply_anyway)
+{
+    const std::string patch = R"(--- a	2023-01-08 10:32:38.112719302 +1300
++++ b	2023-01-08 10:32:44.400714493 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
++b
+ 3
+)";
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << patch;
+        file.close();
+    }
+
+    const std::string content = "1\nb\n3\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << content;
+        file.close();
+    }
+
+    PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", nullptr }, "n\ny\n");
+    EXPECT_EQ(term.output(), R"(patching file a
+Reversed (or previously applied) patch detected!  Assume -R? [n] Apply anyway? [n] Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file a.rej
+)");
+    EXPECT_EQ(term.return_code(), 1);
+    EXPECT_FILE_EQ("a", content);
+    EXPECT_FILE_EQ("a.rej", patch);
+}

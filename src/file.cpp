@@ -59,11 +59,7 @@ File& File::operator=(File&& other) noexcept
 
 File File::create_temporary()
 {
-    FILE* file = std::tmpfile();
-    if (!file)
-        throw std::system_error(errno, std::generic_category(), "Unable to create temporary file");
-
-    return File(file);
+    return File(create_temporary_file());
 }
 
 static void copy_from(FILE* from, FILE* to)
@@ -99,17 +95,10 @@ void File::write_entire_contents_to(FILE* file)
 
 File File::create_temporary(FILE* initial_content)
 {
-    FILE* file = std::tmpfile();
-    if (!file)
-        throw std::system_error(errno, std::generic_category(), "Unable to create temporary file");
-
-    File real_file(file);
-
-    copy_from(initial_content, file);
-
-    std::rewind(file);
-
-    return real_file;
+    File file(create_temporary_file());
+    copy_from(initial_content, file.m_file);
+    std::rewind(file.m_file);
+    return file;
 }
 
 File File::create_temporary_with_content(const std::string& initial_content)

@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <algorithm>
 #include <array>
+#include <cerrno>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <fcntl.h>
+#include <functional>
 #include <iostream>
 #include <patch/system.h>
+#include <random>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <system_error>
@@ -20,11 +25,38 @@
 #    define close _close
 #    define read _read
 #    define open _open
+#    define fdopen _fdopen
 #else
 #    include <unistd.h>
 #endif
 
 namespace Patch {
+
+static std::mt19937 random_generator()
+{
+    constexpr auto seed_bytes = sizeof(std::mt19937::result_type) * std::mt19937::state_size;
+    constexpr auto seed_len = seed_bytes / sizeof(std::seed_seq::result_type);
+
+    auto seed = std::array<std::seed_seq::result_type, seed_len>();
+    std::random_device dev;
+    std::generate_n(std::begin(seed), seed_len, std::ref(dev));
+
+    std::seed_seq seed_seq(std::begin(seed), std::end(seed));
+
+    return std::mt19937(seed_seq);
+}
+
+static std::string generate_random_alphanumeric_string(std::size_t len)
+{
+    static const char* chars = "0123456789"
+                               "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                               "abcdefghijklmnopqrstuvwxyz";
+    static thread_local std::mt19937 rng = random_generator();
+    auto dist = std::uniform_int_distribution<size_t> { {}, std::strlen(chars) - 1 };
+    auto result = std::string(len, '\0');
+    std::generate_n(begin(result), len, [&]() { return chars[dist(rng)]; });
+    return result;
+}
 
 std::string read_tty_until_enter()
 {
@@ -177,7 +209,67 @@ std::string current_path()
 #endif
 }
 
+FILE* create_temporary_file()
+{
+    constexpr int max_attempts = 256; // something very wrong if this fails.
+
+    for (int i = 0; i < max_attempts; i++) {
+        std::string tmpname = filesystem::temp_directory_path() + "/patch-" + generate_random_alphanumeric_string(6);
+#ifdef _WIN32
+        int fd = ::_open(tmpname.c_str(), _O_BINARY | _O_CREAT | _O_EXCL | _O_RDWR | _O_TEMPORARY, _S_IREAD | _S_IWRITE);
+#else
+        int fd = ::open(tmpname.c_str(), O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
+#endif
+        if (fd == -1)
+            continue;
+
+#ifndef _WIN32
+        if (::unlink(tmpname.c_str()) != 0)
+            throw std::system_error(errno, std::generic_category(), "Failed unlinking temporary file " + tmpname);
+#endif
+
+        FILE* fp = ::fdopen(fd, "wb+");
+        if (!fp)
+            throw std::system_error(errno, std::generic_category(), "Failed running fdopen to create temporary file");
+
+        return fp;
+    }
+
+    // Ran out of attempts creating the file :(
+    throw std::system_error(errno, std::generic_category(), "Failed creating temporary file");
+}
+
 namespace filesystem {
+
+std::string temp_directory_path()
+{
+#ifdef _WIN32
+    std::wstring result;
+    result.resize(MAX_PATH);
+
+    while (true) {
+        const auto requested_size = static_cast<unsigned long>(result.size());
+
+        const auto size = GetTempPathW(requested_size, &result[0]);
+
+        if (size == 0)
+            throw std::system_error(GetLastError(), std::system_category(), "Failed getting current directory");
+
+        result.resize(size);
+        if (size <= requested_size)
+            return to_narrow(result);
+    }
+#else
+    std::array<const char*, 4> env_vars { "TMPDIR", "TMP", "TEMP", "TEMPDIR" };
+    for (const char* env : env_vars) {
+        const char* maybe_temp_dir = std::getenv(env);
+        if (maybe_temp_dir)
+            return maybe_temp_dir;
+    }
+    // Fallback to /tmp if we couldn't find anything else.
+    return "/tmp";
+#endif
+}
 
 std::string make_temp_directory()
 {

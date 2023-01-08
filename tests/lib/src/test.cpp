@@ -9,8 +9,8 @@
 class Test {
 public:
     explicit Test(std::string name, std::function<void(const char*)> test_function)
-        : m_name(std::move(name))
-        , m_test_function(std::move(test_function))
+        : m_test_function(std::move(test_function))
+        , m_name(std::move(name))
         , m_start_dir(Patch::current_path())
     {
     }
@@ -38,7 +38,6 @@ public:
 
 private:
     std::function<void(const char*)> m_test_function;
-
     std::string m_name;
     std::string m_tmp_dir;
     std::string m_start_dir;

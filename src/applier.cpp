@@ -98,7 +98,7 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
     };
 
     DefineState define_state = DefineState::Outside;
-    auto line_number = location.line_number;
+    auto line_number = static_cast<size_t>(location.line_number);
 
     for (const auto& patch_line : hunk.lines) {
         if (patch_line.operation == ' ') {
@@ -139,7 +139,7 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
     if (define_state != DefineState::Outside)
         output << "#endif" << lines.at(lines.size() - 1).newline;
 
-    return line_number;
+    return static_cast<LineNumber>(line_number);
 }
 
 static LineNumber write_hunk(LineWriter& output, const Hunk& hunk, const Location& location, const std::vector<Line>& lines, const std::string& define)
@@ -147,7 +147,7 @@ static LineNumber write_hunk(LineWriter& output, const Hunk& hunk, const Locatio
     if (!define.empty())
         return write_define_hunk(output, hunk, location, lines, define);
 
-    auto line_number = location.line_number;
+    auto line_number = static_cast<size_t>(location.line_number);
 
     for (const auto& patch_line : hunk.lines) {
         if (patch_line.operation == ' ') {
@@ -160,7 +160,7 @@ static LineNumber write_hunk(LineWriter& output, const Hunk& hunk, const Locatio
         }
     }
 
-    return line_number;
+    return static_cast<LineNumber>(line_number);
 }
 
 static void print_hunk_statistics(std::ostream& out, size_t hunk_num, bool skipped, const Location& location, const Hunk& hunk, LineNumber offset_old_lines_to_new, LineNumber offset_error)
@@ -317,7 +317,7 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file
 
             // Write up until where we have found this latest hunk from the old file.
             for (; line_number < location.line_number; ++line_number)
-                output << lines.at(line_number);
+                output << lines.at(static_cast<size_t>(line_number));
 
             // Then output the hunk to what we hope is the correct location in the file.
             line_number = write_hunk(output, hunk, location, lines, options.define_macro);
@@ -343,7 +343,7 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file
 
     // We've finished applying all hunks, write out anything from the old file we haven't already.
     for (; static_cast<size_t>(line_number) < lines.size(); ++line_number)
-        output << lines[line_number];
+        output << lines[static_cast<size_t>(line_number)];
 
     return { reject_writer.rejected_hunks(), skip_remaining_hunks, all_hunks_applied_perfectly };
 }

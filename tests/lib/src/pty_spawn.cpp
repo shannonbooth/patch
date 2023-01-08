@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <sys/wait.h>
 #include <system_error>
+#include <termios.h>
 #include <unistd.h>
 
 #if defined(HAVE_FORKPTY_PTY)
@@ -73,7 +74,7 @@ PtySpawn::PtySpawn(const char* cmd, const std::vector<const char*>& args, const 
 void PtySpawn::write(const std::string& data)
 {
     auto ret = ::write(m_master, data.c_str(), data.size());
-    if (ret != data.size())
+    if (ret < 0 || static_cast<size_t>(ret) != data.size())
         throw std::system_error(errno, std::generic_category(), "Failed to write data");
 }
 
@@ -103,7 +104,7 @@ std::string PtySpawn::read(std::chrono::milliseconds timeout)
             break;
         }
 
-        offset += ret;
+        offset += static_cast<size_t>(ret);
 
         if (offset >= buffer.size())
             buffer.resize(buffer.size() * 2);
@@ -118,8 +119,10 @@ void PtySpawn::disable_echo(int fd)
     if (tcgetattr(fd, &term) < 0)
         throw std::system_error(errno, std::generic_category(), "Failed getting terminal attributes");
 
-    term.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
-    term.c_oflag &= ~ONLCR;
+    constexpr tcflag_t echo_lflags = ECHO | ECHOE | ECHOK | ECHONL;
+    constexpr tcflag_t echo_oflags = ONLCR;
+    term.c_lflag &= ~echo_lflags;
+    term.c_oflag &= ~echo_oflags;
 
     if (tcsetattr(fd, TCSANOW, &term) < 0)
         throw std::system_error(errno, std::generic_category(), "Failed setting terminal attributes");

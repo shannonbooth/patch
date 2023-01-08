@@ -694,7 +694,7 @@ TEST(parser_context_diff_with_changed_line)
     EXPECT_FALSE(patch.hunks[1].lines.empty());
 }
 
-TEST(parser_normal_diff_no_new_line_at_end_of_file)
+TEST(parser_normal_diff_add_no_new_line_at_end_of_file)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(0a1
 > a
@@ -707,6 +707,22 @@ TEST(parser_normal_diff_no_new_line_at_end_of_file)
     EXPECT_EQ(lines.size(), 1);
     EXPECT_EQ(lines.at(0).operation, '+');
     EXPECT_EQ(lines.at(0).line.content, "a");
+    EXPECT_EQ(lines.at(0).line.newline, Patch::NewLine::None);
+}
+
+TEST(parser_normal_diff_remove_no_new_line_at_end_of_file)
+{
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(1d0
+< d
+\ No newline at end of file
+)");
+
+    auto patch = Patch::parse_patch(patch_file);
+    EXPECT_EQ(patch.hunks.size(), 1);
+    const auto& lines = patch.hunks.at(0).lines;
+    EXPECT_EQ(lines.size(), 1);
+    EXPECT_EQ(lines.at(0).operation, '-');
+    EXPECT_EQ(lines.at(0).line.content, "d");
     EXPECT_EQ(lines.at(0).line.newline, Patch::NewLine::None);
 }
 

@@ -785,11 +785,6 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
         }
     }
 
-    // If we didn't find any leading hunk, there must have been some garbage
-    // at the end of the patch, or we were already there.
-    if (m_file.eof())
-        return;
-
     // We've now parse the range of the 'old-file', but do not know whether the
     // old file contents were omitted in the hunk. Peek ahead a line to check if
     // we can spot the 'to-file' range which looks something like:

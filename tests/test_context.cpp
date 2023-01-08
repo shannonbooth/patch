@@ -135,3 +135,69 @@ x  1
     EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** malformed patch at line 5: x  1\n\n");
     EXPECT_EQ(process.return_code(), 2);
 }
+
+PATCH_TEST(context_patch_missing_from_line)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(*** a	2023-01-08 21:10:53.195723396 +1300
+--- b	2023-01-08 21:10:13.699815158 +1300
+***************
+*** 1,3 ****
+! 2
+! 3
+--- 1,3 ----
+  1
+! b
+! c
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+
+        file << "1\n2\n3\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    // FIXME: Should we output 'patching file a' to stdout for this case?
+    /* EXPECT_EQ(process.stdout_data(), ""); */
+    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** Premature '---' at line 7; check line numbers at line 4\n");
+    EXPECT_EQ(process.return_code(), 2);
+}
+
+PATCH_TEST(context_patch_missing_to_line)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(*** a	2023-01-08 21:10:53.195723396 +1300
+--- b	2023-01-08 21:10:13.699815158 +1300
+***************
+*** 1,3 ****
+  1
+! 2
+! 3
+--- 1,3 ----
+  1
+! b
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+
+        file << "1\n2\n3\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    // FIXME: Should we output 'patching file a' to stdout for this case?
+    /* EXPECT_EQ(process.stdout_data(), ""); */
+    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** context mangled in hunk at line 4\n");
+    EXPECT_EQ(process.return_code(), 2);
+}

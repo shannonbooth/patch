@@ -730,13 +730,18 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
 {
     std::string line;
 
+    LineNumber from_file_range_line_number = 0;
+
     LineNumber old_end_line = 0;
     LineNumber new_end_line = 0;
 
-    auto append_line = [this](std::vector<PatchLine>& lines, const std::string& content, NewLine newline) {
+    auto append_line = [&](std::vector<PatchLine>& lines, const std::string& content, NewLine newline) {
         if (content.size() < 2)
             throw std::invalid_argument("Unexpected empty patch line");
         lines.emplace_back(content[0], Line(content.substr(2, content.size()), newline));
+
+        if (content[1] == '-')
+            throw parser_error("Premature '---' at line " + std::to_string(m_line_number - 1) + "; check line numbers at line " + std::to_string(from_file_range_line_number));
 
         const auto& line = lines.back();
         if (line.operation != ' ' && line.operation != '+' && line.operation != '-' && line.operation != '!') {
@@ -750,7 +755,7 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
         NewLine newline;
         for (LineNumber i = start_line + static_cast<LineNumber>(lines.size()); i <= end_line; ++i) {
             if (!get_line(line, &newline))
-                throw std::runtime_error("Invalid context patch, unable to retrieve expected number of lines");
+                throw parser_error("context mangled in hunk at line " + std::to_string(from_file_range_line_number));
             append_line(lines, line, newline);
         }
     };
@@ -773,8 +778,9 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
     // Skip over the patch until we find the old file range.
     NewLine newline;
     while (get_line(line, &newline)) {
-        if (line.rfind("*** ", 0) == 0 && ends_with(line, " ****")) {
+        if (starts_with(line, "*** ") && ends_with(line, " ****")) {
             parse_context_range(old_start_line, old_end_line, line.substr(4, line.size() - 9));
+            from_file_range_line_number = m_line_number - 1;
             break;
         }
     }

@@ -145,7 +145,13 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
                 if (static_cast<size_t>(line) >= content.size())
                     return false;
 
-                return matches(content.at(line++), hunk_line.line, ignore_whitespace);
+                // Check whether this line matches what is specified in this part of the hunk.
+                if (!matches(content[static_cast<size_t>(line)], hunk_line.line, ignore_whitespace))
+                    return false;
+
+                // Proceed to the next line.
+                ++line;
+                return true;
             });
         };
 

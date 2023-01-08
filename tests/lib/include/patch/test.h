@@ -92,7 +92,7 @@ void patch_test_error_format(const T& a)
                 << (msg) << "\", but instead got: \"" << patch_error_msg << "\"\n"; \
             throw std::runtime_error("Test failed");                                \
         }                                                                           \
-    } while (false);
+    } while (false)
 
 #define EXPECT_FILE_EQ(file, rhs)                                                         \
     do {                                                                                  \

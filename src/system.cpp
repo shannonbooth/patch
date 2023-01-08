@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
-#include <patch/system.h>
-
 #include <array>
 #include <climits>
 #include <cstdio>
@@ -10,6 +8,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
+#include <patch/system.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <system_error>
@@ -357,7 +356,7 @@ uintmax_t file_size(const std::string& path)
     if (!S_ISREG(buf.st_mode))
         throw std::system_error(std::make_error_code(std::errc::not_supported), path + " is not a regular file, unable to determine file size");
 
-    return buf.st_size;
+    return static_cast<uintmax_t>(buf.st_size);
 #endif
 }
 

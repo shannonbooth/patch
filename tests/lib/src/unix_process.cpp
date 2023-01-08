@@ -147,8 +147,6 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
         if (poll_result == 0)
             throw std::runtime_error("Timeout waiting for data");
 
-        bool done = false;
-
         for (const auto& fd : fds) {
             if (fd.revents == 0)
                 continue;
@@ -160,7 +158,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
                     continue;
                 }
 
-                stdout_offset += ret;
+                stdout_offset += static_cast<size_t>(ret);
 
                 if (stdout_offset >= m_stdout_data.size())
                     m_stdout_data.resize(m_stdout_data.size() * 2);
@@ -171,7 +169,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
                     continue;
                 }
 
-                stderr_offset += ret;
+                stderr_offset += static_cast<size_t>(ret);
 
                 if (stderr_offset >= m_stderr_data.size())
                     m_stderr_data.resize(m_stderr_data.size() * 2);

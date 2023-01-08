@@ -135,14 +135,14 @@ public:
                 case '5':
                 case '6':
                 case '7': {
-                    unsigned char result = c - '0';
+                    unsigned char result = static_cast<unsigned char>(c) - '0';
 
                     for (int i = 1; i < 3; ++i) {
                         char octal_val = peek();
                         if (!is_octal(octal_val))
                             break;
 
-                        uint8_t digit_val = octal_val - '0';
+                        unsigned char digit_val = static_cast<unsigned char>(octal_val) - '0';
                         result = result * 8 + digit_val;
 
                         ++m_current;
@@ -249,7 +249,7 @@ bool string_to_line_number(const std::string& str, LineNumber& output)
             return false;
 
         output *= 10;
-        unsigned char c = it - '0';
+        unsigned char c = static_cast<unsigned char>(it) - '0';
         if (std::numeric_limits<LineNumber>::max() - c < output)
             return false;
         output += c;
@@ -741,7 +741,7 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
 
     auto append_content = [&](std::vector<PatchLine>& lines, LineNumber start_line, LineNumber end_line) {
         NewLine newline;
-        for (LineNumber i = start_line + lines.size(); i <= end_line; ++i) {
+        for (LineNumber i = start_line + static_cast<LineNumber>(lines.size()); i <= end_line; ++i) {
             if (!m_file.get_line(line, &newline))
                 throw std::runtime_error("Invalid context patch, unable to retrieve expected number of lines");
             append_line(lines, line, newline);

@@ -4,10 +4,13 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <vector>
 
 namespace Patch {
+
+FILE* create_temporary_file();
 
 std::string read_tty_until_enter();
 
@@ -22,6 +25,8 @@ void ensure_parent_directories(const std::string& file_path);
 namespace filesystem {
 
 bool create_directory(const std::string& path);
+
+std::string temp_directory_path();
 
 std::string make_temp_directory();
 

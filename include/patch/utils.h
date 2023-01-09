@@ -32,4 +32,9 @@ constexpr bool is_not_digit(char c)
     return !is_digit(c);
 }
 
+constexpr bool is_whitespace(char c)
+{
+    return c == ' ' || c == '\t';
+}
+
 } // namespace Patch

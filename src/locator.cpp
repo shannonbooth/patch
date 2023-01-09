@@ -4,13 +4,9 @@
 #include <algorithm>
 #include <patch/hunk.h>
 #include <patch/locator.h>
+#include <patch/utils.h>
 
 namespace Patch {
-
-static constexpr bool is_whitespace(char c)
-{
-    return c == ' ' || c == '\t';
-}
 
 bool matches_ignoring_whitespace(const std::string& as, const std::string& bs)
 {

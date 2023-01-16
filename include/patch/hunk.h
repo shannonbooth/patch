@@ -14,8 +14,8 @@ namespace Patch {
 using LineNumber = int64_t;
 
 struct Range {
-    LineNumber start_line { 0 };
-    LineNumber number_of_lines { 0 };
+    LineNumber start_line { -1 };
+    LineNumber number_of_lines { -1 };
 };
 
 enum class Format {

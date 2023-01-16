@@ -642,9 +642,9 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
     }
 
     if (patch.operation == Operation::Change) {
-        if (patch.new_file_path == "/dev/null")
+        if (hunk.new_file_range.start_line == 0)
             patch.operation = Operation::Delete;
-        else if (patch.old_file_path == "/dev/null")
+        else if (hunk.old_file_range.start_line == 0)
             patch.operation = Operation::Add;
     }
 

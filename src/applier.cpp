@@ -77,17 +77,6 @@ private:
     const Options& m_options;
 };
 
-static std::vector<Line> file_as_lines(File& input_file)
-{
-    std::vector<Line> lines;
-    NewLine newline;
-    std::string line;
-    while (input_file.get_line(line, &newline))
-        lines.emplace_back(line, newline);
-
-    return lines;
-}
-
 static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const Location& location, const std::vector<Line>& lines, const std::string& define)
 {
     enum class DefineState {
@@ -261,13 +250,12 @@ bool RejectWriter::should_write_as_unified() const
         || (m_reject_format == Options::RejectFormat::Default && m_patch.format == Format::Unified);
 }
 
-Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file, Patch& patch, const Options& options, std::ostream& out)
+Result apply_patch(File& out_file, RejectWriter& reject_writer, const std::vector<Line>& lines, Patch& patch, const Options& options, std::ostream& out)
 {
     if (options.reverse_patch)
         reverse(patch);
 
     LineWriter output(out_file, options);
-    auto lines = file_as_lines(input_file);
     LineNumber line_number = 0; // NOTE: relative to 'old' file.
     LineNumber offset_old_lines_to_new = 0;
     LineNumber offset_error = 0;

@@ -69,7 +69,7 @@ else()
 endif()
 
 if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
-  add_executable(test_pty test_pty.cpp lib/src/pty_spawn.cpp)
+  add_executable(test_pty test_pty.cpp test_prerequisite.cpp lib/src/pty_spawn.cpp)
   target_link_libraries(test_pty PRIVATE patch_test util)
   target_include_directories(test_pty PRIVATE lib/src ${CMAKE_CURRENT_BINARY_DIR}/lib/src)
   patch_add_tests(test_pty sb_patch ON)

@@ -168,4 +168,16 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
     return {};
 }
 
+bool has_prerequisite(const Line& line, const std::string& prerequisite)
+{
+    return line.content.find(prerequisite) != std::string::npos;
+}
+
+bool has_prerequisite(const std::vector<Line>& lines, const std::string& prerequisite)
+{
+    return std::any_of(lines.begin(), lines.end(), [&prerequisite](const Line& line) {
+        return has_prerequisite(line, prerequisite);
+    });
+}
+
 } // namespace Patch

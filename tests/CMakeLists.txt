@@ -89,6 +89,7 @@ add_executable(test_basic
   test_basic.cpp
   test_normal.cpp
   test_context.cpp
+  test_defines.cpp
 )
 target_link_libraries(test_basic PRIVATE patch_test)
 patch_add_tests(test_basic sb_patch ON)
@@ -96,7 +97,6 @@ patch_add_tests(test_basic sb_patch ON)
 add_executable(test_unit
   test_applier.cpp
   test_cmdline.cpp
-  test_defines.cpp
   test_determine_format.cpp
   test_file.cpp
   test_formatter.cpp

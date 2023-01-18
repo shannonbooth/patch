@@ -102,6 +102,7 @@ struct Patch {
     Operation operation { Operation::Change };
 
     std::string index_file_path;
+    std::string prerequisite;
 
     std::string old_file_path;
     std::string new_file_path;

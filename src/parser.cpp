@@ -545,6 +545,11 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
             continue;
         }
 
+        if (starts_with(line, "Prereq: ")) {
+            parse_file_line(line.substr(8, line.size() - 8), strip, patch.prerequisite);
+            continue;
+        }
+
         // Git diffs sometimes have some extended information in them which can express some
         // operations in a more terse manner. If we recognise a git diff, try and look for
         // these extensions lines in the patch.

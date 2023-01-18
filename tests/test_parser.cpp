@@ -117,6 +117,29 @@ TEST(parser_one_unified_hunk_remove_no_context)
     EXPECT_EQ(hunk.new_file_range.start_line, 2);
 }
 
+TEST(parser_unified_hunk_with_prereq_line)
+{
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
+--- main1.cpp	2022-01-04 13:29:06.799930273 +1300
++++ main2.cpp	2022-01-04 13:29:05.599932817 +1300
+Prereq: some_version-1.2.3
+@@ -3 +2,0 @@
+-	return 0;
+)");
+
+    auto patch = Patch::parse_patch(patch_file);
+    EXPECT_EQ(patch.format, Patch::Format::Unified);
+    EXPECT_EQ(patch.hunks.size(), 1);
+    auto& hunk = patch.hunks[0];
+    EXPECT_EQ(patch.old_file_path, "main1.cpp");
+    EXPECT_EQ(patch.new_file_path, "main2.cpp");
+    EXPECT_EQ(patch.prerequisite, "some_version-1.2.3");
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 1);
+    EXPECT_EQ(hunk.old_file_range.start_line, 3);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 0);
+    EXPECT_EQ(hunk.new_file_range.start_line, 2);
+}
+
 TEST(parser_one_context_hunk_no_context_remove_line)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(

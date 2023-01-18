@@ -35,4 +35,8 @@ bool matches_ignoring_whitespace(const std::string& as, const std::string& bs);
 
 bool matches(const Line& line1, const Line& line2, bool ignore_whitespace);
 
+bool has_prerequisite(const std::vector<Line>& lines, const std::string& prerequisite);
+
+bool has_prerequisite(const Line& line, const std::string& prerequisite);
+
 } // namespace Patch

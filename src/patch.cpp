@@ -12,6 +12,7 @@
 #include <patch/cmdline.h>
 #include <patch/file.h>
 #include <patch/hunk.h>
+#include <patch/locator.h>
 #include <patch/options.h>
 #include <patch/parser.h>
 #include <patch/patch.h>
@@ -23,6 +24,17 @@
 #include <unordered_set>
 
 namespace Patch {
+
+static std::vector<Line> file_as_lines(File& input_file)
+{
+    std::vector<Line> lines;
+    NewLine newline;
+    std::string line;
+    while (input_file.get_line(line, &newline))
+        lines.emplace_back(line, newline);
+
+    return lines;
+}
 
 std::string to_string(Format format)
 {
@@ -421,6 +433,23 @@ int process_patch(const Options& options)
                 filesystem::permissions(output_file, old_permissions | write_perm_mask);
         }
 
+        File input_file;
+        if (!looks_like_adding_file || filesystem::exists(file_to_patch)) {
+            input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::ios_base::in);
+            if (!input_file)
+                throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
+        }
+
+        const auto input_lines = file_as_lines(input_file);
+
+        input_file.close();
+
+        if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite)) {
+            out << "This file doesn't appear to be the " << patch.prerequisite << " version -- ";
+            if (!check_with_user("patch anyway?", out, Default::False))
+                throw std::runtime_error("aborted");
+        }
+
         out << patch_operation(options) << " file " << format_filename(output_file);
 
         if (patch.operation == Operation::Rename) {
@@ -443,18 +472,9 @@ int process_patch(const Options& options)
         if (options.verbose)
             out << "Using Plan A...\n";
 
-        File input_file;
-        if (!looks_like_adding_file || filesystem::exists(file_to_patch)) {
-            input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::ios_base::in);
-            if (!input_file)
-                throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
-        }
-
         File tmp_out_file = File::create_temporary();
 
-        Result result = apply_patch(tmp_out_file, reject_writer, input_file, patch, options, out);
-
-        input_file.close();
+        Result result = apply_patch(tmp_out_file, reject_writer, input_lines, patch, options, out);
 
         if (output_to_stdout) {
             // Nothing else to do other than write to stdout :^)

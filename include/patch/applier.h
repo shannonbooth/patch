@@ -5,14 +5,13 @@
 
 #include <iostream>
 #include <istream>
+#include <patch/hunk.h>
 #include <patch/options.h>
 #include <vector>
 
 namespace Patch {
 
 class File;
-struct Patch;
-struct Hunk;
 
 class RejectWriter {
 public:
@@ -42,7 +41,7 @@ struct Result {
     bool all_hunks_applied_perfectly;
 };
 
-Result apply_patch(File& out_file, RejectWriter& reject_writer, File& input_file, Patch& patch, const Options& options = {}, std::ostream& out = std::cout);
+Result apply_patch(File& out_file, RejectWriter& reject_writer, const std::vector<Line>& input_lines, Patch& patch, const Options& options = {}, std::ostream& out = std::cout);
 
 void reverse(Patch& patch);
 

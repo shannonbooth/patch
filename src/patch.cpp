@@ -339,14 +339,10 @@ int process_patch(const Options& options)
         bool looks_like_adding_file = false;
 
         if (patch.operation == Operation::Add) {
-            // This should only happen if the file has already been patched!
-            if (options.file_to_patch.empty() && !file_to_patch.empty()) {
-                out << "The next patch would create the file " << file_to_patch << ",\n"
-                    << "which already exists!\n";
-            } else if (file_to_patch.empty()) {
+            if (file_to_patch.empty()) {
                 file_to_patch = patch.new_file_path;
                 looks_like_adding_file = true;
-            } else {
+            } else if (!options.file_to_patch.empty()) {
                 looks_like_adding_file = true;
             }
         }

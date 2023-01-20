@@ -129,6 +129,7 @@ PATCH_TEST(prerequisite_is_not_met_abort)
     PtySpawn term(patch_path, { patch_path, "-i", "diff.patch", nullptr }, "\n");
 
     EXPECT_EQ(term.output(), "This file doesn't appear to be the version-1.2.4 version -- patch anyway? [n] " + std::string(patch_path) + ": **** aborted\n");
+    EXPECT_EQ(term.return_code(), 2);
 }
 
 PATCH_TEST(prerequisite_is_not_met_force)

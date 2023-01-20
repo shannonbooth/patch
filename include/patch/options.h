@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -46,6 +46,7 @@ struct Options {
 
     // non posix defined
     bool force { false };
+    bool batch { false };
     bool show_help { false };
     bool show_version { false };
     bool interpret_as_unified { false };

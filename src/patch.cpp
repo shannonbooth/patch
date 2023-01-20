@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <cassert>
@@ -223,6 +223,21 @@ static const char* patch_operation(const Options& options)
     return options.dry_run ? "checking" : "patching";
 }
 
+void check_prerequisite_handling(std::ostream& out, const Options& options, const std::string& prerequisite)
+{
+    if (options.batch)
+        throw std::runtime_error("This file doesn't appear to be the " + prerequisite + " version -- aborting.");
+
+    if (options.force) {
+        out << "Warning: this file doesn't appear to be the version-1.2.4 version -- patching anyway.\n";
+        return;
+    }
+
+    out << "This file doesn't appear to be the " << prerequisite << " version -- ";
+    if (!check_with_user("patch anyway?", out, Default::False))
+        throw std::runtime_error("aborted");
+}
+
 class Backup {
 public:
     explicit Backup(const Options& options)
@@ -444,11 +459,8 @@ int process_patch(const Options& options)
 
         input_file.close();
 
-        if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite)) {
-            out << "This file doesn't appear to be the " << patch.prerequisite << " version -- ";
-            if (!check_with_user("patch anyway?", out, Default::False))
-                throw std::runtime_error("aborted");
-        }
+        if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))
+            check_prerequisite_handling(out, options, patch.prerequisite);
 
         out << patch_operation(options) << " file " << format_filename(output_file);
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <istream>
 #include <limits>
@@ -214,6 +214,12 @@ static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, con
 
     // Check whether we've been told to ignore this on the command line.
     if (!options.ignore_reversed) {
+        // Or if we have been told to assume patches have been reversed.
+        if (options.batch) {
+            out << "Assuming -R.\n";
+            return ReverseHandling::Reverse;
+        }
+
         // Otherwise we need to the user whether we should reverse it.
         if (check_with_user("Assume -R?", out, Default::False))
             return ReverseHandling::Reverse;

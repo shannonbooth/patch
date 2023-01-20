@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
 #include <patch/process.h>
@@ -1938,4 +1938,36 @@ d4
     EXPECT_EQ(process.stdout_data(), "patching file a\n");
     EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** malformed patch at line 7: d4\n\n");
     EXPECT_EQ(process.return_code(), 2);
+}
+
+PATCH_TEST(reversed_patch_batch)
+{
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "1\nb\n3\n";
+        file.close();
+    }
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- a	2022-09-27 19:32:58.112960376 +1300
++++ b	2022-09-27 19:33:04.088209645 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
++b
+ 3
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--batch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file a\nReversed (or previously applied) patch detected!  Assuming -R.\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("a", "1\n2\n3\n");
 }

@@ -4,7 +4,7 @@
 #include <patch/pty_spawn.h>
 #include <patch/test.h>
 
-PATCH_TEST(pty_reversed_patch)
+PATCH_TEST(pty_reversed_patch_answer_yes)
 {
     {
         Patch::File file("a", std::ios_base::out);

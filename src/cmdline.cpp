@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <array>
@@ -31,7 +31,7 @@ struct Option {
     HasArgument has_argument;
 };
 
-const std::array<Option, 25> s_switches { {
+const std::array<Option, 26> s_switches { {
     { 'B', "--prefix", HasArgument::Yes },
     { 'D', "--ifdef", HasArgument::Yes },
     { 'F', "--fuzz", HasArgument::Yes },
@@ -49,6 +49,7 @@ const std::array<Option, 25> s_switches { {
     { 'o', "--output", HasArgument::Yes },
     { 'p', "--strip", HasArgument::Yes },
     { 'r', "--reject-file", HasArgument::Yes },
+    { 't', "--batch", HasArgument::No },
     { 'u', "--unified", HasArgument::No },
     { 'v', "--version", HasArgument::No },
     { 'z', "--suffix", HasArgument::Yes },
@@ -347,6 +348,9 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
     case 'r':
         m_options.reject_file_path = value;
         break;
+    case 't':
+        m_options.batch = true;
+        break;
     case 'u':
         m_options.interpret_as_unified = true;
         break;
@@ -442,6 +446,9 @@ void show_usage(std::ostream& out)
            "\n"
            "    -f, --force\n"
            "                Do not prompt for input, try to apply patch as given.\n"
+           "\n"
+           "    -t, --batch\n"
+           "                Do not apply patch file if content given by 'Prereq' is missing in the original file.\n"
            "\n"
            "    -b, --backup\n"
            "                Before writing to the patched file, make a backup of the file that will be written\n"

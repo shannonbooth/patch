@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+# Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 include(CheckSymbolExists)
 
@@ -90,12 +90,12 @@ add_executable(test_basic
   test_normal.cpp
   test_context.cpp
   test_defines.cpp
+  test_applier.cpp
 )
 target_link_libraries(test_basic PRIVATE patch_test)
 patch_add_tests(test_basic sb_patch ON)
 
 add_executable(test_unit
-  test_applier.cpp
   test_cmdline.cpp
   test_determine_format.cpp
   test_file.cpp

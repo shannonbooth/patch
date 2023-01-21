@@ -22,11 +22,16 @@ void patch_test_error_format(const T& a)
     std::cerr << static_cast<typename std::underlying_type<T>::type>(a);
 }
 
+class test_assertion_failure : public std::runtime_error {
+public:
+    using runtime_error::runtime_error;
+};
+
 #define EXPECT_TRUE(condition)                                                                                  \
     do {                                                                                                        \
         if (!(condition)) {                                                                                     \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": 'EXPECT_TRUE(" << #condition ")' failed\n"; \
-            throw std::runtime_error("Test failed");                                                            \
+            throw test_assertion_failure("Test failed");                                                        \
         }                                                                                                       \
     } while (false)
 
@@ -34,7 +39,7 @@ void patch_test_error_format(const T& a)
     do {                                                                                                         \
         if ((condition)) {                                                                                       \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": 'EXPECT_FALSE(" << #condition ")' failed\n"; \
-            throw std::runtime_error("Test failed");                                                             \
+            throw test_assertion_failure("Test failed");                                                         \
         }                                                                                                        \
     } while (false)
 
@@ -48,7 +53,7 @@ void patch_test_error_format(const T& a)
             std::cerr << " == ";                                                 \
             patch_test_error_format(rhs);                                        \
             std::cerr << '\n';                                                   \
-            throw std::runtime_error("Test failed");                             \
+            throw test_assertion_failure("Test failed");                         \
         }                                                                        \
     } while (false)
 
@@ -62,7 +67,7 @@ void patch_test_error_format(const T& a)
             std::cerr << " != ";                                                 \
             patch_test_error_format(rhs);                                        \
             std::cerr << '\n';                                                   \
-            throw std::runtime_error("Test failed");                             \
+            throw test_assertion_failure("Test failed");                         \
         }                                                                        \
     } while (false)
 
@@ -86,15 +91,15 @@ void patch_test_error_format(const T& a)
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
                       << #statement " throws an exception of type "                       \
                       << #expected_exception ", but threw a different type.\n";           \
-            throw std::runtime_error("Test failed");                                      \
+            throw test_assertion_failure("Test failed");                                  \
         }                                                                                 \
         if (patch_failed_test)                                                            \
-            throw std::runtime_error("Test failed");                                      \
+            throw test_assertion_failure("Test failed");                                  \
         if (!expected_msg.empty() && patch_error_msg != (msg)) {                          \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
                       << #statement " expected an error message of: \""                   \
                       << (msg) << "\", but instead got: \"" << patch_error_msg << "\"\n"; \
-            throw std::runtime_error("Test failed");                                      \
+            throw test_assertion_failure("Test failed");                                  \
         }                                                                                 \
     } while (false)
 

@@ -22,76 +22,80 @@ void patch_test_error_format(const T& a)
     std::cerr << static_cast<typename std::underlying_type<T>::type>(a);
 }
 
-#define EXPECT_TRUE(condition)                            \
-    do {                                                  \
-        if (!(condition)) {                               \
-            std::cerr << "FAIL: condition is not true\n"; \
-            throw std::runtime_error("Test failed");      \
-        }                                                 \
+#define EXPECT_TRUE(condition)                                                                                  \
+    do {                                                                                                        \
+        if (!(condition)) {                                                                                     \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": 'EXPECT_TRUE(" << #condition ")' failed\n"; \
+            throw std::runtime_error("Test failed");                                                            \
+        }                                                                                                       \
     } while (false)
 
-#define EXPECT_FALSE(condition)                            \
-    do {                                                   \
-        if ((condition)) {                                 \
-            std::cerr << "FAIL: condition is not false\n"; \
-            throw std::runtime_error("Test failed");       \
-        }                                                  \
+#define EXPECT_FALSE(condition)                                                                                  \
+    do {                                                                                                         \
+        if ((condition)) {                                                                                       \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": 'EXPECT_FALSE(" << #condition ")' failed\n"; \
+            throw std::runtime_error("Test failed");                                                             \
+        }                                                                                                        \
     } while (false)
 
-#define EXPECT_NE(lhs, rhs)                                    \
-    do {                                                       \
-        /* NOLINTNEXTLINE(readability-container-size-empty) */ \
-        if ((lhs) == (rhs)) {                                  \
-            std::cerr << "FAIL: ";                             \
-            patch_test_error_format(lhs);                      \
-            std::cerr << " == ";                               \
-            patch_test_error_format(rhs);                      \
-            std::cerr << '\n';                                 \
-            throw std::runtime_error("Test failed");           \
-        }                                                      \
+#define EXPECT_NE(lhs, rhs)                                                      \
+    do {                                                                         \
+        /* NOLINTNEXTLINE(readability-container-size-empty) */                   \
+        if ((lhs) == (rhs)) {                                                    \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": ";           \
+            std::cerr << "'EXPECT_NE(" << #lhs << ", " << #rhs << ")' failed, "; \
+            patch_test_error_format(lhs);                                        \
+            std::cerr << " == ";                                                 \
+            patch_test_error_format(rhs);                                        \
+            std::cerr << '\n';                                                   \
+            throw std::runtime_error("Test failed");                             \
+        }                                                                        \
     } while (false)
 
-#define EXPECT_EQ(lhs, rhs)                                    \
-    do {                                                       \
-        /* NOLINTNEXTLINE(readability-container-size-empty) */ \
-        if ((lhs) != (rhs)) {                                  \
-            std::cerr << "FAIL: ";                             \
-            patch_test_error_format(lhs);                      \
-            std::cerr << " != ";                               \
-            patch_test_error_format(rhs);                      \
-            std::cerr << '\n';                                 \
-            throw std::runtime_error("Test failed");           \
-        }                                                      \
+#define EXPECT_EQ(lhs, rhs)                                                      \
+    do {                                                                         \
+        /* NOLINTNEXTLINE(readability-container-size-empty) */                   \
+        if ((lhs) != (rhs)) {                                                    \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": ";           \
+            std::cerr << "'EXPECT_EQ(" << #lhs << ", " << #rhs << ")' failed, "; \
+            patch_test_error_format(lhs);                                        \
+            std::cerr << " != ";                                                 \
+            patch_test_error_format(rhs);                                        \
+            std::cerr << '\n';                                                   \
+            throw std::runtime_error("Test failed");                             \
+        }                                                                        \
     } while (false)
 
 #define EXPECT_THROW(statement, expected_exception) \
     EXPECT_THROW_WITH_MSG(statement, expected_exception, "")
 
-#define EXPECT_THROW_WITH_MSG(statement, expected_exception, msg)                   \
-    do {                                                                            \
-        bool patch_failed_test = false;                                             \
-        std::string patch_error_msg;                                                \
-        std::string expected_msg = msg;                                             \
-        try {                                                                       \
-            (statement);                                                            \
-            std::cerr << "FAIL: " #statement " expected an exception of type "      \
-                      << #expected_exception ", but none was thrown.\n";            \
-            patch_failed_test = true;                                               \
-        } catch (const expected_exception& e) {                                     \
-            patch_error_msg = e.what();                                             \
-        } catch (...) {                                                             \
-            std::cerr << "FAIL: " #statement " throws an exception of type "        \
-                      << #expected_exception ", but threw a different type.\n";     \
-            throw std::runtime_error("Test failed");                                \
-        }                                                                           \
-        if (patch_failed_test)                                                      \
-            throw std::runtime_error("Test failed");                                \
-        if (!expected_msg.empty() && patch_error_msg != (msg)) {                    \
-            std::cerr                                                               \
-                << "FAIL: " #statement " expected an error message of: \""          \
-                << (msg) << "\", but instead got: \"" << patch_error_msg << "\"\n"; \
-            throw std::runtime_error("Test failed");                                \
-        }                                                                           \
+#define EXPECT_THROW_WITH_MSG(statement, expected_exception, msg)                         \
+    do {                                                                                  \
+        bool patch_failed_test = false;                                                   \
+        std::string patch_error_msg;                                                      \
+        std::string expected_msg = msg;                                                   \
+        try {                                                                             \
+            (statement);                                                                  \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
+                      << #statement " expected an exception of type "                     \
+                      << #expected_exception ", but none was thrown.\n";                  \
+            patch_failed_test = true;                                                     \
+        } catch (const expected_exception& e) {                                           \
+            patch_error_msg = e.what();                                                   \
+        } catch (...) {                                                                   \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
+                      << #statement " throws an exception of type "                       \
+                      << #expected_exception ", but threw a different type.\n";           \
+            throw std::runtime_error("Test failed");                                      \
+        }                                                                                 \
+        if (patch_failed_test)                                                            \
+            throw std::runtime_error("Test failed");                                      \
+        if (!expected_msg.empty() && patch_error_msg != (msg)) {                          \
+            std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
+                      << #statement " expected an error message of: \""                   \
+                      << (msg) << "\", but instead got: \"" << patch_error_msg << "\"\n"; \
+            throw std::runtime_error("Test failed");                                      \
+        }                                                                                 \
     } while (false)
 
 #define EXPECT_FILE_EQ(file, rhs)                                                         \

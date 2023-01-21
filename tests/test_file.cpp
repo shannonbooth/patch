@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
+#include <patch/system.h>
 #include <patch/test.h>
 
 TEST(file_get_line_lf)
@@ -137,4 +138,43 @@ TEST(file_mixed_new_lines)
     EXPECT_FALSE(patch_file.get_line(line, &newline));
     EXPECT_EQ(newline, Patch::NewLine::None);
     EXPECT_EQ(line, "");
+}
+
+TEST(file_move_construct_move_assign)
+{
+    // Construct a temporary file, get_line until eof and bad.
+    Patch::File file_orig = Patch::File::create_temporary_with_content("abc\n");
+    EXPECT_FALSE(file_orig.eof());
+    EXPECT_TRUE(file_orig);
+
+    std::string content;
+    EXPECT_TRUE(file_orig.get_line(content));
+    EXPECT_EQ(content, "abc");
+    EXPECT_FALSE(file_orig.eof());
+    EXPECT_TRUE(file_orig);
+
+    EXPECT_FALSE(file_orig.get_line(content));
+    EXPECT_EQ(content, "");
+    EXPECT_TRUE(file_orig.eof());
+    EXPECT_TRUE(file_orig);
+
+    EXPECT_FALSE(file_orig.get_line(content));
+    EXPECT_EQ(content, "");
+    EXPECT_TRUE(file_orig.eof());
+    EXPECT_FALSE(file_orig);
+
+    // Move construct a new file, it should inherit state.
+    Patch::File file_move_constructed = std::move(file_orig);
+    EXPECT_TRUE(file_move_constructed.eof());
+    EXPECT_FALSE(file_move_constructed);
+
+    // Move assign a new file, it should inherit state.
+    Patch::File file_move_assigned = Patch::File::create_temporary_with_content("some stuff");
+    file_move_assigned = std::move(file_move_constructed);
+
+    EXPECT_TRUE(file_move_assigned.eof());
+    EXPECT_FALSE(file_move_assigned);
+
+    // Should still be able to read from the file, but using new content!
+    EXPECT_EQ(file_move_assigned.read_all_as_string(), "abc\n");
 }

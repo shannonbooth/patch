@@ -86,13 +86,13 @@ public:
 
     void clear()
     {
-        is_eof = false;
-        is_bad = false;
+        m_is_eof = false;
+        m_is_bad = false;
     }
 
     char peek();
 
-    bool eof() const { return is_eof; }
+    bool eof() const { return m_is_eof; }
 
     void close()
     {
@@ -106,7 +106,7 @@ public:
 
     bool fail() const
     {
-        return !m_file || is_bad;
+        return !m_file || m_is_bad;
     }
 
     std::string read_all_as_string();
@@ -127,9 +127,9 @@ private:
     {
     }
 
-    bool is_bad { false };
-    bool is_eof { false };
     FILE* m_file { nullptr };
+    bool m_is_bad { false };
+    bool m_is_eof { false };
 };
 
 } // namespace Patch

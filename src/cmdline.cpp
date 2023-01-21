@@ -31,7 +31,7 @@ struct Option {
     HasArgument has_argument;
 };
 
-const std::array<Option, 26> s_switches { {
+const std::array<Option, 28> s_switches { {
     { 'B', "--prefix", HasArgument::Yes },
     { 'D', "--ifdef", HasArgument::Yes },
     { 'F', "--fuzz", HasArgument::Yes },
@@ -58,6 +58,8 @@ const std::array<Option, 26> s_switches { {
     { CHAR_MAX + 3, "--reject-format", HasArgument::Yes },
     { CHAR_MAX + 4, "--verbose", HasArgument::No },
     { CHAR_MAX + 5, "--dry-run", HasArgument::No },
+    { CHAR_MAX + 6, "--backup-if-mismatch", HasArgument::No },
+    { CHAR_MAX + 7, "--no-backup-if-mismatch", HasArgument::No },
 } };
 
 } // namespace
@@ -375,6 +377,12 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
     case CHAR_MAX + 5:
         m_options.dry_run = true;
         break;
+    case CHAR_MAX + 6:
+        m_options.backup_if_mismatch = true;
+        break;
+    case CHAR_MAX + 7:
+        m_options.backup_if_mismatch = false;
+        break;
     default:
         break;
     }
@@ -454,6 +462,15 @@ void show_usage(std::ostream& out)
            "    -b, --backup\n"
            "                Before writing to the patched file, make a backup of the file that will be written\n"
            "                to. The output file with be given the filename suffix '.orig'.\n"
+           "\n"
+           "    --backup-if-mismatch\n"
+           "                Automatically make a backup of the file to be written to (as if given '--backup') if\n"
+           "                it is determined that the patch will apply with an offset or fuzz factor. Defaults\n"
+           "                to 'true'.\n"
+           "\n"
+           "    --no-backup-if-mismatch\n"
+           "                Only apply a backup of the file to be written to if told to do so by the '--backup'\n"
+           "                option even if the patch is determined to not apply perfectly.\n"
            "\n"
            "    -B, --prefix <prefix>\n"
            "                Add <prefix> to the beginning of backup file names.\n"

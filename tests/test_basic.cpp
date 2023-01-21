@@ -1369,6 +1369,87 @@ PATCH_TEST(backup_on_top_of_existing_file)
     EXPECT_FILE_EQ("a.orig", to_patch);
 }
 
+static void backup_if_mismatch(const char* patch_path, const std::vector<const char*>& extra_args)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- a	2023-01-22 11:11:17.631295409 +1300
++++ b	2023-01-22 11:11:22.183419472 +1300
+@@ -1,3 +1,2 @@
+ 1
+-2
+ 3
+)";
+        file.close();
+    }
+
+    // extra newline at start of file
+    const std::string to_patch = "\n1\n2\n3\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    // Instert extra commandline arguments (if any).
+    std::vector<const char*> args { patch_path, "-i", "diff.patch" };
+    args.insert(args.end(), extra_args.begin(), extra_args.end());
+    args.emplace_back(nullptr);
+
+    Process process(patch_path, args);
+    EXPECT_EQ(process.stdout_data(), "patching file a\nHunk #1 succeeded at 2 (offset 1 line).\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("a", "\n1\n3\n");
+    EXPECT_FILE_EQ("a.orig", to_patch);
+}
+
+PATCH_TEST(backup_if_mismatch_done_by_default)
+{
+    backup_if_mismatch(patch_path, {});
+}
+
+PATCH_TEST(backup_if_mismatch_done_with_flag)
+{
+    backup_if_mismatch(patch_path, { "--backup-if-mismatch" });
+}
+
+PATCH_TEST(backup_if_mismatch_not_done_with_flag)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- a	2023-01-22 11:11:17.631295409 +1300
++++ b	2023-01-22 11:11:22.183419472 +1300
+@@ -1,3 +1,2 @@
+ 1
+-2
+ 3
+)";
+        file.close();
+    }
+
+    // extra newline at start of file
+    const std::string to_patch = "\n1\n2\n3\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-idiff.patch", "--no-backup-if-mismatch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file a\nHunk #1 succeeded at 2 (offset 1 line).\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("a", "\n1\n3\n");
+    EXPECT_FALSE(Patch::filesystem::exists("a.orig"));
+}
+
 PATCH_TEST(backup_multiple_files_only_backs_up_first)
 {
     {

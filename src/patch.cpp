@@ -493,7 +493,7 @@ int process_patch(const Options& options)
             tmp_out_file.write_entire_contents_to(stdout);
         } else {
             if (!options.dry_run) {
-                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped))
+                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch))
                     backup.make_backup_for(output_file);
 
                 // Ensure that parent directories exist if we are adding a file.

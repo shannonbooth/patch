@@ -9,7 +9,7 @@
 TEST(parser_simple)
 {
     Patch::Hunk hunk;
-    Patch::parse_unified_range(hunk, "@@ -1,3 +1,4 @@");
+    EXPECT_TRUE(Patch::parse_unified_range(hunk, "@@ -1,3 +1,4 @@"));
     EXPECT_EQ(hunk.old_file_range.start_line, 1);
     EXPECT_EQ(hunk.old_file_range.number_of_lines, 3);
     EXPECT_EQ(hunk.new_file_range.start_line, 1);
@@ -19,11 +19,18 @@ TEST(parser_simple)
 TEST(parser_one_context_line)
 {
     Patch::Hunk hunk;
-    Patch::parse_unified_range(hunk, "@@ -2,0 +3 @@");
+    EXPECT_TRUE(Patch::parse_unified_range(hunk, "@@ -2,0 +3 @@"));
     EXPECT_EQ(hunk.old_file_range.start_line, 2);
     EXPECT_EQ(hunk.old_file_range.number_of_lines, 0);
     EXPECT_EQ(hunk.new_file_range.start_line, 3);
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
+}
+
+TEST(bad_unified_ranges)
+{
+    Patch::Hunk hunk;
+    EXPECT_FALSE(Patch::parse_unified_range(hunk, "@@ -a,0 +3 @@"));
+    EXPECT_FALSE(Patch::parse_unified_range(hunk, "@@ -2,0 +3,x @@"));
 }
 
 TEST(parser_normal_diff_header)

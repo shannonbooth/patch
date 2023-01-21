@@ -62,7 +62,19 @@ File File::create_temporary()
     return File(create_temporary_file());
 }
 
-static void copy_from(FILE* from, FILE* to)
+static void check_ferror(FILE* file, const char* operation)
+{
+    if (std::ferror(file) != 0)
+        throw std::system_error(errno, std::generic_category(), operation);
+}
+
+static void fflush(FILE* file, const char* operation)
+{
+    if (std::fflush(file) != 0)
+        throw std::system_error(errno, std::generic_category(), operation);
+}
+
+void File::copy_from(FILE* from, FILE* to)
 {
     std::array<char, 4096> buffer;
 
@@ -70,21 +82,14 @@ static void copy_from(FILE* from, FILE* to)
 
         auto from_n = std::fread(buffer.data(), sizeof(char), buffer.size(), from);
         if (from_n == 0) {
-            if (std::ferror(from) != 0)
-                throw std::system_error(errno, std::generic_category(), "Error ocurred reading from file");
+            check_ferror(from, "Error occurred reading from file");
             break;
         }
 
-        auto out_n = std::fwrite(buffer.data(), sizeof(char), from_n, to);
-        if (out_n == 0) {
-            if (std::ferror(to) != 0)
-                throw std::system_error(errno, std::generic_category(), "Error ocurred writing to file");
-            break;
-        }
+        fwrite(buffer.data(), from_n, to);
     }
 
-    if (std::fflush(to) != 0)
-        throw std::system_error(errno, std::generic_category(), "Error ocurred writing to file");
+    fflush(to, "Error occurred writing to file");
 }
 
 void File::write_entire_contents_to(FILE* file)
@@ -105,8 +110,7 @@ File File::create_temporary_with_content(const std::string& initial_content)
 {
     File file = create_temporary();
     file << initial_content;
-    if (std::fflush(file.m_file) != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to create temporary");
+    fflush(file.m_file, "Unable to create temporary file");
 
     std::rewind(file.m_file);
 
@@ -178,8 +182,7 @@ bool File::get_line(std::string& line, NewLine* newline)
         int c = std::getc(m_file);
 
         if (c == EOF) {
-            if (std::ferror(m_file) != 0)
-                throw std::system_error(errno, std::generic_category(), "Failed reading line from file");
+            check_ferror(m_file, "Failed reading line from file");
             if (newline)
                 *newline = NewLine::None;
             is_eof = true;
@@ -215,8 +218,7 @@ std::string File::read_all_as_string()
         int c = std::getc(m_file);
 
         if (c == EOF) {
-            if (std::ferror(m_file) != 0)
-                throw std::system_error(errno, std::generic_category(), "Failed reading character from file");
+            check_ferror(m_file, "Failed reading character from file");
             break;
         }
 

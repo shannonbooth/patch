@@ -33,8 +33,7 @@ public:
 
     File& operator<<(const std::string& content)
     {
-        if (std::fwrite(content.c_str(), sizeof(std::string::value_type), content.size(), m_file) != content.size())
-            throw std::system_error(errno, std::generic_category(), "Failed writing content to file");
+        fwrite(content.c_str(), content.size(), m_file);
         return *this;
     }
 
@@ -113,6 +112,14 @@ public:
     std::string read_all_as_string();
 
 private:
+    static void fwrite(const char* content, size_t size, FILE* file)
+    {
+        if (std::fwrite(content, sizeof(char), size, file) != size)
+            throw std::system_error(errno, std::generic_category(), "Failed writing content to file");
+    }
+
+    static void copy_from(FILE* from, FILE* to);
+
     explicit File(FILE* file)
         : m_file(file)
     {

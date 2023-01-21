@@ -117,12 +117,17 @@ File File::create_temporary_with_content(const std::string& initial_content)
     return file;
 }
 
-File::File(const std::string& path, std::ios_base::openmode mode)
+FILE* File::cfile_open_impl(const std::string& path, std::ios_base::openmode mode)
+{
 #ifdef _WIN32
-    : m_file(_wfopen(to_native(path).c_str(), to_native(to_mode(mode)).c_str()))
+    return _wfopen(to_native(path).c_str(), to_native(to_mode(mode)).c_str());
 #else
-    : m_file(std::fopen(path.c_str(), to_mode(mode).c_str()))
+    return std::fopen(path.c_str(), to_mode(mode).c_str());
 #endif
+}
+
+File::File(const std::string& path, std::ios_base::openmode mode)
+    : m_file(cfile_open_impl(path, mode))
 {
     if (!m_file)
         throw std::system_error(errno, std::generic_category(), "Unable to open file " + path);
@@ -130,12 +135,7 @@ File::File(const std::string& path, std::ios_base::openmode mode)
 
 bool File::open(const std::string& path, std::ios_base::openmode mode)
 {
-#ifdef _WIN32
-    m_file = _wfopen(to_native(path).c_str(), to_native(to_mode(mode)).c_str());
-#else
-    m_file = std::fopen(path.c_str(), to_mode(mode).c_str());
-#endif
-
+    m_file = cfile_open_impl(path, mode);
     return m_file;
 }
 

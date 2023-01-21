@@ -112,6 +112,8 @@ public:
     std::string read_all_as_string();
 
 private:
+    static FILE* cfile_open_impl(const std::string& path, std::ios_base::openmode mode);
+
     static void fwrite(const char* content, size_t size, FILE* file)
     {
         if (std::fwrite(content, sizeof(char), size, file) != size)

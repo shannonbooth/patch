@@ -77,7 +77,7 @@ PATCH_TEST(defines_remove_one_line)
 )");
 }
 
-PATCH_TEST(defines_mix)
+PATCH_TEST(defines_remove_add)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -116,6 +116,61 @@ PATCH_TEST(defines_mix)
 #endif
 }
 )");
+}
+
+PATCH_TEST(defines_add_remove)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(
+--- file.cpp	2022-01-30 13:57:31.173528027 +1300
++++ file.cpp	2022-01-30 13:57:36.321216497 +1300
+@@ -1,4 +1,4 @@
+ int main()
+ {
++    return 1;
+-    return 0;
+ }
+)";
+    }
+
+    {
+        Patch::File file("file.cpp", std::ios_base::out);
+        file <<
+            R"(int main()
+{
+    return 0;
+}
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--ifdef", "TEST_PATCH", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file file.cpp\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    // Allow either of these forms as they are (effectively) equivalent.
+    try {
+        EXPECT_FILE_EQ("file.cpp", R"(int main()
+{
+#ifdef TEST_PATCH
+    return 1;
+#else
+    return 0;
+#endif
+}
+)");
+    } catch (const test_assertion_failure&) {
+        EXPECT_FILE_EQ("file.cpp", R"(int main()
+{
+#ifndef TEST_PATCH
+    return 0;
+#else
+    return 1;
+#endif
+}
+)");
+    }
 }
 
 PATCH_TEST(defines_changes_at_end_of_file)

@@ -115,13 +115,11 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
             if (define_state == DefineState::Outside) {
                 define_state = DefineState::InsideIFNDEF;
                 output << "#ifndef " << define << line.newline;
-                output << line;
             } else if (define_state == DefineState::InsideIFDEF) {
                 define_state = DefineState::InsideELSE;
                 output << "#else" << line.newline;
-            } else {
-                output << line;
             }
+            output << line;
         }
     }
 

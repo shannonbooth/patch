@@ -42,6 +42,8 @@ File::~File()
 
 File::File(File&& other) noexcept
     : m_file(other.m_file)
+    , m_is_bad(other.m_is_bad)
+    , m_is_eof(other.m_is_eof)
 {
     other.m_file = nullptr;
 }
@@ -51,7 +53,11 @@ File& File::operator=(File&& other) noexcept
     if (&other != this) {
         if (m_file)
             std::fclose(m_file);
+
         m_file = other.m_file;
+        m_is_bad = other.m_is_bad;
+        m_is_eof = other.m_is_eof;
+
         other.m_file = nullptr;
     }
     return *this;
@@ -165,10 +171,10 @@ bool File::get_line(std::string& line, NewLine* newline)
 {
     line.clear();
 
-    if (is_eof) {
+    if (m_is_eof) {
         if (newline)
             *newline = NewLine::None;
-        is_bad = true;
+        m_is_bad = true;
         return false;
     }
 
@@ -185,7 +191,7 @@ bool File::get_line(std::string& line, NewLine* newline)
             check_ferror(m_file, "Failed reading line from file");
             if (newline)
                 *newline = NewLine::None;
-            is_eof = true;
+            m_is_eof = true;
 
             return !line.empty();
         }

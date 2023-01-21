@@ -831,13 +831,8 @@ Patch Parser::parse_context_patch(Patch& patch)
         std::vector<PatchLine> new_lines;
         LineNumber old_start_line = 0;
         LineNumber new_start_line = 0;
-        if (m_file.eof())
-            return patch;
 
         parse_context_hunk(old_lines, old_start_line, new_lines, new_start_line);
-
-        if (old_lines.empty() && new_lines.empty())
-            return patch;
 
         Hunk hunk = hunk_from_context_parts(old_start_line, old_lines, new_start_line, new_lines);
         patch.hunks.push_back(hunk);

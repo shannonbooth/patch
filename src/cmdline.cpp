@@ -31,7 +31,7 @@ struct Option {
     HasArgument has_argument;
 };
 
-const std::array<Option, 28> s_switches { {
+const std::array<Option, 29> s_switches { {
     { 'B', "--prefix", HasArgument::Yes },
     { 'D', "--ifdef", HasArgument::Yes },
     { 'F', "--fuzz", HasArgument::Yes },
@@ -60,6 +60,7 @@ const std::array<Option, 28> s_switches { {
     { CHAR_MAX + 5, "--dry-run", HasArgument::No },
     { CHAR_MAX + 6, "--backup-if-mismatch", HasArgument::No },
     { CHAR_MAX + 7, "--no-backup-if-mismatch", HasArgument::No },
+    { CHAR_MAX + 8, "--posix", HasArgument::No },
 } };
 
 } // namespace
@@ -383,6 +384,9 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
     case CHAR_MAX + 7:
         m_options.backup_if_mismatch = false;
         break;
+    case CHAR_MAX + 8:
+        m_options.posix = true;
+        break;
     default:
         break;
     }
@@ -487,6 +491,9 @@ void show_usage(std::ostream& out)
            "\n"
            "    --dry-run\n"
            "                Do not actually patch any files, perform a trial run to see what would happen.\n"
+           "\n"
+           "    --posix\n"
+           "                Change behavior to align with the POSIX standard.\n"
            "\n"
            "    -d, --directory <directory>\n"
            "                Change the working directory to <directory> before applying the patch file.\n"

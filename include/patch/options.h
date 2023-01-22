@@ -53,6 +53,7 @@ struct Options {
     bool verbose { false };
     bool dry_run { false };
     bool backup_if_mismatch { true };
+    bool posix { false };
     NewlineOutput newline_output { NewlineOutput::Native };
     RejectFormat reject_format { RejectFormat::Default };
     ReadOnlyHandling read_only_handling { ReadOnlyHandling::Warn };

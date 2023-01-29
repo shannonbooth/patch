@@ -27,6 +27,12 @@ struct Options {
         Fail,
     };
 
+    enum class BackupIfMismatchHandling {
+        Default,
+        Yes,
+        No,
+    };
+
     // posix defined options
     bool save_backup { false };
     bool interpret_as_context { false };
@@ -52,8 +58,8 @@ struct Options {
     bool interpret_as_unified { false };
     bool verbose { false };
     bool dry_run { false };
-    bool backup_if_mismatch { true };
     bool posix { false };
+    BackupIfMismatchHandling backup_if_mismatch { BackupIfMismatchHandling::Default };
     NewlineOutput newline_output { NewlineOutput::Native };
     RejectFormat reject_format { RejectFormat::Default };
     ReadOnlyHandling read_only_handling { ReadOnlyHandling::Warn };

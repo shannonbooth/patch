@@ -26,7 +26,7 @@ public:
 
     const std::string& name() const { return m_name; }
 
-    bool run(const char* patch_path);
+    bool run(const char* patch_path, bool is_compat = false);
 
     enum class ExpectedResult {
         Pass,
@@ -34,7 +34,7 @@ public:
         ExpectedFail,
     };
 
-    ExpectedResult expected_result() const;
+    ExpectedResult expected_result(bool is_compat) const;
 
 private:
     std::function<void(const char*)> m_test_function;
@@ -63,15 +63,15 @@ void Test::tear_down()
     std::system(command.c_str());
 }
 
-bool Test::run(const char* patch_path)
+bool Test::run(const char* patch_path, bool is_compat)
 {
-    const auto expected = expected_result();
+    const auto expected = expected_result(is_compat);
     if (expected == ExpectedResult::Disabled) {
         std::cout << "[ DISABLED ] " << m_name << '\n';
         return true;
     }
 
-    bool success = expected != ExpectedResult::ExpectedFail;
+    bool success = true;
 
     setup();
 
@@ -82,9 +82,7 @@ bool Test::run(const char* patch_path)
     try {
         test(patch_path);
     } catch (const std::exception& e) {
-        if (expected == ExpectedResult::ExpectedFail) {
-            std::cout << m_name << " XFAIL\n";
-        } else {
+        if (expected != ExpectedResult::ExpectedFail) {
             std::cerr << e.what() << '\n';
             std::cerr << m_name << " FAILED!\n";
             success = false;
@@ -94,10 +92,15 @@ bool Test::run(const char* patch_path)
     const auto test_finish = std::chrono::high_resolution_clock::now();
     const auto test_time = std::chrono::duration_cast<std::chrono::milliseconds>(test_finish - test_start);
 
-    if (success)
-        std::cout << "[       OK ] " << m_name;
-    else
+    if (success) {
+        if (expected == ExpectedResult::Pass) {
+            std::cout << "[       OK ] " << m_name;
+        } else {
+            std::cout << "[    XFAIL ] " << m_name;
+        }
+    } else {
         std::cout << "[  FAILED  ] " << m_name;
+    }
 
     std::cout << " (" << test_time.count() << " ms)\n";
 
@@ -106,12 +109,15 @@ bool Test::run(const char* patch_path)
     return success;
 }
 
-Test::ExpectedResult Test::expected_result() const
+Test::ExpectedResult Test::expected_result(bool is_compat) const
 {
     if (Patch::starts_with(m_name, "DISABLED_"))
         return ExpectedResult::Disabled;
 
     if (Patch::starts_with(m_name, "XFAIL_"))
+        return ExpectedResult::ExpectedFail;
+
+    if (is_compat && Patch::starts_with(m_name, "COMPAT_XFAIL_"))
         return ExpectedResult::ExpectedFail;
 
     return ExpectedResult::Pass;
@@ -138,9 +144,16 @@ void TestRunner::register_test(std::string name, std::function<void(const char*)
 
 bool TestRunner::run_test(const char* patch_path, const char* test_name)
 {
+    // Determine if this is a compatability test if it begins with 'compat.'
+    // When looking for the test to run, strip this prefix when performing a name lookup.
+    std::string normalized_test_name = test_name;
+    bool is_compat = Patch::starts_with(normalized_test_name, "compat.");
+    if (is_compat)
+        normalized_test_name.erase(0, 7);
+
     for (Test& test : m_tests) {
-        if (test.name() == test_name)
-            return test.run(patch_path);
+        if (test.name() == normalized_test_name)
+            return test.run(patch_path, is_compat);
     }
 
     std::cerr << "Unable to find test " << test_name << '\n';

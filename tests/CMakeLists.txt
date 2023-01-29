@@ -52,7 +52,7 @@ function(patch_add_tests target_name patch_target test_compat_gnu_patch)
     foreach(test ${tests})
       add_test(NAME ${test} COMMAND ${target_name} $<TARGET_FILE:${patch_target}> ${test})
       if(test_compat_gnu_patch AND GNU_PATCH)
-        add_test(NAME compat.${test} COMMAND ${target_name} ${GNU_PATCH} ${test})
+        add_test(NAME compat.${test} COMMAND ${target_name} ${GNU_PATCH} "compat.${test}")
       endif()
 
       if (${test} MATCHES "^DISABLED_" AND ${CMAKE_VERSION} VERSION_GREATER "3.9")

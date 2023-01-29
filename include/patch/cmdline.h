@@ -49,6 +49,8 @@ public:
     const Options& parse();
 
 private:
+    void apply_posix_defaults();
+
     static int stoi(const std::string& option, const std::string& description);
 
     void parse_long_option(const std::string& option);

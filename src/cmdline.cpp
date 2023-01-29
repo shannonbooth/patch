@@ -294,7 +294,20 @@ const Options& CmdLineParser::parse()
             parse_short_option(option_string);
     }
 
+    apply_posix_defaults();
+
     return m_options;
+}
+
+void CmdLineParser::apply_posix_defaults()
+{
+    if (m_options.backup_if_mismatch == Options::BackupIfMismatchHandling::Default) {
+        // POSIX does not backup files on mismatch.
+        if (m_options.posix)
+            m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::No;
+        else
+            m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::Yes;
+    }
 }
 
 void CmdLineParser::process_option(int short_name, const std::string& value)
@@ -379,10 +392,10 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         m_options.dry_run = true;
         break;
     case CHAR_MAX + 6:
-        m_options.backup_if_mismatch = true;
+        m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::Yes;
         break;
     case CHAR_MAX + 7:
-        m_options.backup_if_mismatch = false;
+        m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::No;
         break;
     case CHAR_MAX + 8:
         m_options.posix = true;
@@ -470,7 +483,7 @@ void show_usage(std::ostream& out)
            "    --backup-if-mismatch\n"
            "                Automatically make a backup of the file to be written to (as if given '--backup') if\n"
            "                it is determined that the patch will apply with an offset or fuzz factor. Defaults\n"
-           "                to 'true'.\n"
+           "                to 'true', unless the '--posix' option is set.\n"
            "\n"
            "    --no-backup-if-mismatch\n"
            "                Only apply a backup of the file to be written to if told to do so by the '--backup'\n"

@@ -1417,7 +1417,17 @@ PATCH_TEST(backup_if_mismatch_done_with_flag)
     backup_if_mismatch(patch_path, { "--backup-if-mismatch" });
 }
 
-PATCH_TEST(backup_if_mismatch_not_done_with_flag)
+PATCH_TEST(backup_if_mismatch_done_posix_and_done_with_flag)
+{
+    backup_if_mismatch(patch_path, { "--backup-if-mismatch", "--posix" });
+}
+
+PATCH_TEST(backup_if_mismatch_done_posix_and_backup_given)
+{
+    backup_if_mismatch(patch_path, { "-b", "--posix" });
+}
+
+static void no_backup_if_mismatch(const char* patch_path, const std::vector<const char*>& extra_args)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1441,13 +1451,30 @@ PATCH_TEST(backup_if_mismatch_not_done_with_flag)
         file.close();
     }
 
-    Process process(patch_path, { patch_path, "-idiff.patch", "--no-backup-if-mismatch", nullptr });
+    // Instert extra commandline arguments (if any).
+    std::vector<const char*> args { patch_path, "-i", "diff.patch" };
+    args.insert(args.end(), extra_args.begin(), extra_args.end());
+    args.emplace_back(nullptr);
+
+    Process process(patch_path, args);
     EXPECT_EQ(process.stdout_data(), "patching file a\nHunk #1 succeeded at 2 (offset 1 line).\n");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
     EXPECT_FILE_EQ("a", "\n1\n3\n");
     EXPECT_FALSE(Patch::filesystem::exists("a.orig"));
+}
+
+PATCH_TEST(backup_if_mismatch_not_done_with_flag)
+{
+    no_backup_if_mismatch(patch_path, { "--no-backup-if-mismatch" });
+}
+
+PATCH_TEST(COMPAT_XFAIL_backup_if_mismatch_not_done_posix)
+{
+    // NOTE: This appears to be a bug with GNU patch.
+    //       Setting POSIXLY_CORRECT appears to work, but --posix flag does not!
+    no_backup_if_mismatch(patch_path, { "--posix" });
 }
 
 PATCH_TEST(backup_multiple_files_only_backs_up_first)

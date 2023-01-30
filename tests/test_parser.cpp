@@ -43,6 +43,17 @@ TEST(parser_normal_diff_header)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
 }
 
+TEST(parser_normal_diff_remove_header)
+{
+    // Regression test for a previously miscalculated normal range
+    Patch::Hunk hunk;
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "1,3d0"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 3);
+    EXPECT_EQ(hunk.old_file_range.start_line, 1);
+    EXPECT_EQ(hunk.new_file_range.start_line, 0);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 0);
+}
+
 TEST(parser_normal_diff_simple)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3

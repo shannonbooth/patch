@@ -645,7 +645,7 @@ PATCH_TEST(remove_file_in_folders)
     EXPECT_FILE_EQ("a/1", second_file_contents);
 }
 
-PATCH_TEST(remove_file_successfully)
+static void remove_file(const char* patch_path, bool expect_removed, const std::vector<const char*>& extra_args)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -661,25 +661,46 @@ PATCH_TEST(remove_file_successfully)
         file.close();
     }
 
-    {
-        Patch::File file("to_remove", std::ios_base::out);
-
-        file << R"(int main()
+    const std::string to_patch = R"(int main()
 {
 }
 )";
+
+    {
+        Patch::File file("to_remove", std::ios_base::out);
+        file << to_patch;
         file.close();
     }
 
-    EXPECT_TRUE(Patch::filesystem::exists("to_remove"));
+    std::vector<const char*> args { patch_path, "-i", "diff.patch" };
+    args.insert(args.end(), extra_args.begin(), extra_args.end());
+    args.emplace_back(nullptr);
 
-    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    Process process(patch_path, args);
 
     EXPECT_EQ(process.stdout_data(), "patching file to_remove\n");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
-    EXPECT_FALSE(Patch::filesystem::exists("to_remove"));
+    if (expect_removed)
+        EXPECT_FALSE(Patch::filesystem::exists("to_remove"));
+    else
+        EXPECT_FILE_EQ("to_remove", "");
+}
+
+PATCH_TEST(remove_file_successfully_no_args)
+{
+    remove_file(patch_path, true, {});
+}
+
+PATCH_TEST(no_remove_file_posix)
+{
+    remove_file(patch_path, false, { "--posix" });
+}
+
+PATCH_TEST(remove_file_successfully_posix_and_remove_flag)
+{
+    remove_file(patch_path, true, { "--posix", "--remove-empty-files" });
 }
 
 PATCH_TEST(remove_file_that_has_trailing_garbage)

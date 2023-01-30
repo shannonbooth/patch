@@ -493,7 +493,7 @@ int process_patch(const Options& options)
             tmp_out_file.write_entire_contents_to(stdout);
         } else {
             if (!options.dry_run) {
-                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::BackupIfMismatchHandling::Yes))
+                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes))
                     backup.make_backup_for(output_file);
 
                 // Ensure that parent directories exist if we are adding a file.
@@ -548,7 +548,7 @@ int process_patch(const Options& options)
 
                 // Clean up the file if it looks like it was removed.
                 // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
-                if (patch.new_file_path == "/dev/null") {
+                if (options.remove_empty_files == Options::OptionalBool::Yes && patch.new_file_path == "/dev/null") {
                     if (filesystem::file_size(output_file) == 0) {
                         if (!options.dry_run)
                             remove_file_and_empty_parent_folders(output_file);

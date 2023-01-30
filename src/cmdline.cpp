@@ -31,9 +31,10 @@ struct Option {
     HasArgument has_argument;
 };
 
-const std::array<Option, 29> s_switches { {
+const std::array<Option, 30> s_switches { {
     { 'B', "--prefix", HasArgument::Yes },
     { 'D', "--ifdef", HasArgument::Yes },
+    { 'E', "--remove-empty-files", HasArgument::No },
     { 'F', "--fuzz", HasArgument::Yes },
     { 'N', "--forward", HasArgument::No },
     { 'R', "--reverse", HasArgument::No },
@@ -301,13 +302,18 @@ const Options& CmdLineParser::parse()
 
 void CmdLineParser::apply_posix_defaults()
 {
-    if (m_options.backup_if_mismatch == Options::BackupIfMismatchHandling::Default) {
-        // POSIX does not backup files on mismatch.
-        if (m_options.posix)
-            m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::No;
-        else
-            m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::Yes;
-    }
+    auto false_if_posix = [this](Options::OptionalBool& option) {
+        if (option == Options::OptionalBool::Unset) {
+            if (m_options.posix)
+                option = Options::OptionalBool::No;
+            else
+                option = Options::OptionalBool::Yes;
+        }
+    };
+
+    // POSIX does not backup files on mismatch or remove empty files.
+    false_if_posix(m_options.backup_if_mismatch);
+    false_if_posix(m_options.remove_empty_files);
 }
 
 void CmdLineParser::process_option(int short_name, const std::string& value)
@@ -318,6 +324,9 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         break;
     case 'D':
         m_options.define_macro = value;
+        break;
+    case 'E':
+        m_options.remove_empty_files = Options::OptionalBool::Yes;
         break;
     case 'F':
         m_options.max_fuzz = stoi(value, "fuzz factor");
@@ -392,10 +401,10 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         m_options.dry_run = true;
         break;
     case CHAR_MAX + 6:
-        m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::Yes;
+        m_options.backup_if_mismatch = Options::OptionalBool::Yes;
         break;
     case CHAR_MAX + 7:
-        m_options.backup_if_mismatch = Options::BackupIfMismatchHandling::No;
+        m_options.backup_if_mismatch = Options::OptionalBool::No;
         break;
     case CHAR_MAX + 8:
         m_options.posix = true;
@@ -484,6 +493,9 @@ void show_usage(std::ostream& out)
            "                Automatically make a backup of the file to be written to (as if given '--backup') if\n"
            "                it is determined that the patch will apply with an offset or fuzz factor. Defaults\n"
            "                to 'true', unless the '--posix' option is set.\n"
+           "\n"
+           "    -E, --remove-empty-files\n"
+           "                Empty files after patching are removed. Defaults to true unless '--posix' is set.\n"
            "\n"
            "    --no-backup-if-mismatch\n"
            "                Only apply a backup of the file to be written to if told to do so by the '--backup'\n"

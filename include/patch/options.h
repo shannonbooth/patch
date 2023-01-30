@@ -27,8 +27,8 @@ struct Options {
         Fail,
     };
 
-    enum class BackupIfMismatchHandling {
-        Default,
+    enum class OptionalBool {
+        Unset,
         Yes,
         No,
     };
@@ -59,7 +59,8 @@ struct Options {
     bool verbose { false };
     bool dry_run { false };
     bool posix { false };
-    BackupIfMismatchHandling backup_if_mismatch { BackupIfMismatchHandling::Default };
+    OptionalBool backup_if_mismatch { OptionalBool::Unset };
+    OptionalBool remove_empty_files { OptionalBool::Unset };
     NewlineOutput newline_output { NewlineOutput::Native };
     RejectFormat reject_format { RejectFormat::Default };
     ReadOnlyHandling read_only_handling { ReadOnlyHandling::Warn };

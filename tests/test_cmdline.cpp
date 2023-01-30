@@ -472,8 +472,8 @@ TEST(cmdline_long_option_only_partially_specified_ambiguous)
         { "--rejec", "option '--rejec' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
         { "--reje", "option '--reje' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
         { "--rej", "option '--rej' is ambiguous; possibilities: '--reject-file' '--reject-format'" },
-        { "--re", "option '--re' is ambiguous; possibilities: '--reverse' '--reject-file' '--read-only' '--reject-format'" },
-        { "--r", "option '--r' is ambiguous; possibilities: '--reverse' '--reject-file' '--read-only' '--reject-format'" },
+        { "--re", "option '--re' is ambiguous; possibilities: '--remove-empty-files' '--reverse' '--reject-file' '--read-only' '--reject-format'" },
+        { "--r", "option '--r' is ambiguous; possibilities: '--remove-empty-files' '--reverse' '--reject-file' '--read-only' '--reject-format'" },
     };
 
     for (const auto& data : test_data) {

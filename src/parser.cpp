@@ -302,62 +302,53 @@ bool parse_unified_range(Hunk& hunk, const std::string& line)
 // "%d , %d d %d       ", <num1>, <num2>, <num3>
 // "%d , %d c %d       ", <num1>, <num2>, <num3>
 // "%d , %d c %d , %d  ", <num1>, <num2>, <num3>, <num4>
+//
+// <num> is used to specify the start and end lines of the two files being diffed.
 bool parse_normal_range(Hunk& hunk, const std::string& line)
 {
-    auto adjust_offsets = [&hunk](char command) {
-        if (command == 'a') {
-            hunk.new_file_range.number_of_lines += 1;
-        } else if (command == 'd') {
-            hunk.old_file_range.number_of_lines += 1;
-        } else {
-            hunk.new_file_range.number_of_lines += 1;
-            hunk.old_file_range.number_of_lines += 1;
-        }
-    };
-
     LineParser parser(line);
 
     // Ensure that the first character is an integer.
     if (!parser.consume_line_number(hunk.old_file_range.start_line))
         return false;
 
-    // The next character must either be a ',' followed by a command, or just a command.
+    // The next character must either be a ',' followed by a number of lines, or just a command.
     // Skip any optional ',' - remembering whether we found it for later on.
     bool has_first_comma = parser.consume_specific(',');
-
-    // If there is a second integer here, use it for the number of lines
-    if (!parser.consume_line_number(hunk.old_file_range.number_of_lines))
-        hunk.old_file_range.number_of_lines = 0;
+    if (has_first_comma && !parser.consume_line_number(hunk.old_file_range.number_of_lines))
+        return false;
 
     // Ensure we've now reached a valid normal command.
     char command = parser.consume();
     if (command != 'c' && command != 'a' && command != 'd')
         return false;
 
+    // Only a single line between the start and end of the old file. If we are appending then
+    // the old file must not have any lines in the diff. Otherwise there must be something which
+    // is being changed or removed.
+    if (!has_first_comma)
+        hunk.old_file_range.number_of_lines = command == 'a' ? 0 : 1;
+
     // All of the normal commands must have an integer once we've reached this point.
     if (!parser.consume_line_number(hunk.new_file_range.start_line))
         return false;
 
-    // If we're at the end here, this is a valid normal diff command.
-    if (parser.is_eof()) {
-        hunk.new_file_range.number_of_lines = 0;
-        adjust_offsets(command);
-        return true;
+    // Read the end line of the new file to work backwards to determine the number of lines.
+    LineNumber new_range_end_line = 0;
+    if (parser.consume_specific(',')) {
+        // If this is the second comma that was found, this must be a change command.
+        if (has_first_comma && command != 'c')
+            return false;
+        if (!parser.consume_line_number(new_range_end_line))
+            return false;
+    } else {
+        new_range_end_line = hunk.new_file_range.start_line;
     }
 
-    // All of the remaining normal commands must have a ',' at this point.
-    if (!parser.consume_specific(','))
-        return false;
+    hunk.new_file_range.number_of_lines = new_range_end_line - hunk.new_file_range.start_line + 1;
+    if (command == 'd')
+        --hunk.new_file_range.number_of_lines;
 
-    // And if this is the second comma that was found, this must be a change command.
-    if (has_first_comma && command != 'c')
-        return false;
-
-    // All remaining normal commands must finish with an integer here.
-    if (!parser.consume_line_number(hunk.new_file_range.number_of_lines))
-        return false;
-
-    adjust_offsets(command);
     return parser.is_eof();
 }
 

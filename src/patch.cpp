@@ -518,7 +518,11 @@ int process_patch(const Options& options)
                 // patches individual patches one after another. To solve this problem and
                 // implement atomic changes for a git style collection of patches, we defer
                 // writing to any output file until all patches have finished applying.
-                if (patch.format == Format::Git) {
+                //
+                // Removals are applied immediately as only a single removal of a file should
+                // be present in any git commit - and deferring the write causes issues when
+                // checking if we should be removing the file if empty.
+                if (patch.format == Format::Git && patch.operation != Operation::Delete) {
                     deferred_writer.deferred_write(std::move(tmp_out_file), output_file, std::move(permission_callback));
                 } else {
                     File file(output_file, mode | std::ios::trunc);

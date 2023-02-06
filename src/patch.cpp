@@ -552,7 +552,7 @@ int process_patch(const Options& options)
 
                 // Clean up the file if it looks like it was removed.
                 // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
-                if (options.remove_empty_files == Options::OptionalBool::Yes && patch.new_file_path == "/dev/null") {
+                if (options.remove_empty_files == Options::OptionalBool::Yes && patch.operation == Operation::Delete) {
                     if (filesystem::file_size(output_file) == 0) {
                         if (!options.dry_run)
                             remove_file_and_empty_parent_folders(output_file);

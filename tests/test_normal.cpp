@@ -163,7 +163,7 @@ PATCH_TEST(normal_patch_add_file)
     EXPECT_FILE_EQ("a", "1\n");
 }
 
-PATCH_TEST(PATCH_XFAIL_normal_patch_remove_file)
+PATCH_TEST(normal_patch_remove_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

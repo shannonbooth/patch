@@ -162,3 +162,30 @@ PATCH_TEST(normal_patch_add_file)
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "1\n");
 }
+
+PATCH_TEST(PATCH_XFAIL_normal_patch_remove_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(1,3d0
+< 1
+< 2
+< 3
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+
+        file << "1\n2\n3\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-n", "to_patch", "-E", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FALSE(Patch::filesystem::exists("to_patch"));
+}

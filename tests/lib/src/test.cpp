@@ -81,11 +81,14 @@ bool Test::run(const char* patch_path, bool is_compat)
 
     try {
         test(patch_path);
+        if (expected == ExpectedResult::ExpectedFail)
+            success = false;
     } catch (const std::exception& e) {
         if (expected != ExpectedResult::ExpectedFail) {
             std::cerr << e.what() << '\n';
             std::cerr << m_name << " FAILED!\n";
-            success = false;
+        } else {
+            success = true;
         }
     }
 

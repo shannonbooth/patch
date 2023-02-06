@@ -703,6 +703,41 @@ PATCH_TEST(remove_file_successfully_posix_and_remove_flag)
     remove_file(patch_path, true, { "--posix", "--remove-empty-files" });
 }
 
+PATCH_TEST(git_patch_remove_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+diff --git a/a b/a
+deleted file mode 100644
+index 01e79c3..0000000
+--- a/a
++++ /dev/null
+@@ -1,3 +0,0 @@
+-1
+-2
+-3
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "1\n2\n3\n";
+        file.close();
+    }
+
+    EXPECT_TRUE(Patch::filesystem::exists("a"));
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file a\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FALSE(Patch::filesystem::exists("a"));
+}
+
 PATCH_TEST(remove_file_that_has_trailing_garbage)
 {
     {

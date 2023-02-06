@@ -117,8 +117,13 @@ Test::ExpectedResult Test::expected_result(bool is_compat) const
     if (Patch::starts_with(m_name, "XFAIL_"))
         return ExpectedResult::ExpectedFail;
 
-    if (is_compat && Patch::starts_with(m_name, "COMPAT_XFAIL_"))
-        return ExpectedResult::ExpectedFail;
+    if (is_compat) {
+        if (Patch::starts_with(m_name, "COMPAT_XFAIL_"))
+            return ExpectedResult::ExpectedFail;
+    } else {
+        if (Patch::starts_with(m_name, "PATCH_XFAIL_"))
+            return ExpectedResult::ExpectedFail;
+    }
 
     return ExpectedResult::Pass;
 }

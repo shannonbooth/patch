@@ -12,6 +12,10 @@
 
 namespace Patch {
 
+void unset_env(const char* name);
+
+void set_env(const char* name, const char* value);
+
 template<class T, typename std::enable_if<!std::is_enum<T> {}>::type* = nullptr>
 void test_error_format(const T& a)
 {

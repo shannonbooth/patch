@@ -295,9 +295,16 @@ const Options& CmdLineParser::parse()
             parse_short_option(option_string);
     }
 
+    apply_environment_defaults();
     apply_posix_defaults();
 
     return m_options;
+}
+
+void CmdLineParser::apply_environment_defaults()
+{
+    if (!m_options.posix)
+        m_options.posix = std::getenv("POSIXLY_CORRECT") != nullptr;
 }
 
 void CmdLineParser::apply_posix_defaults()

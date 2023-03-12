@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -10,14 +10,16 @@
 #include <string>
 #include <type_traits>
 
+namespace Patch {
+
 template<class T, typename std::enable_if<!std::is_enum<T> {}>::type* = nullptr>
-void patch_test_error_format(const T& a)
+void test_error_format(const T& a)
 {
     std::cerr << a;
 }
 
 template<class T, typename std::enable_if<std::is_enum<T> {}>::type* = nullptr>
-void patch_test_error_format(const T& a)
+void test_error_format(const T& a)
 {
     std::cerr << static_cast<typename std::underlying_type<T>::type>(a);
 }
@@ -31,7 +33,7 @@ public:
     do {                                                                                                        \
         if (!(condition)) {                                                                                     \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": 'EXPECT_TRUE(" << #condition ")' failed\n"; \
-            throw test_assertion_failure("Test failed");                                                        \
+            throw Patch::test_assertion_failure("Test failed");                                                 \
         }                                                                                                       \
     } while (false)
 
@@ -39,7 +41,7 @@ public:
     do {                                                                                                         \
         if ((condition)) {                                                                                       \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": 'EXPECT_FALSE(" << #condition ")' failed\n"; \
-            throw test_assertion_failure("Test failed");                                                         \
+            throw Patch::test_assertion_failure("Test failed");                                                  \
         }                                                                                                        \
     } while (false)
 
@@ -49,11 +51,11 @@ public:
         if ((lhs) == (rhs)) {                                                    \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": ";           \
             std::cerr << "'EXPECT_NE(" << #lhs << ", " << #rhs << ")' failed, "; \
-            patch_test_error_format(lhs);                                        \
+            Patch::test_error_format(lhs);                                       \
             std::cerr << " == ";                                                 \
-            patch_test_error_format(rhs);                                        \
+            Patch::test_error_format(rhs);                                       \
             std::cerr << '\n';                                                   \
-            throw test_assertion_failure("Test failed");                         \
+            throw Patch::test_assertion_failure("Test failed");                  \
         }                                                                        \
     } while (false)
 
@@ -63,11 +65,11 @@ public:
         if ((lhs) != (rhs)) {                                                    \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": ";           \
             std::cerr << "'EXPECT_EQ(" << #lhs << ", " << #rhs << ")' failed, "; \
-            patch_test_error_format(lhs);                                        \
+            Patch::test_error_format(lhs);                                       \
             std::cerr << " != ";                                                 \
-            patch_test_error_format(rhs);                                        \
+            Patch::test_error_format(rhs);                                       \
             std::cerr << '\n';                                                   \
-            throw test_assertion_failure("Test failed");                         \
+            throw Patch::test_assertion_failure("Test failed");                  \
         }                                                                        \
     } while (false)
 
@@ -91,15 +93,15 @@ public:
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
                       << #statement " throws an exception of type "                       \
                       << #expected_exception ", but threw a different type.\n";           \
-            throw test_assertion_failure("Test failed");                                  \
+            throw Patch::test_assertion_failure("Test failed");                           \
         }                                                                                 \
         if (patch_failed_test)                                                            \
-            throw test_assertion_failure("Test failed");                                  \
+            throw Patch::test_assertion_failure("Test failed");                           \
         if (!expected_msg.empty() && patch_error_msg != (msg)) {                          \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": "                     \
                       << #statement " expected an error message of: \""                   \
                       << (msg) << "\", but instead got: \"" << patch_error_msg << "\"\n"; \
-            throw test_assertion_failure("Test failed");                                  \
+            throw Patch::test_assertion_failure("Test failed");                           \
         }                                                                                 \
     } while (false)
 
@@ -131,7 +133,7 @@ void register_test(std::string name, std::function<void(const char*)> test);
         TEST_REGISTER_HELPER(name)                                      \
         ()                                                              \
         {                                                               \
-            register_test(#name, TEST_FUNCTION_NAME(name));             \
+            Patch::register_test(#name, TEST_FUNCTION_NAME(name));      \
         }                                                               \
     };                                                                  \
     static const TEST_REGISTER_HELPER(name) TEST_REGISTER_HELPER(name); \
@@ -145,9 +147,11 @@ void register_test(std::string name, std::function<void(const char*)> test);
         TEST_REGISTER_HELPER(name)                                      \
         ()                                                              \
         {                                                               \
-            register_test(#name, TEST_FUNCTION_NAME(name));             \
+            Patch::register_test(#name, TEST_FUNCTION_NAME(name));      \
         }                                                               \
     };                                                                  \
     static const TEST_REGISTER_HELPER(name) TEST_REGISTER_HELPER(name); \
     /* NOLINTNEXTLINE(readability-function-cognitive-complexity) */     \
     static void TEST_FUNCTION_NAME(name)()
+
+} // namespace Patch

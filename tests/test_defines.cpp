@@ -160,7 +160,7 @@ PATCH_TEST(defines_add_remove)
 #endif
 }
 )");
-    } catch (const test_assertion_failure&) {
+    } catch (const Patch::test_assertion_failure&) {
         EXPECT_FILE_EQ("file.cpp", R"(int main()
 {
 #ifndef TEST_PATCH

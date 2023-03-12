@@ -120,6 +120,7 @@ bool Test::run(const char* patch_path, bool is_compat)
         if (expected != ExpectedResult::ExpectedFail) {
             std::cerr << e.what() << '\n';
             std::cerr << m_name << " FAILED!\n";
+            success = false;
         } else {
             success = true;
         }

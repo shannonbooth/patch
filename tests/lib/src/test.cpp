@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <chrono>
 #include <patch/system.h>
 #include <patch/test.h>
 #include <patch/utils.h>
+
+namespace Patch {
 
 class Test {
 public:
@@ -220,9 +222,11 @@ void register_test(std::string name, const std::function<void()>& test_function)
     });
 }
 
+} // namespace Patch
+
 int main(int argc, const char* const* argv)
 {
-    auto& r = runner();
+    auto& r = Patch::runner();
 
     // List tests
     if (argc == 1) {

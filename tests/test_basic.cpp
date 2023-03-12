@@ -2147,3 +2147,28 @@ PATCH_TEST(reversed_patch_batch)
 
     EXPECT_FILE_EQ("a", "1\n2\n3\n");
 }
+
+PATCH_TEST(basic_add_symlink_file_to_stdout)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+diff --git a/b b/b
+new file mode 120000
+index 0000000..2e65efe
+--- /dev/null
++++ b/b
+@@ -0,0 +1 @@
++a
+\ No newline at end of file
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-o-", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "a");
+    EXPECT_EQ(process.stderr_data(), "patching symbolic link - (read from b)\n");
+    EXPECT_EQ(process.return_code(), 0);
+}

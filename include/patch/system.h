@@ -58,6 +58,12 @@ enum class perms : unsigned {
     unknown = 0xFFFF,
 };
 
+inline bool is_symlink(uint32_t mode)
+{
+    constexpr uint32_t symlink_mode = 0120000;
+    return (mode & symlink_mode) == symlink_mode;
+}
+
 inline perms operator&(perms left, perms right)
 {
     return static_cast<perms>(static_cast<unsigned>(left) & static_cast<unsigned>(right));

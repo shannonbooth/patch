@@ -462,7 +462,7 @@ int process_patch(const Options& options)
         if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))
             check_prerequisite_handling(out, options, patch.prerequisite);
 
-        out << patch_operation(options) << " file " << format_filename(output_file);
+        out << patch_operation(options) << (filesystem::is_symlink(patch.new_file_mode) ? " symbolic link " : " file ") << format_filename(output_file);
 
         if (patch.operation == Operation::Rename) {
             if (file_to_patch == output_file) {

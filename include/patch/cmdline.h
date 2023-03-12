@@ -50,6 +50,7 @@ public:
 
 private:
     void apply_posix_defaults();
+    void apply_environment_defaults();
 
     static int stoi(const std::string& option, const std::string& description);
 

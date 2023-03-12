@@ -5,8 +5,37 @@
 #include <patch/system.h>
 #include <patch/test.h>
 #include <patch/utils.h>
+#include <system_error>
+
+#ifdef _WIN32
+#    include <cstdlib>
+#else
+#    include <unistd.h>
+#endif
 
 namespace Patch {
+
+void unset_env(const char* name)
+{
+#ifdef _WIN32
+    int ret = _putenv_s(name, "");
+#else
+    int ret = unsetenv(name);
+#endif
+    if (ret != 0)
+        throw std::system_error(errno, std::generic_category(), "Failed to unset environment variable " + std::string(name));
+}
+
+void set_env(const char* name, const char* value)
+{
+#ifdef _WIN32
+    int ret = _putenv_s(name, value);
+#else
+    int ret = setenv(name, value, 1);
+#endif
+    if (ret != 0)
+        throw std::system_error(errno, std::generic_category(), "Failed to set environment variable " + std::string(name));
+}
 
 class Test {
 public:
@@ -63,6 +92,8 @@ void Test::tear_down()
 #endif
 
     std::system(command.c_str());
+
+    unset_env("POSIXLY_CORRECT");
 }
 
 bool Test::run(const char* patch_path, bool is_compat)

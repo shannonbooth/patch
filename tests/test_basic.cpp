@@ -698,6 +698,12 @@ PATCH_TEST(no_remove_file_posix)
     remove_file(patch_path, false, { "--posix" });
 }
 
+PATCH_TEST(no_remove_file_posix_as_env)
+{
+    Patch::set_env("POSIXLY_CORRECT", "1");
+    remove_file(patch_path, false, {});
+}
+
 PATCH_TEST(remove_file_successfully_posix_and_remove_flag)
 {
     remove_file(patch_path, true, { "--posix", "--remove-empty-files" });
@@ -1529,8 +1535,14 @@ PATCH_TEST(backup_if_mismatch_not_done_with_flag)
 PATCH_TEST(COMPAT_XFAIL_backup_if_mismatch_not_done_posix)
 {
     // NOTE: This appears to be a bug with GNU patch.
-    //       Setting POSIXLY_CORRECT appears to work, but --posix flag does not!
+    //       Setting POSIXLY_CORRECT appears to work (see below), but --posix flag does not!
     no_backup_if_mismatch(patch_path, { "--posix" });
+}
+
+PATCH_TEST(backup_if_mismatch_not_done_posix_env)
+{
+    Patch::set_env("POSIXLY_CORRECT", "1");
+    no_backup_if_mismatch(patch_path, {});
 }
 
 PATCH_TEST(backup_multiple_files_only_backs_up_first)

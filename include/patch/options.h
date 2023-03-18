@@ -33,6 +33,14 @@ struct Options {
         No,
     };
 
+    enum class QuotingStyle {
+        Unset,
+        Literal,
+        Shell,
+        ShellAlways,
+        C,
+    };
+
     // posix defined options
     bool save_backup { false };
     bool interpret_as_context { false };
@@ -64,6 +72,7 @@ struct Options {
     NewlineOutput newline_output { NewlineOutput::Native };
     RejectFormat reject_format { RejectFormat::Default };
     ReadOnlyHandling read_only_handling { ReadOnlyHandling::Warn };
+    QuotingStyle quoting_style { QuotingStyle::Unset };
     std::string backup_suffix;
     std::string backup_prefix;
 };

@@ -94,6 +94,7 @@ void Test::tear_down()
     std::system(command.c_str());
 
     unset_env("POSIXLY_CORRECT");
+    unset_env("QUOTING_STYLE");
 }
 
 bool Test::run(const char* patch_path, bool is_compat)

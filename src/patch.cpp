@@ -192,7 +192,7 @@ static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, con
     out << '\n';
 }
 
-static bool needs_quoting(const std::string& input)
+static bool needs_shell_quoting(const std::string& input)
 {
     // FIXME: This list is probably incomplete.
     //        Is based off special characters in shell.
@@ -210,12 +210,30 @@ static bool needs_quoting(const std::string& input)
     });
 }
 
-static std::string format_filename(const std::string& input)
+static std::string quote_c_style(const std::string& input)
 {
-    if (!needs_quoting(input))
-        return input;
+    // FIXME: This needs to be a lot smarter - escaping needs to be done for certain characters.
+    return "\"" + input + "\"";
+}
 
+static std::string quote_shell_style(const std::string& input)
+{
+    // FIXME: This needs to be a lot smarter - escaping needs to be done for certain characters.
     return "'" + input + "'";
+}
+
+static std::string format_filename(Options::QuotingStyle quote_style, const std::string& input)
+{
+    if (quote_style == Options::QuotingStyle::C)
+        return quote_c_style(input);
+
+    if (quote_style == Options::QuotingStyle::ShellAlways)
+        return quote_shell_style(input);
+
+    if (quote_style == Options::QuotingStyle::Shell && needs_shell_quoting(input))
+        return quote_shell_style(input);
+
+    return input;
 }
 
 static const char* patch_operation(const Options& options)
@@ -462,7 +480,7 @@ int process_patch(const Options& options)
         if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))
             check_prerequisite_handling(out, options, patch.prerequisite);
 
-        out << patch_operation(options) << (filesystem::is_symlink(patch.new_file_mode) ? " symbolic link " : " file ") << format_filename(output_file);
+        out << patch_operation(options) << (filesystem::is_symlink(patch.new_file_mode) ? " symbolic link " : " file ") << format_filename(options.quoting_style, output_file);
 
         if (patch.operation == Operation::Rename) {
             if (file_to_patch == output_file) {

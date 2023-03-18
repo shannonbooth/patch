@@ -31,7 +31,7 @@ struct Option {
     HasArgument has_argument;
 };
 
-const std::array<Option, 30> s_switches { {
+const std::array<Option, 31> s_switches { {
     { 'B', "--prefix", HasArgument::Yes },
     { 'D', "--ifdef", HasArgument::Yes },
     { 'E', "--remove-empty-files", HasArgument::No },
@@ -62,6 +62,7 @@ const std::array<Option, 30> s_switches { {
     { CHAR_MAX + 6, "--backup-if-mismatch", HasArgument::No },
     { CHAR_MAX + 7, "--no-backup-if-mismatch", HasArgument::No },
     { CHAR_MAX + 8, "--posix", HasArgument::No },
+    { CHAR_MAX + 9, "--quoting-style", HasArgument::Yes },
 } };
 
 } // namespace
@@ -167,6 +168,22 @@ void CmdLineParser::handle_reject_format(const std::string& format)
         m_options.reject_format = Options::RejectFormat::Unified;
     else
         throw cmdline_parse_error("unrecognized reject format " + format);
+}
+
+void CmdLineParser::handle_quoting_style(const std::string& style, const Options::QuotingStyle* default_quote_style)
+{
+    if (style == "literal")
+        m_options.quoting_style = Options::QuotingStyle::Literal;
+    else if (style == "shell")
+        m_options.quoting_style = Options::QuotingStyle::Shell;
+    else if (style == "shell-always")
+        m_options.quoting_style = Options::QuotingStyle::ShellAlways;
+    else if (style == "c")
+        m_options.quoting_style = Options::QuotingStyle::C;
+    else if (default_quote_style)
+        m_options.quoting_style = *default_quote_style;
+    else
+        throw cmdline_parse_error("unrecognized quoting style " + style);
 }
 
 void CmdLineParser::parse_short_option(const std::string& option_string)
@@ -305,6 +322,15 @@ void CmdLineParser::apply_environment_defaults()
 {
     if (!m_options.posix)
         m_options.posix = std::getenv("POSIXLY_CORRECT") != nullptr;
+
+    if (m_options.quoting_style == Options::QuotingStyle::Unset) {
+        const auto default_quote_style = Options::QuotingStyle::Shell;
+        const char* style = std::getenv("QUOTING_STYLE");
+        if (style)
+            handle_quoting_style(style, &default_quote_style);
+        else
+            m_options.quoting_style = default_quote_style;
+    }
 }
 
 void CmdLineParser::apply_posix_defaults()
@@ -415,6 +441,9 @@ void CmdLineParser::process_option(int short_name, const std::string& value)
         break;
     case CHAR_MAX + 8:
         m_options.posix = true;
+        break;
+    case CHAR_MAX + 9:
+        handle_quoting_style(value);
         break;
     default:
         break;
@@ -537,6 +566,15 @@ void show_usage(std::ostream& out)
            "                    warn    Warn that the file is read-only, but proceed patching it anyway.\n"
            "                    ignore  Proceed patching without any warning issued.\n"
            "                    fail    Fail, and refuse patching the file.\n"
+           "\n"
+           "    --quoting-style <style>\n"
+           "                Change how output file names are quoted. The default style is shell. The possible values for\n"
+           "                this flag are:\n"
+           "\n"
+           "                    literal       Do not quote file names, display as is.\n"
+           "                    shell         Quote the file name if it contains special shell characters, and escape them.\n"
+           "                    shell-always  As 'shell' above, but always quote file names.\n"
+           "                    c             Quote the string following the rules of the C programming langnuage.\n"
            "\n"
            "    --newline-handling <handling>\n"
            "                Change how newlines are output to the patched file. The default newline behavior\n"

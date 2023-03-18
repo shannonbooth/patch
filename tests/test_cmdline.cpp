@@ -487,3 +487,29 @@ TEST(cmdline_long_option_only_partially_specified_ambiguous)
         EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error, data.error);
     }
 }
+
+TEST(cmdline_bad_quote_style_cmdline_throws)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        "--quoting-style=bad",
+        nullptr,
+    };
+
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "unrecognized quoting style bad");
+}
+
+TEST(cmdline_bad_quote_style_env_is_defaulted)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        nullptr,
+    };
+
+    Patch::set_env("QUOTING_STYLE", "bad");
+
+    auto options = parse_cmdline(dummy_args.size() - 1, dummy_args.data());
+
+    EXPECT_EQ(options.quoting_style, Patch::Options::QuotingStyle::Shell);
+}

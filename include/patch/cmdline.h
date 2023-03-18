@@ -60,6 +60,7 @@ private:
     void handle_newline_strategy(const std::string& strategy);
     void handle_read_only(const std::string& handling);
     void handle_reject_format(const std::string& format);
+    void handle_quoting_style(const std::string& style, const Options::QuotingStyle* default_quote_style = nullptr);
 
     void process_option(int short_name, const std::string& value);
 

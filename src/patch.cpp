@@ -212,8 +212,28 @@ static bool needs_shell_quoting(const std::string& input)
 
 static std::string quote_c_style(const std::string& input)
 {
-    // FIXME: This needs to be a lot smarter - escaping needs to be done for certain characters.
-    return "\"" + input + "\"";
+    std::string output = "\"";
+    for (const char c : input) {
+        switch (c) {
+        case '\\':
+            output += "\\\\";
+            break;
+        case '"':
+            output += "\\\"";
+            break;
+        case '\n':
+            output += "\\n";
+            break;
+        case '\t':
+            output += "\\t";
+            break;
+        default:
+            output += c;
+            break;
+        }
+    }
+    output += "\"";
+    return output;
 }
 
 static std::string quote_shell_style(const std::string& input)

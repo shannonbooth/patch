@@ -293,6 +293,24 @@ std::string make_temp_directory()
 #endif
 }
 
+std::string basename(const std::string& path)
+{
+#ifdef _WIN32
+    constexpr const char* seperator = "/\\";
+#else
+    constexpr char seperator = '/';
+#endif
+
+    const auto pos = path.find_last_of(seperator);
+
+    // No slash - path is already basename.
+    if (pos == std::string::npos)
+        return path;
+
+    // basename is the component of the path after the seperator
+    return path.substr(pos + 1);
+}
+
 bool create_directory(const std::string& path)
 {
 #ifdef _WIN32

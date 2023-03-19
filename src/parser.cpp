@@ -1015,17 +1015,17 @@ Patch parse_patch(File& file, Format format, int strip)
 std::string strip_path(const std::string& path, int amount)
 {
     // A negative strip count (the default) indicates that we use the basename of the filepath.
-    const bool strip_leading = amount < 0;
-    if (strip_leading)
-        return path.substr(path.find_last_of("/\\") + 1);
+    const bool use_basename = amount < 0;
+    if (use_basename)
+        return filesystem::basename(path);
 
     int remaining_to_strip = amount;
     auto stripped_begin = path.begin();
     for (auto c = path.begin(); c != path.end(); ++c) {
-        if (*c == '/' || *c == '\\') {
+        if (filesystem::is_seperator(*c)) {
             // A double slash resolves as the same path as a single one does.
             ++c;
-            if (c != path.end() && (*c == '/' || *c == '\\'))
+            if (c != path.end() && filesystem::is_seperator(*c))
                 ++c;
 
             if (--remaining_to_strip >= 0)

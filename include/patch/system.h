@@ -24,6 +24,17 @@ void ensure_parent_directories(const std::string& file_path);
 
 namespace filesystem {
 
+constexpr bool is_seperator(char c)
+{
+#ifdef _WIN32
+    return c == '/' || c == '\\';
+#else
+    return c == '/';
+#endif
+}
+
+std::string basename(const std::string& path);
+
 bool create_directory(const std::string& path);
 
 std::string temp_directory_path();

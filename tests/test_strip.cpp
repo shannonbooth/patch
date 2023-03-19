@@ -22,24 +22,30 @@ TEST(strip_remove_all_leading)
     EXPECT_EQ(Patch::strip_path("/usr/bin/cat", -1), "cat");
     EXPECT_EQ(Patch::strip_path("noslash", -1), "noslash");
 
+#ifdef _WIN32
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\thing.pdf", -1), "thing.pdf");
     EXPECT_EQ(Patch::strip_path("\\Program Files\\Utilities\\test.exe", -1), "test.exe");
     EXPECT_EQ(Patch::strip_path("2018\\thing.xlsx", -1), "thing.xlsx");
+#endif
 }
 
 TEST(strip_multi_slash)
 {
     EXPECT_EQ(Patch::strip_path("/path//with/multiple/slashes", 3), "multiple/slashes");
+#ifdef _WIN32
     EXPECT_EQ(Patch::strip_path("C:\\Users\\\\Shannon\\another.txt", 2), "Shannon\\another.txt");
+#endif
 }
 
 TEST(strip_windows_path)
 {
+#ifdef _WIN32
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 0), "C:\\Users\\Shannon\\test.pdf");
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 1), "Users\\Shannon\\test.pdf");
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 2), "Shannon\\test.pdf");
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 3), "test.pdf");
     EXPECT_EQ(Patch::strip_path("C:\\Users\\Shannon\\test.pdf", 4), "");
+#endif
 }
 
 TEST(strip_quoted_string_bad)

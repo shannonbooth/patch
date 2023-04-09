@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <ios>
 #include <patch/file.h>
 #include <patch/system.h>
 #include <patch/test.h>
+#include <system_error>
 
 TEST(file_get_line_lf)
 {
@@ -177,4 +179,26 @@ TEST(file_move_construct_move_assign)
 
     // Should still be able to read from the file, but using new content!
     EXPECT_EQ(file_move_assigned.read_all_as_string(), "abc\n");
+}
+
+PATCH_TEST(file_append)
+{
+    (void)patch_path;
+
+    {
+        Patch::File file("some-file", std::ios_base::out);
+        file << "first line!\n";
+    }
+
+    {
+        Patch::File file("some-file", std::ios_base::out | std::ios_base::app);
+        file << "second line!\n";
+    }
+
+    EXPECT_FILE_EQ("some-file", "first line!\nsecond line!\n");
+}
+
+PATCH_TEST(file_open_failure)
+{
+    EXPECT_THROW(Patch::File("file-that-does-not-exist"), std::system_error);
 }

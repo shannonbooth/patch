@@ -293,6 +293,18 @@ std::string make_temp_directory()
 #endif
 }
 
+void symlink(const std::string& target, const std::string& linkpath)
+{
+#ifdef _WIN32
+    // FIXME: How do we implement this properly on Windows??
+    throw std::system_error(ENOSYS, std::generic_category(), "Can't create symbolic link " + target + " ");
+#else
+    int ret = ::symlink(target.c_str(), linkpath.c_str());
+    if (ret != 0)
+        throw std::system_error(errno, std::generic_category(), "Can't create symbolic link " + target + " ");
+#endif
+}
+
 std::string basename(const std::string& path)
 {
 #ifdef _WIN32
@@ -370,6 +382,20 @@ bool is_regular_file(const std::string& path)
 #else
     struct stat buf;
     return ::stat(path.c_str(), &buf) == 0 && S_ISREG(buf.st_mode);
+#endif
+}
+
+bool is_symlink(const std::string& path)
+{
+#ifdef _WIN32
+    // FIXME: support this
+    return false;
+#else
+    struct stat buf;
+    if (::lstat(path.c_str(), &buf) != 0)
+        return false;
+
+    return S_ISLNK(buf.st_mode);
 #endif
 }
 

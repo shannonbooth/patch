@@ -236,9 +236,27 @@ static std::string quote_c_style(const std::string& input)
     return output;
 }
 
-static std::string quote_shell_style(const std::string& input)
+static std::string quote_shell_style(Options::QuotingStyle quote_style, const std::string& input)
 {
-    // FIXME: This needs to be a lot smarter - escaping needs to be done for certain characters.
+    const bool needs_quoting = needs_shell_quoting(input);
+
+    // FIXME: This needs to be smarter - we may need to escape characters.
+
+    if (needs_quoting)
+        return "'" + input + "'";
+
+    auto pos = input.find('\'');
+    if (pos != std::string::npos)
+        return "\"" + input + "\"";
+
+    if (quote_style == Options::QuotingStyle::Shell) {
+        pos = input.find('"');
+        if (pos != std::string::npos)
+            return "'" + input + "'";
+
+        return input;
+    }
+
     return "'" + input + "'";
 }
 
@@ -247,11 +265,8 @@ static std::string format_filename(Options::QuotingStyle quote_style, const std:
     if (quote_style == Options::QuotingStyle::C)
         return quote_c_style(input);
 
-    if (quote_style == Options::QuotingStyle::ShellAlways)
-        return quote_shell_style(input);
-
-    if (quote_style == Options::QuotingStyle::Shell && needs_shell_quoting(input))
-        return quote_shell_style(input);
+    if (quote_style == Options::QuotingStyle::ShellAlways || quote_style == Options::QuotingStyle::Shell)
+        return quote_shell_style(quote_style, input);
 
     return input;
 }

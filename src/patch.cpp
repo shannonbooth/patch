@@ -576,7 +576,13 @@ int process_patch(const Options& options)
                 // be present in any git commit - and deferring the write causes issues when
                 // checking if we should be removing the file if empty.
                 if (patch.format == Format::Git && patch.operation != Operation::Delete) {
-                    deferred_writer.deferred_write(std::move(tmp_out_file), output_file, std::move(permission_callback));
+                    if (filesystem::is_symlink(patch.new_file_mode)) {
+                        // A symlink patch should contain the filename in the contents of the patched file.
+                        const auto symlink_target = tmp_out_file.read_all_as_string();
+                        filesystem::symlink(symlink_target, output_file);
+                    } else {
+                        deferred_writer.deferred_write(std::move(tmp_out_file), output_file, std::move(permission_callback));
+                    }
                 } else {
                     File file(output_file, mode | std::ios::trunc);
                     tmp_out_file.write_entire_contents_to(file);

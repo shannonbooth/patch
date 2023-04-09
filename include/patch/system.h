@@ -33,6 +33,8 @@ constexpr bool is_seperator(char c)
 #endif
 }
 
+void symlink(const std::string& target, const std::string& linkpath);
+
 std::string basename(const std::string& path);
 
 bool create_directory(const std::string& path);
@@ -44,6 +46,8 @@ std::string make_temp_directory();
 bool exists(const std::string& path);
 
 bool is_regular_file(const std::string& path);
+
+bool is_symlink(const std::string& path);
 
 void rename(const std::string& old_path, const std::string& new_path);
 

@@ -152,21 +152,20 @@ std::string LineParser::parse_quoted_string()
     throw std::invalid_argument("Failed to find terminating \" when parsing " + std::string(begin, m_current));
 }
 
-void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp)
+void LineParser::parse_file_line(int strip, std::string& path, std::string* timestamp)
 {
-    if (input.empty()) {
+    if (is_eof()) {
         path.clear();
         if (timestamp)
             timestamp->clear();
         return;
     }
 
-    auto it = input.begin();
+    auto it = m_current;
 
     if (*it == '"') {
-        LineParser parser(input);
-        path = parser.parse_quoted_string();
-        it = parser.current();
+        path = parse_quoted_string();
+        it = m_current;
     } else {
         // In most patches, a \t is used to separate the path from
         // the timestamp. However, POSIX does not seem to specify one
@@ -176,27 +175,29 @@ void parse_file_line(const std::string& input, int strip, std::string& path, std
         // however git does not. To implement this, if we find any tab
         // that is considered the end of the path. Otherwise if no tab
         // is found, we fall back on using a space.
+        auto begin = m_current;
+
         while (true) {
-            if (it == input.end()) {
-                path = input;
+            if (it == m_end) {
+                path = std::string(begin, m_end);
                 break;
             }
 
             // Must have reached the end of the path.
             if (*it == '\t') {
-                path = std::string(input.begin(), it);
+                path = std::string(begin, it);
                 break;
             }
 
             // May have reached end of the path, but it also could be
             // a path with spaces. Look for a tab to find out.
             if (*it == ' ') {
-                auto new_it = std::find(it, input.end(), '\t');
-                if (new_it == input.end()) {
-                    path = std::string(input.begin(), it);
+                auto new_it = std::find(it, m_end, '\t');
+                if (new_it == m_end) {
+                    path = std::string(begin, it);
                 } else {
                     it = new_it;
-                    path = std::string(input.begin(), new_it);
+                    path = std::string(begin, new_it);
                 }
                 break;
             }
@@ -208,8 +209,8 @@ void parse_file_line(const std::string& input, int strip, std::string& path, std
     // Anything after the path is considered the timestamp.
     // Currently this may also include whitespace! (which depends on
     // how the path and timestamp were separated in the patch).
-    if (timestamp && it != input.end() && it + 1 != input.end())
-        *timestamp = std::string(it + 1, input.end());
+    if (timestamp && it != m_end && it + 1 != m_end)
+        *timestamp = std::string(it + 1, m_end);
 
     // We don't want /dev/null to become stripped, as this is a magic
     // name which we use to determine whether a file has been deleted
@@ -433,20 +434,16 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
     return false;
 }
 
-static void parse_git_header_name(const std::string& line, Patch& patch, int strip)
+void LineParser::parse_git_header_name(Patch& patch, int strip)
 {
-    LineParser parser(line);
-    if (!parser.consume_specific("diff --git "))
-        return;
-
     std::string name;
-    if (parser.peek() == '"') {
-        name = parser.parse_quoted_string();
+    if (peek() == '"') {
+        name = parse_quoted_string();
     } else {
-        while (!parser.is_eof()) {
-            if (parser.consume_specific(" b/"))
+        while (!is_eof()) {
+            if (consume_specific(" b/"))
                 break;
-            name += parser.consume();
+            name += consume();
         }
     }
 
@@ -511,36 +508,38 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
     //
     // Once the format is determine, we continue parsing until the beginning of the first hunk is found.
     while (get_line(line)) {
+        LineParser parser(line);
+
         ++lines;
         auto last_line_looks_like = this_line_looks_like;
         this_line_looks_like = Format::Unknown;
 
         // Look for any file headers in the patch header telling up what the old and new file names are.
-        if ((last_line_looks_like != Format::Context && starts_with(line, "*** "))
-            || starts_with(line, "+++ ")) {
-            parse_file_line(line.substr(4, line.size() - 4), strip, patch.old_file_path, &patch.old_file_time);
+        if ((last_line_looks_like != Format::Context && parser.consume_specific("*** "))
+            || parser.consume_specific("+++ ")) {
+            parser.parse_file_line(strip, patch.old_file_path, &patch.old_file_time);
             continue;
         }
 
-        if (starts_with(line, "--- ")) {
-            parse_file_line(line.substr(4, line.size() - 4), strip, patch.new_file_path, &patch.new_file_time);
+        if (parser.consume_specific("--- ")) {
+            parser.parse_file_line(strip, patch.new_file_path, &patch.new_file_time);
             continue;
         }
 
-        if (starts_with(line, "Index: ")) {
-            parse_file_line(line.substr(7, line.size() - 7), strip, patch.index_file_path);
+        if (parser.consume_specific("Index: ")) {
+            parser.parse_file_line(strip, patch.index_file_path);
             continue;
         }
 
-        if (starts_with(line, "Prereq: ")) {
-            parse_file_line(line.substr(8, line.size() - 8), strip, patch.prerequisite);
+        if (parser.consume_specific("Prereq: ")) {
+            parser.parse_file_line(strip, patch.prerequisite);
             continue;
         }
 
         // Git diffs sometimes have some extended information in them which can express some
         // operations in a more terse manner. If we recognise a git diff, try and look for
         // these extensions lines in the patch.
-        if (starts_with(line, "diff --git ")) {
+        if (parser.consume_specific("diff --git ")) {
             // We have already parsed the patch header but have found the next patch! This
             // must mean that we have not found any hunk to parse for the patch body.
             if (is_git_patch) {
@@ -548,7 +547,7 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
                 break;
             }
 
-            parse_git_header_name(line, patch, strip);
+            parser.parse_git_header_name(patch, strip);
             is_git_patch = true;
             patch.format = Format::Unified;
             continue;

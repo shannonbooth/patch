@@ -1878,6 +1878,51 @@ PATCH_TEST(error_on_chdir_to_bad_directory)
     EXPECT_EQ(process.return_code(), 2);
 }
 
+static void test_basic_bad_mode_given(const char* patch_path, const char* new_mode_str)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << "diff --git a/file b/file\n"
+             << "old mode 100644\n"
+             << "new mode " << new_mode_str << '\n';
+    }
+
+    const std::string to_patch = "1\n2\n3\n";
+    {
+        Patch::File file("file", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    const auto old_perms = Patch::filesystem::get_permissions("file");
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-u", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file file\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("file", to_patch);
+
+    const auto new_perms = Patch::filesystem::get_permissions("file");
+
+    EXPECT_EQ(old_perms, new_perms);
+}
+
+PATCH_TEST(test_basic_bad_mode_given_too_long)
+{
+    test_basic_bad_mode_given(patch_path, "1007555");
+}
+
+PATCH_TEST(test_basic_bad_mode_given_bad_character_ending)
+{
+    test_basic_bad_mode_given(patch_path, "10075a");
+}
+
+PATCH_TEST(test_basic_bad_mode_given_bad_character_beginning)
+{
+    test_basic_bad_mode_given(patch_path, ";0075a");
+}
+
 PATCH_TEST(add_executable_bit)
 {
     {

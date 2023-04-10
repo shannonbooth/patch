@@ -21,9 +21,9 @@ function(add_coverage_target)
 
   set(EXCLUDES --exclude ${PROJECT_SOURCE_DIR}/tests --exclude ${PROJECT_BINARY_DIR}/CMakeFiles)
   add_custom_target(coverage
-    COMMAND ${GCOVR} --exclude-unreachable-branches --xml coverage.xml -r ${PROJECT_SOURCE_DIR} ${EXCLUDES}
+    COMMAND ${GCOVR} --exclude-unreachable-branches --exclude-throw-branches --xml coverage.xml -r ${PROJECT_SOURCE_DIR} ${EXCLUDES}
     COMMAND ${CMAKE_COMMAND} -E make_directory coverage
-    COMMAND ${GCOVR} --exclude-unreachable-branches --html coverage/index.html --html-details -r ${PROJECT_SOURCE_DIR} ${EXCLUDES}
+    COMMAND ${GCOVR} --exclude-unreachable-branches --exclude-throw-branches --html coverage/index.html --html-details -r ${PROJECT_SOURCE_DIR} ${EXCLUDES}
     BYPRODUCTS coverage.xml coverage/index.html
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     VERBATIM

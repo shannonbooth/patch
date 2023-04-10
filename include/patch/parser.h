@@ -43,6 +43,39 @@ private:
     File& m_file;
 };
 
+class LineParser {
+public:
+    explicit LineParser(const std::string& line)
+        : m_current(line.cbegin())
+        , m_end(line.cend())
+    {
+    }
+
+    bool is_eof() const;
+
+    char peek() const;
+
+    char consume();
+
+    bool consume_specific(char c);
+
+    bool consume_specific(const char* chars);
+
+    bool consume_uint();
+
+    bool consume_line_number(LineNumber& output);
+
+    std::string::const_iterator current() const { return m_current; }
+    std::string::const_iterator end() const { return m_end; }
+
+    std::string parse_quoted_string();
+
+private:
+    std::string::const_iterator m_current;
+    std::string::const_iterator m_end;
+};
+
+
 Patch parse_patch(File& file, Format format = Format::Unknown, int strip = -1);
 
 bool parse_unified_range(Hunk& hunk, const std::string& line);

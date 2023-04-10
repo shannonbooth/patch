@@ -354,10 +354,23 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
 
 static uint16_t parse_mode(const std::string& mode_str)
 {
-    if (mode_str.size() != 6)
-        throw std::invalid_argument("mode string not of correct size: " + mode_str);
+    // Ignore any mode strings which are not in the format which we expect.
 
-    return static_cast<uint16_t>(std::stoul(mode_str, nullptr, 8));
+    if (mode_str.size() != 6)
+        return 0;
+
+    try {
+        size_t pos;
+        auto value = std::stoul(mode_str, &pos, 8);
+        if (pos != mode_str.size())
+            return 0;
+
+        return static_cast<uint16_t>(value);
+    } catch (const std::exception&) {
+        // do nothing
+    }
+
+    return 0;
 }
 
 static bool parse_git_extended_info(Patch& patch, const std::string& line, int strip)

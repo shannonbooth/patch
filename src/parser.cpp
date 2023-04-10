@@ -914,7 +914,10 @@ Patch Parser::parse_unified_patch(Patch& patch)
                 // to parse the next hunk, otherwise return the end of
                 // this patch.
                 auto pos = m_file.tellg();
-                if (!get_line(line) || !parse_unified_range(hunk, line)) {
+                if (!get_line(line))
+                    return patch;
+
+                if (!parse_unified_range(hunk, line)) {
                     --m_line_number;
                     m_file.seekg(pos);
                     return patch;

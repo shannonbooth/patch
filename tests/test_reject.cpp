@@ -4,7 +4,7 @@
 #include <patch/process.h>
 #include <patch/test.h>
 
-PATCH_TEST(reject_unified_remove_line_no_offset)
+static void test_reject_unified_remove_line_no_offset(const char* patch_path, const std::vector<const char*>& extra_args = {})
 {
     const std::string patch = R"(--- 1	2022-04-24 12:58:33.100280281 +1200
 +++ 2	2022-04-24 12:58:31.560276720 +1200
@@ -38,7 +38,11 @@ PATCH_TEST(reject_unified_remove_line_no_offset)
 )";
     }
 
-    Process process(patch_path, { patch_path, "-i", "diff.patch", "--force", nullptr });
+    std::vector<const char*> args { patch_path, "-i", "diff.patch", "--force" };
+    args.insert(args.end(), extra_args.begin(), extra_args.end());
+    args.emplace_back(nullptr);
+
+    Process process(patch_path, args);
     EXPECT_EQ(process.stdout_data(), R"(patching file 1
 Hunk #1 FAILED at 2.
 1 out of 1 hunk FAILED -- saving rejects to file 1.rej
@@ -47,6 +51,16 @@ Hunk #1 FAILED at 2.
     EXPECT_EQ(process.return_code(), 1);
 
     EXPECT_FILE_EQ("1.rej", patch);
+}
+
+PATCH_TEST(reject_unified_remove_line_no_offset_no_args)
+{
+    test_reject_unified_remove_line_no_offset(patch_path);
+}
+
+PATCH_TEST(reject_unified_remove_line_no_offset_flag_reject_unified)
+{
+    test_reject_unified_remove_line_no_offset(patch_path, { "--reject-format=unified" });
 }
 
 PATCH_TEST(reject_context_remove_line)

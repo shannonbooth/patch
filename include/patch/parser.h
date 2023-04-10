@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -70,6 +70,8 @@ public:
     void parse_file_line(int strip, std::string& path, std::string* timestamp = nullptr);
 
     void parse_git_header_name(Patch& patch, int strip);
+
+    bool parse_git_extended_info(Patch& patch, int strip);
 
 private:
     std::string::const_iterator m_current;

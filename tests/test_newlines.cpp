@@ -4,6 +4,20 @@
 #include <patch/file.h>
 #include <patch/process.h>
 #include <patch/test.h>
+#include <sstream>
+
+PATCH_TEST(newline_strategy_is_unknown)
+{
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--newline-output", "unknown-option", nullptr });
+
+    std::ostringstream ss;
+    ss << patch_path << ": unrecognized newline strategy unknown-option\n"
+       << patch_path << ": Try '" << patch_path << " --help' for more information.\n";
+
+    EXPECT_EQ(process.stdout_data(), "");
+    EXPECT_EQ(process.stderr_data(), ss.str());
+    EXPECT_EQ(process.return_code(), 2);
+}
 
 PATCH_TEST(both_patch_and_input_as_crlf_output_keep)
 {

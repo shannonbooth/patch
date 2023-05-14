@@ -513,3 +513,27 @@ TEST(cmdline_bad_quote_style_env_is_defaulted)
 
     EXPECT_EQ(options.quoting_style, Patch::Options::QuotingStyle::Shell);
 }
+
+TEST(cmdline_bad_reject_format)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        "--reject-format=unknown!!",
+        nullptr,
+    };
+
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "unrecognized reject format unknown!!");
+}
+
+TEST(cmdline_bad_read_only_handling)
+{
+    const std::vector<const char*> dummy_args {
+        "patch",
+        "--read-only=another-bad-option",
+        nullptr,
+    };
+
+    EXPECT_THROW_WITH_MSG(parse_cmdline(dummy_args.size() - 1, dummy_args.data()), Patch::cmdline_parse_error,
+        "unrecognized read-only handling another-bad-option");
+}

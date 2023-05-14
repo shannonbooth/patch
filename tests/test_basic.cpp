@@ -1912,7 +1912,7 @@ new mode 100755
 #endif
 }
 
-PATCH_TEST(read_only_file)
+static void test_read_only_file(const char* patch_path, const std::vector<const char*>& extra_args = {})
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1945,7 +1945,11 @@ PATCH_TEST(read_only_file)
     Patch::filesystem::permissions("a", mode & ro_mask);
     const auto old_mode = Patch::filesystem::get_permissions("a");
 
-    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    std::vector<const char*> args { patch_path, "-i", "diff.patch" };
+    args.insert(args.end(), extra_args.begin(), extra_args.end());
+    args.push_back(nullptr);
+
+    Process process(patch_path, args);
     EXPECT_EQ(process.stdout_data(), "File a is read-only; trying to patch anyway\npatching file a\n");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
@@ -1953,6 +1957,16 @@ PATCH_TEST(read_only_file)
 
     const auto new_mode = Patch::filesystem::get_permissions("a");
     EXPECT_TRUE(old_mode == new_mode);
+}
+
+PATCH_TEST(read_only_file_no_arguments)
+{
+    test_read_only_file(patch_path);
+}
+
+PATCH_TEST(read_only_file_warn)
+{
+    test_read_only_file(patch_path, { "--read-only=warn" });
 }
 
 PATCH_TEST(read_only_file_ignore)

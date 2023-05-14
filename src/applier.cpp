@@ -59,16 +59,11 @@ public:
             return *this;
         }
 
-        switch (newline) {
-        case NewLine::CRLF:
+        if (newline == NewLine::CRLF)
             m_file << "\r\n";
-            break;
-        case NewLine::LF:
+        else
             m_file << '\n';
-            break;
-        case NewLine::None:
-            break;
-        }
+
         return *this;
     }
 

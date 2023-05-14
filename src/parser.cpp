@@ -23,7 +23,6 @@ public:
     explicit LineParser(const std::string& line)
         : m_current(line.cbegin())
         , m_end(line.cend())
-        , m_line(line)
     {
     }
 
@@ -98,6 +97,7 @@ public:
 
     std::string parse_quoted_string()
     {
+        const auto begin = m_current;
         std::string output;
 
         consume_specific('"');
@@ -112,7 +112,7 @@ public:
                 char c = consume();
                 switch (c) {
                 case '\0':
-                    throw std::invalid_argument("Invalid unterminated \\ in quoted path " + m_line);
+                    throw std::invalid_argument("Invalid unterminated \\ in quoted path " + std::string(begin, m_end));
                 case '\\':
                     output += '\\';
                     break;
@@ -152,7 +152,7 @@ public:
                     break;
                 }
                 default:
-                    throw std::invalid_argument("Invalid or unsupported escape character in path " + m_line);
+                    throw std::invalid_argument("Invalid or unsupported escape character in path " + std::string(begin, m_current));
                 }
             } else {
                 // Normal case - a character of the path we can just add to our output.
@@ -160,13 +160,12 @@ public:
             }
         }
 
-        throw std::invalid_argument("Failed to find terminating \" when parsing " + m_line);
+        throw std::invalid_argument("Failed to find terminating \" when parsing " + std::string(begin, m_current));
     }
 
 private:
     std::string::const_iterator m_current;
     std::string::const_iterator m_end;
-    const std::string& m_line;
 };
 
 void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp)

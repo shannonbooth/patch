@@ -90,10 +90,38 @@ PATCH_TEST(quoting_c_style_tab)
 #endif
 }
 
-PATCH_TEST(quoting_shell_always_style)
+PATCH_TEST(quoting_shell_always_style_basic)
 {
     Patch::set_env("QUOTING_STYLE", "shell-always");
     test_quoting(patch_path, "add", "patching file 'add'\n");
+}
+
+PATCH_TEST(quoting_shell_always_style_single_quote_only)
+{
+    Patch::set_env("QUOTING_STYLE", "shell-always");
+    test_quoting(patch_path, "with'quote", "patching file \"with'quote\"\n");
+}
+
+PATCH_TEST(quoting_shell_always_style_double_quote_only)
+{
+#ifndef _WIN32
+    Patch::set_env("QUOTING_STYLE", "shell-always");
+    test_quoting(patch_path, "with\"quote", "patching file 'with\"quote'\n");
+#endif
+}
+
+PATCH_TEST(quoting_shell_style_double_quote_only)
+{
+#ifndef _WIN32
+    Patch::set_env("QUOTING_STYLE", "shell");
+    test_quoting(patch_path, "with\"quote", "patching file 'with\"quote'\n");
+#endif
+}
+
+PATCH_TEST(quoting_shell_style_single_quote_only)
+{
+    Patch::set_env("QUOTING_STYLE", "shell");
+    test_quoting(patch_path, "with'quote", "patching file \"with'quote\"\n");
 }
 
 PATCH_TEST(quoting_shell_no_quote)

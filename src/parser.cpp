@@ -18,155 +18,139 @@ public:
     using std::runtime_error::runtime_error;
 };
 
-class LineParser {
-public:
-    explicit LineParser(const std::string& line)
-        : m_current(line.cbegin())
-        , m_end(line.cend())
-    {
-    }
+bool LineParser::is_eof() const
+{
+    return m_current == m_end;
+}
 
-    bool is_eof() const
-    {
-        return m_current == m_end;
-    }
+char LineParser::peek() const
+{
+    if (m_current == m_end)
+        return '\0';
+    return *m_current;
+}
 
-    char peek() const
-    {
-        if (m_current == m_end)
-            return '\0';
-        return *m_current;
-    }
+char LineParser::consume()
+{
+    if (m_current == m_end)
+        return '\0';
+    char c = *m_current;
+    ++m_current;
+    return c;
+}
 
-    char consume()
-    {
-        if (m_current == m_end)
-            return '\0';
-        char c = *m_current;
-        ++m_current;
-        return c;
-    }
+bool LineParser::consume_specific(char c)
+{
+    if (m_current == m_end)
+        return false;
+    if (*m_current != c)
+        return false;
 
-    bool consume_specific(char c)
-    {
-        if (m_current == m_end)
+    ++m_current;
+    return true;
+}
+
+bool LineParser::consume_specific(const char* chars)
+{
+    auto current = m_current;
+    for (const char* c = chars; *c != '\0'; ++c) {
+        if (!consume_specific(*c)) {
+            m_current = current;
             return false;
-        if (*m_current != c)
-            return false;
-
-        ++m_current;
-        return true;
-    }
-
-    bool consume_specific(const char* chars)
-    {
-        auto current = m_current;
-        for (const char* c = chars; *c != '\0'; ++c) {
-            if (!consume_specific(*c)) {
-                m_current = current;
-                return false;
-            }
         }
-        return true;
     }
+    return true;
+}
 
-    bool consume_uint()
-    {
-        if (m_current == m_end)
-            return false;
-        if (!is_digit(*m_current))
-            return false;
+bool LineParser::consume_uint()
+{
+    if (m_current == m_end)
+        return false;
+    if (!is_digit(*m_current))
+        return false;
 
-        // Skip past this digit we just checked, and any remaining parts of the integer.
-        ++m_current;
-        m_current = std::find_if(m_current, m_end, is_not_digit);
-        return true;
-    }
+    // Skip past this digit we just checked, and any remaining parts of the integer.
+    ++m_current;
+    m_current = std::find_if(m_current, m_end, is_not_digit);
+    return true;
+}
 
-    bool consume_line_number(LineNumber& output)
-    {
-        auto start = m_current;
-        if (!consume_uint())
-            return false;
+bool LineParser::consume_line_number(LineNumber& output)
+{
+    auto start = m_current;
+    if (!consume_uint())
+        return false;
 
-        return string_to_line_number(std::string(start, m_current), output);
-    }
+    return string_to_line_number(std::string(start, m_current), output);
+}
 
-    std::string::const_iterator current() const { return m_current; }
-    std::string::const_iterator end() const { return m_end; }
+std::string LineParser::parse_quoted_string()
+{
+    const auto begin = m_current;
+    std::string output;
 
-    std::string parse_quoted_string()
-    {
-        const auto begin = m_current;
-        std::string output;
+    consume_specific('"');
 
-        consume_specific('"');
+    while (!is_eof()) {
+        // Reached the end of the string
+        if (peek() == '"')
+            return output;
 
-        while (!is_eof()) {
-            // Reached the end of the string
-            if (peek() == '"')
-                return output;
+        // Some escaped character, peek past to determine the intended unescaped character.
+        if (consume_specific('\\')) {
+            char c = consume();
+            switch (c) {
+            case '\0':
+                throw std::invalid_argument("Invalid unterminated \\ in quoted path " + std::string(begin, m_end));
+            case '\\':
+                output += '\\';
+                break;
+            case '"':
+                output += '"';
+                break;
+            case 'n':
+                output += '\n';
+                break;
+            case 't':
+                output += '\t';
+                break;
+            // Octal encoding possibilities
+            // Must be followed by 1, 2, or 3 octal digits '0' - '7' (inclusive)
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7': {
+                unsigned char result = static_cast<unsigned char>(c) - '0';
 
-            // Some escaped character, peek past to determine the intended unescaped character.
-            if (consume_specific('\\')) {
-                char c = consume();
-                switch (c) {
-                case '\0':
-                    throw std::invalid_argument("Invalid unterminated \\ in quoted path " + std::string(begin, m_end));
-                case '\\':
-                    output += '\\';
-                    break;
-                case '"':
-                    output += '"';
-                    break;
-                case 'n':
-                    output += '\n';
-                    break;
-                case 't':
-                    output += '\t';
-                    break;
-                // Octal encoding possibilities
-                // Must be followed by 1, 2, or 3 octal digits '0' - '7' (inclusive)
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7': {
-                    unsigned char result = static_cast<unsigned char>(c) - '0';
+                for (int i = 1; i < 3; ++i) {
+                    char octal_val = peek();
+                    if (!is_octal(octal_val))
+                        break;
 
-                    for (int i = 1; i < 3; ++i) {
-                        char octal_val = peek();
-                        if (!is_octal(octal_val))
-                            break;
+                    unsigned char digit_val = static_cast<unsigned char>(octal_val) - '0';
+                    result = result * 8 + digit_val;
 
-                        unsigned char digit_val = static_cast<unsigned char>(octal_val) - '0';
-                        result = result * 8 + digit_val;
-
-                        ++m_current;
-                    }
-
-                    output += static_cast<char>(result);
-                    break;
+                    ++m_current;
                 }
-                default:
-                    throw std::invalid_argument("Invalid or unsupported escape character in path " + std::string(begin, m_current));
-                }
-            } else {
-                // Normal case - a character of the path we can just add to our output.
-                output += consume();
+
+                output += static_cast<char>(result);
+                break;
             }
+            default:
+                throw std::invalid_argument("Invalid or unsupported escape character in path " + std::string(begin, m_current));
+            }
+        } else {
+            // Normal case - a character of the path we can just add to our output.
+            output += consume();
         }
-
-        throw std::invalid_argument("Failed to find terminating \" when parsing " + std::string(begin, m_current));
     }
 
-private:
-    std::string::const_iterator m_current;
-    std::string::const_iterator m_end;
-};
+    throw std::invalid_argument("Failed to find terminating \" when parsing " + std::string(begin, m_current));
+}
 
 void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp)
 {

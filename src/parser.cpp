@@ -957,23 +957,23 @@ Patch Parser::parse_normal_patch(Patch& patch)
             break;
 
         patch.hunks.emplace_back();
-        auto current_hunk = &patch.hunks.back();
-        if (!parse_normal_range(*current_hunk, patch_line))
+        auto& current_hunk = patch.hunks.back();
+        if (!parse_normal_range(current_hunk, patch_line))
             throw std::invalid_argument("Unable to parse normal range command: " + patch_line);
 
-        for (LineNumber i = 0; i < current_hunk->old_file_range.number_of_lines; ++i) {
+        for (LineNumber i = 0; i < current_hunk.old_file_range.number_of_lines; ++i) {
             if (!get_line(patch_line, &newline))
                 throw parser_error("unexpected end of file in patch at line " + std::to_string(m_line_number - 1));
 
             if (patch_line.size() < 2 || patch_line[0] != '<' || !is_whitespace(patch_line[1]))
                 throw parser_error("'<' followed by space or tab expected at line " + std::to_string(m_line_number - 1) + " of patch");
 
-            current_hunk->lines.emplace_back('-', Line(patch_line.substr(2, patch_line.size()), newline));
+            current_hunk.lines.emplace_back('-', Line(patch_line.substr(2, patch_line.size()), newline));
         }
 
         if (m_file.peek() == '\\') {
             get_line(patch_line, &newline);
-            current_hunk->lines.back().line.newline = NewLine::None;
+            current_hunk.lines.back().line.newline = NewLine::None;
         }
 
         // Expect --- if 'c' command
@@ -981,19 +981,19 @@ Patch Parser::parse_normal_patch(Patch& patch)
             get_line(patch_line, &newline);
         }
 
-        for (LineNumber i = 0; i < current_hunk->new_file_range.number_of_lines; ++i) {
+        for (LineNumber i = 0; i < current_hunk.new_file_range.number_of_lines; ++i) {
             if (!get_line(patch_line, &newline))
                 throw parser_error("unexpected end of file in patch at line " + std::to_string(m_line_number - 1));
 
             if (patch_line.size() < 2 || patch_line[0] != '>' || !is_whitespace(patch_line[1]))
                 throw parser_error("'>' followed by space or tab expected at line " + std::to_string(m_line_number - 1) + " of patch");
 
-            current_hunk->lines.emplace_back('+', Line(patch_line.substr(2, patch_line.size()), newline));
+            current_hunk.lines.emplace_back('+', Line(patch_line.substr(2, patch_line.size()), newline));
         }
 
         if (m_file.peek() == '\\') {
             get_line(patch_line, &newline);
-            current_hunk->lines.back().line.newline = NewLine::None;
+            current_hunk.lines.back().line.newline = NewLine::None;
         }
     }
     return patch;

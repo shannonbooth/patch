@@ -65,23 +65,21 @@ public:
 
     bool consume_line_number(LineNumber& output);
 
-    std::string::const_iterator current() const { return m_current; }
-    std::string::const_iterator end() const { return m_end; }
-
     std::string parse_quoted_string();
+
+    void parse_file_line(int strip, std::string& path, std::string* timestamp = nullptr);
+
+    void parse_git_header_name(Patch& patch, int strip);
 
 private:
     std::string::const_iterator m_current;
     std::string::const_iterator m_end;
 };
 
-
 Patch parse_patch(File& file, Format format = Format::Unknown, int strip = -1);
 
 bool parse_unified_range(Hunk& hunk, const std::string& line);
 bool parse_normal_range(Hunk& hunk, const std::string& line);
-
-void parse_file_line(const std::string& input, int strip, std::string& path, std::string* timestamp = nullptr);
 
 std::string strip_path(const std::string& path, int amount);
 std::string parse_path(const std::string& input, int strip);

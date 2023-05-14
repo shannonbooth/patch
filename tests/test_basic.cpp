@@ -2148,6 +2148,54 @@ PATCH_TEST(reversed_patch_batch)
     EXPECT_FILE_EQ("a", "1\n2\n3\n");
 }
 
+PATCH_TEST(basic_add_symlink_file)
+{
+#ifndef _WIN32
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+commit 00072ad856ca2fa4fe34b4c79bd656a4cfaec81e (HEAD -> master)
+Author: Shannon Booth <shannon.ml.booth@gmail.com>
+Date:   Sun Apr 9 12:44:55 2023 +1200
+
+    add symlink
+
+diff --git a/active b/active
+new file mode 120000
+index 0000000..2e65efe
+--- /dev/null
++++ b/active
+@@ -0,0 +1 @@
++a
+\ No newline at end of file
+)";
+        file.close();
+    }
+
+    const std::string content = "some file content that the symlink is pointing to!\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << content;
+    }
+
+    // Sanity check
+    EXPECT_FALSE(Patch::filesystem::exists("active"));
+    EXPECT_FALSE(Patch::filesystem::is_symlink("active"));
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching symbolic link active\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    // Symlink exists and is pointing to valid file that has our contents.
+    EXPECT_TRUE(Patch::filesystem::is_symlink("active"));
+    EXPECT_TRUE(Patch::filesystem::exists("active"));
+    EXPECT_FILE_EQ("active", content);
+#endif
+}
+
 PATCH_TEST(basic_add_symlink_file_to_stdout)
 {
     {

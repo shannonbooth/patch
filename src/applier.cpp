@@ -103,7 +103,6 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
             }
             output << patch_line.line;
         } else if (patch_line.operation == '-') {
-            // Skip this line from the input file (unless applying define)
             const auto& line = lines.at(line_number);
             ++line_number;
 

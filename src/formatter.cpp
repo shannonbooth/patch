@@ -12,10 +12,10 @@ void write_hunk_as_unified(const Hunk& hunk, File& out)
     // Write hunk range
     out << "@@ -" << hunk.old_file_range.start_line;
     if (hunk.old_file_range.number_of_lines != 1)
-        out << "," << hunk.old_file_range.number_of_lines;
+        out << ',' << hunk.old_file_range.number_of_lines;
     out << " +" << hunk.new_file_range.start_line;
     if (hunk.new_file_range.number_of_lines != 1)
-        out << "," << hunk.new_file_range.number_of_lines;
+        out << ',' << hunk.new_file_range.number_of_lines;
     out << " @@\n";
 
     // Then body

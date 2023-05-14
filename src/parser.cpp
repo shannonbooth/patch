@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <cassert>
@@ -357,17 +357,16 @@ static uint16_t parse_mode(const std::string& mode_str)
     return 0;
 }
 
-static bool parse_git_extended_info(Patch& patch, const std::string& line, int strip)
+bool LineParser::parse_git_extended_info(Patch& patch, int strip)
 {
-    auto parse_filename = [&](std::string& output, const std::string& name, const std::string& prefix) {
+    auto parse_filename = [&](std::string& output, const std::string& prefix) {
         // NOTE: we do 'strip - 1' here as the extended headers do not come with a leading
         // "a/" or "b/" prefix - strip the filename as if this part is already stripped.
-        if (!name.empty() && name[0] == '"') {
-            LineParser parser(name);
-            output = parser.parse_quoted_string();
+        if (peek() == '"') {
+            output = parse_quoted_string();
             output = strip_path(output, strip - 1);
         } else {
-            output = strip_path(name, strip - 1);
+            output = strip_path(std::string(m_current, m_end), strip - 1);
         }
 
         // Special case - we're not stripping at all. So make sure to add on the "a/" or "b/" prefix.
@@ -375,58 +374,57 @@ static bool parse_git_extended_info(Patch& patch, const std::string& line, int s
             output = prefix + output;
     };
 
-    if (starts_with(line, "rename from ")) {
+    if (consume_specific("rename from ")) {
         patch.operation = Operation::Rename;
-        parse_filename(patch.old_file_path, line.substr(12, line.size() - 12), "a/");
+        parse_filename(patch.old_file_path, "a/");
         return true;
     }
 
-    if (starts_with(line, "rename to ")) {
+    if (consume_specific("rename to ")) {
         patch.operation = Operation::Rename;
-        parse_filename(patch.new_file_path, line.substr(10, line.size() - 10), "b/");
+        parse_filename(patch.new_file_path, "b/");
         return true;
     }
 
-    if (starts_with(line, "copy to ")) {
+    if (consume_specific("copy to ")) {
         patch.operation = Operation::Copy;
-        parse_filename(patch.new_file_path, line.substr(8, line.size() - 8), "b/");
+        parse_filename(patch.new_file_path, "b/");
         return true;
     }
 
-    if (starts_with(line, "copy from ")) {
+    if (consume_specific("copy from ")) {
         patch.operation = Operation::Copy;
-        parse_filename(patch.old_file_path, line.substr(10, line.size() - 10), "a/");
+        parse_filename(patch.old_file_path, "a/");
         return true;
     }
 
-    if (starts_with(line, "deleted file mode ")) {
+    if (consume_specific("deleted file mode ")) {
         patch.operation = Operation::Delete;
-        patch.old_file_mode = parse_mode(line.substr(18, line.size() - 18));
+        patch.old_file_mode = parse_mode(std::string(m_current, m_end));
         return true;
     }
 
-    if (starts_with(line, "new file mode ")) {
+    if (consume_specific("new file mode ")) {
         patch.operation = Operation::Add;
-        patch.new_file_mode = parse_mode(line.substr(14, line.size() - 14));
+        patch.new_file_mode = parse_mode(std::string(m_current, m_end));
         return true;
     }
 
-    if (starts_with(line, "old mode ")) {
-        patch.old_file_mode = parse_mode(line.substr(9, line.size() - 9));
+    if (consume_specific("old mode ")) {
+        patch.old_file_mode = parse_mode(std::string(m_current, m_end));
         return true;
     }
 
-    if (starts_with(line, "new mode ")) {
-        patch.new_file_mode = parse_mode(line.substr(9, line.size() - 9));
+    if (consume_specific("new mode ")) {
+        patch.new_file_mode = parse_mode(std::string(m_current, m_end));
         return true;
     }
 
-    if (starts_with(line, "index ")) {
+    if (consume_specific("index "))
         return true;
-    }
 
     // NOTE: GIT binary patch line not included as part of header info.
-    if (starts_with(line, "GIT binary patch")) {
+    if (consume_specific("GIT binary patch")) {
         patch.operation = Operation::Binary;
         return false;
     }
@@ -555,7 +553,7 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
 
         // Consider any extended info line as part of the hunk as renames and copies may not
         // have any hunk - and we need to advance parsing past this informational section.
-        if (is_git_patch && parse_git_extended_info(patch, line, strip)) {
+        if (is_git_patch && parser.parse_git_extended_info(patch, strip)) {
             header_info.lines_till_first_hunk = lines + 1;
             continue;
         }

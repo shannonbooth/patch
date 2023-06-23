@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <patch/cmdline.h>
 #include <string>
 
 namespace Patch {
@@ -76,5 +77,38 @@ struct Options {
     std::string backup_suffix;
     std::string backup_prefix;
 };
+
+class OptionHandler : public CmdLineParser::Handler {
+public:
+    OptionHandler();
+
+    void process_option(int short_name, const std::string& option = "") override;
+
+    const Options& options() const { return m_options; }
+
+    void apply_defaults()
+    {
+        apply_environment_defaults();
+        apply_posix_defaults();
+    }
+
+private:
+    void process_operand(const std::string& value);
+    void handle_newline_strategy(const std::string& strategy);
+    void handle_read_only(const std::string& handling);
+    void handle_reject_format(const std::string& format);
+    void handle_quoting_style(const std::string& style, const Options::QuotingStyle* default_quote_style = nullptr);
+
+    void apply_posix_defaults();
+    void apply_environment_defaults();
+
+    static int stoi(const std::string& str, const std::string& description);
+
+    int m_positional_arguments_found { 0 };
+    Options m_options;
+};
+
+void show_usage(std::ostream& out);
+void show_version(std::ostream& out);
 
 } // namespace Patch

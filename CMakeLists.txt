@@ -33,6 +33,7 @@ add_library(patch
   src/cmdline.cpp
   src/formatter.cpp
   src/locator.cpp
+  src/options.cpp
   src/parser.cpp
   src/patch.cpp
   src/system.cpp

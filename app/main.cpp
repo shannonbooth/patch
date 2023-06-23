@@ -4,14 +4,20 @@
 #include <exception>
 #include <iostream>
 #include <patch/cmdline.h>
+#include <patch/options.h>
 #include <patch/patch.h>
 
 int main(int argc, const char* const* argv)
 {
     try {
+        Patch::OptionHandler handler;
         Patch::CmdLine cmdline(argc, argv);
         Patch::CmdLineParser cmdline_parser(cmdline);
-        return Patch::process_patch(cmdline_parser.parse());
+
+        cmdline_parser.parse(handler);
+        handler.apply_defaults();
+
+        return Patch::process_patch(handler.options());
     } catch (const std::bad_alloc&) {
         std::cerr << argv[0] << ": **** out of memory\n";
         return 2;

@@ -9,8 +9,11 @@
 
 static Patch::Options parse_cmdline(size_t argc, const char* const* argv)
 {
+    Patch::OptionHandler handler;
     Patch::CmdLineParser cmdline(static_cast<int>(argc), argv);
-    return cmdline.parse();
+    cmdline.parse(handler);
+    handler.apply_defaults();
+    return handler.options();
 }
 
 TEST(cmdline_input_file_long_arg)

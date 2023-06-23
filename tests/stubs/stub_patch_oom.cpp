@@ -16,10 +16,8 @@ int process_patch(const Options&)
     throw std::bad_alloc();
 }
 
-const Options& CmdLineParser::parse()
+void CmdLineParser::parse(CmdLineParser::Handler&)
 {
-    static Options options;
-    return options;
 }
 
 } // namespace Patch

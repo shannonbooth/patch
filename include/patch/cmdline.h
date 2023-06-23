@@ -4,7 +4,6 @@
 #pragma once
 
 #include <ostream>
-#include <patch/options.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -46,35 +45,44 @@ public:
     {
     }
 
-    const Options& parse();
+    enum class HasArgument {
+        Yes,
+        No,
+    };
+
+    struct Option {
+        int short_name;
+        const char* long_name;
+        HasArgument has_argument;
+    };
+
+    class Handler {
+    public:
+        explicit Handler(const std::vector<Option>& switches)
+            : m_switches(switches)
+        {
+        }
+
+        virtual void process_option(int short_name, const std::string& option = "") = 0;
+
+        const std::vector<Option>& switches() const { return m_switches; }
+
+    protected:
+        const std::vector<Option>& m_switches;
+    };
+
+    void parse(Handler& handler);
 
 private:
-    void apply_posix_defaults();
-    void apply_environment_defaults();
-
-    static int stoi(const std::string& option, const std::string& description);
-
-    void parse_long_option(const std::string& option);
-    void parse_short_option(const std::string& option);
-    void parse_operand();
-    void handle_newline_strategy(const std::string& strategy);
-    void handle_read_only(const std::string& handling);
-    void handle_reject_format(const std::string& format);
-    void handle_quoting_style(const std::string& style, const Options::QuotingStyle* default_quote_style = nullptr);
-
-    void process_option(int short_name, const std::string& value);
+    void parse_long_option(Handler& handler, const std::string& option);
+    void parse_short_option(Handler& handler, const std::string& option);
 
     std::string consume_next_argument();
 
     int i { 1 };
     int m_argc { 0 };
-    int m_positional_arguments_found { 0 };
-    std::string m_buffer;
+    int m_short_option_offset { 1 };
     const char* const* m_argv { nullptr };
-    Options m_options;
 };
-
-void show_usage(std::ostream& out);
-void show_version(std::ostream& out);
 
 } // namespace Patch

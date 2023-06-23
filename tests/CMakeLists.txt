@@ -77,6 +77,7 @@ endif()
 
 add_executable(patch_oom
   stubs/stub_patch_oom.cpp
+  ${PROJECT_SOURCE_DIR}/src/options.cpp
   ${PROJECT_SOURCE_DIR}/app/main.cpp
 )
 target_include_directories(patch_oom PRIVATE ${PROJECT_SOURCE_DIR}/include)

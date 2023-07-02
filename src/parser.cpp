@@ -856,7 +856,7 @@ Patch Parser::parse_unified_patch(Patch& patch)
     State state = State::InitialHunkContext;
 
     LineNumber old_lines_expected = -1;
-    LineNumber to_lines_expected = -1;
+    LineNumber new_lines_expected = -1;
 
     while (true) {
         NewLine newline;
@@ -868,7 +868,7 @@ Patch Parser::parse_unified_patch(Patch& patch)
             if (parse_unified_range(hunk, line)) {
                 state = State::Content;
                 old_lines_expected = hunk.old_file_range.number_of_lines;
-                to_lines_expected = hunk.new_file_range.number_of_lines;
+                new_lines_expected = hunk.new_file_range.number_of_lines;
             }
             break;
         }
@@ -886,9 +886,9 @@ Patch Parser::parse_unified_patch(Patch& patch)
             hunk.lines.emplace_back(what, Line(line.substr(1), newline));
 
             if (what != '-') {
-                --to_lines_expected;
+                --new_lines_expected;
                 // At end of file for 'to', and found a '\ No newline at end of file'
-                if (to_lines_expected == 0 && m_file.peek() == '\\') {
+                if (new_lines_expected == 0 && m_file.peek() == '\\') {
                     hunk.lines.back().line.newline = NewLine::None;
                     get_line(line);
                 }
@@ -904,7 +904,7 @@ Patch Parser::parse_unified_patch(Patch& patch)
             }
 
             // We've found everything for the current hunk that we expect.
-            if (old_lines_expected == 0 && to_lines_expected == 0) {
+            if (old_lines_expected == 0 && new_lines_expected == 0) {
                 patch.hunks.push_back(hunk);
                 hunk.lines.clear();
 
@@ -923,7 +923,7 @@ Patch Parser::parse_unified_patch(Patch& patch)
 
                 state = State::Content;
                 old_lines_expected = hunk.old_file_range.number_of_lines;
-                to_lines_expected = hunk.new_file_range.number_of_lines;
+                new_lines_expected = hunk.new_file_range.number_of_lines;
             }
 
             break;
@@ -937,8 +937,8 @@ Patch Parser::parse_unified_patch(Patch& patch)
     if (state == State::InitialHunkContext && patch.hunks.empty())
         return patch;
 
-    if (to_lines_expected != 0)
-        throw std::invalid_argument("Expected 0 lines left in 'to', got " + std::to_string(to_lines_expected));
+    if (new_lines_expected != 0)
+        throw std::invalid_argument("Expected 0 lines left in 'to', got " + std::to_string(new_lines_expected));
     if (old_lines_expected != 0)
         throw std::invalid_argument("Expected 0 lines left in 'old', got " + std::to_string(old_lines_expected));
 

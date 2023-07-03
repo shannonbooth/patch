@@ -65,7 +65,6 @@ void write_hunk_as_context(const Hunk& hunk, File& out)
     std::vector<PatchLine> new_lines;
     std::vector<PatchLine> old_lines;
 
-    size_t line_num = 0;
     char operation = ' ';
     bool is_all_insertions = true;
     bool is_all_deletions = true;
@@ -84,7 +83,6 @@ void write_hunk_as_context(const Hunk& hunk, File& out)
     };
 
     for (const auto& patch_line : hunk.lines) {
-        ++line_num;
         switch (patch_line.operation) {
         case ' ':
             if (old_lines.size() == static_cast<size_t>(hunk.old_file_range.number_of_lines))

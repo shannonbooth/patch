@@ -92,6 +92,9 @@ static std::string guess_filepath(const Patch& patch)
     if (patch.index_file_path != "/dev/null" && filesystem::exists(patch.index_file_path))
         return patch.index_file_path;
 
+    if (patch.operation == Operation::Add)
+        return patch.new_file_path;
+
     return {};
 }
 
@@ -410,23 +413,6 @@ int process_patch(const Options& options)
 
         first_patch = false;
 
-        std::string file_to_patch;
-        if (!options.file_to_patch.empty())
-            file_to_patch = options.file_to_patch;
-        else
-            file_to_patch = guess_filepath(patch);
-
-        bool looks_like_adding_file = false;
-
-        if (patch.operation == Operation::Add) {
-            if (file_to_patch.empty()) {
-                file_to_patch = patch.new_file_path;
-                looks_like_adding_file = true;
-            } else if (!options.file_to_patch.empty()) {
-                looks_like_adding_file = true;
-            }
-        }
-
         if (patch.operation == Operation::Binary) {
             out << "File " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ": git binary diffs are not supported.\n";
             had_failure = true;
@@ -435,6 +421,8 @@ int process_patch(const Options& options)
 
         if (options.verbose)
             out << "Hmm...  Looks like a " << to_string(info.format) << " diff to me...\n";
+
+        auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch) : options.file_to_patch;
 
         if (file_to_patch.empty()) {
             out << "can't find file to patch at input line " << parser.line_number()
@@ -470,7 +458,7 @@ int process_patch(const Options& options)
         File tmp_reject_file = File::create_temporary();
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
-        if (!looks_like_adding_file && !filesystem::is_regular_file(file_to_patch)) {
+        if (filesystem::exists(file_to_patch) && !filesystem::is_regular_file(file_to_patch)) {
             if (should_parse_body)
                 parser.parse_patch_body(patch);
             out << "File " << file_to_patch << " is not a regular file --";
@@ -502,11 +490,9 @@ int process_patch(const Options& options)
         }
 
         File input_file;
-        if (!looks_like_adding_file || filesystem::exists(file_to_patch)) {
-            input_file.open(file_to_patch, looks_like_adding_file ? mode : mode | std::ios_base::in);
-            if (!input_file)
-                throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
-        }
+        input_file.open(file_to_patch, mode | std::ios_base::in);
+        if (!input_file && (errno != ENOENT || patch.operation != Operation::Add))
+            throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
 
         const auto input_lines = file_as_lines(input_file);
 
@@ -550,7 +536,7 @@ int process_patch(const Options& options)
                     backup.make_backup_for(output_file);
 
                 // Ensure that parent directories exist if we are adding a file.
-                if (looks_like_adding_file)
+                if (patch.operation == Operation::Add)
                     ensure_parent_directories(output_file);
 
                 const auto new_mode_copy = patch.new_file_mode;

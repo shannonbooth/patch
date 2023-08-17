@@ -387,7 +387,7 @@ void show_usage(std::ostream& out)
            "                    shell-always  As 'shell' above, but always quote file names.\n"
            "                    c             Quote the string following the rules of the C programming langnuage.\n"
            "\n"
-           "    --newline-handling <handling>\n"
+           "    --newline-output <handling>\n"
            "                Change how newlines are output to the patched file. The default newline behavior\n"
            "                is 'native'. The possible values for this flag are:\n"
            "\n"

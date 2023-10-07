@@ -285,7 +285,7 @@ void check_prerequisite_handling(std::ostream& out, const Options& options, cons
         throw std::runtime_error("This file doesn't appear to be the " + prerequisite + " version -- aborting.");
 
     if (options.force) {
-        out << "Warning: this file doesn't appear to be the version-1.2.4 version -- patching anyway.\n";
+        out << "Warning: this file doesn't appear to be the " << prerequisite << " version -- patching anyway.\n";
         return;
     }
 

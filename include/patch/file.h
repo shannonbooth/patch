@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
 #include <cinttypes>
 #include <cstdio>
 #include <ios>
-#include <patch/system.h>
 #include <system_error>
 
 namespace Patch {

@@ -1138,3 +1138,44 @@ PATCH_TEST(applier_multi_line_addition_from_empty_file)
 }
 )");
 }
+
+PATCH_TEST(PATCH_XFAIL_applier_add_file_but_file_already_exits_with_conflicts)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(
+--- /dev/null	2023-10-31 17:55:44.017202200 +1300
++++ a	2023-11-11 20:05:33.898828568 +1300
+@@ -0,0 +1,4 @@
++1
++2
++3
++4
+)";
+    }
+
+    const std::string file_contents = R"(a
+b
+c
+d
+)";
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << file_contents;
+    }
+
+    Process process(patch_path, { patch_path, "-f", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(The next patch would create the file a,
+which already exists!  Applying it anyway.
+patching file a
+Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file a.rej
+)");
+
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+
+    EXPECT_FILE_EQ("a", file_contents);
+}

@@ -93,6 +93,21 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
     // Make a first best guess at where the from-file range is telling us where the hunk should be.
     LineNumber offset_guess = expected_line_number(hunk) - 1 + offset;
 
+    // If there's no lines surrounding this hunk - it will always succeed,
+    // so there is no point in checking any further. Note that this check is
+    // also what makes matching against an empty 'from file' work (with no lines),
+    // as in that case there is no content for us to even match against in the
+    // first place!
+    //
+    // Furthermore, we also should reject patches being added when the hunk is
+    // claiming the file is completely empty - but there are actually lines in
+    // that file.
+    if (hunk.old_file_range.number_of_lines == 0) {
+        if (hunk.old_file_range.start_line == 0 && !content.empty())
+            return {};
+        return { offset_guess, 0, 0 };
+    }
+
     LineNumber patch_prefix_content = 0;
     for (const auto& line : hunk.lines) {
         if (line.operation != ' ')
@@ -108,14 +123,6 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
     }
 
     LineNumber context = std::max(patch_prefix_content, patch_suffix_content);
-
-    // If there's no lines surrounding this hunk - it will always succeed,
-    // so there is no point in checking any further. Note that this check is
-    // also what makes matching against an empty 'from file' work (with no lines),
-    // as in that case there is no content for us to even match against in the
-    // first place!
-    if (hunk.old_file_range.number_of_lines == 0)
-        return { offset_guess, 0, 0 };
 
     for (LineNumber fuzz = 0; fuzz <= max_fuzz; ++fuzz) {
 

@@ -167,7 +167,7 @@ static void print_hunk_statistics(std::ostream& out, size_t hunk_num, bool skipp
         }
         out << ".\n";
     } else {
-        out << hunk.old_file_range.start_line + offset_old_lines_to_new << ".\n";
+        out << expected_line_number(hunk) + offset_old_lines_to_new << ".\n";
     }
 }
 

@@ -29,6 +29,8 @@ struct Location {
     LineNumber offset { -1 };
 };
 
+LineNumber expected_line_number(const Hunk& hunk);
+
 Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ignore_whitespace = false, LineNumber offset = 0, LineNumber max_fuzz = 2);
 
 bool matches_ignoring_whitespace(const std::string& as, const std::string& bs);

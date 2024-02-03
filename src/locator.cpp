@@ -80,7 +80,7 @@ bool matches(const Line& line1, const Line& line2, bool ignore_whitespace)
     return matches_ignoring_whitespace(line1.content, line2.content);
 }
 
-static LineNumber expected_line_number(const Hunk& hunk)
+LineNumber expected_line_number(const Hunk& hunk)
 {
     auto line = hunk.old_file_range.start_line;
     if (hunk.old_file_range.number_of_lines == 0)

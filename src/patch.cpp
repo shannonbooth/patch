@@ -132,7 +132,7 @@ static Format diff_format_from_options(const Options& options)
     else if (options.interpret_as_unified)
         format = Format::Unified;
     else if (options.interpret_as_ed)
-        format = Format::Ed;
+        throw std::invalid_argument("ed format patches are not supported by this version of patch");
     return format;
 }
 
@@ -422,9 +422,6 @@ int process_patch(const Options& options)
     Backup backup(options);
 
     const auto format = diff_format_from_options(options);
-
-    if (format == Format::Ed)
-        throw std::invalid_argument("ed format patches are not supported by this version of patch");
 
     bool had_failure = false;
     bool first_patch = true;

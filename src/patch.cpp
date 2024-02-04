@@ -590,6 +590,20 @@ int process_patch(const Options& options)
 
         Result result = apply_patch(tmp_out_file, reject_writer, input_lines, patch, options, out);
 
+        if (result.failed_hunks != 0) {
+            had_failure = true;
+            const char* reason = result.was_skipped ? "ignored" : "FAILED";
+            inform_hunks_failed(out, reason, patch.hunks, result.failed_hunks);
+            if (!options.dry_run) {
+                const auto reject_file = reject_path(options, output_file);
+                out << " -- saving rejects to file " << reject_file;
+
+                File file(reject_file, mode | std::ios::trunc);
+                tmp_reject_file.write_entire_contents_to(file);
+            }
+            out << '\n';
+        }
+
         if (output_to_stdout) {
             // Nothing else to do other than write to stdout :^)
             tmp_out_file.write_entire_contents_to(stdout);
@@ -600,19 +614,7 @@ int process_patch(const Options& options)
                 write_patched_result_to_file(patch, output_file, permission_result, mode, deferred_writer, tmp_out_file);
             }
 
-            if (result.failed_hunks != 0) {
-                had_failure = true;
-                const char* reason = result.was_skipped ? "ignored" : "FAILED";
-                inform_hunks_failed(out, reason, patch.hunks, result.failed_hunks);
-                if (!options.dry_run) {
-                    const auto reject_file = reject_path(options, output_file);
-                    out << " -- saving rejects to file " << reject_file;
-
-                    File file(reject_file, mode | std::ios::trunc);
-                    tmp_reject_file.write_entire_contents_to(file);
-                }
-                out << '\n';
-            } else {
+            if (result.failed_hunks == 0) {
                 if (!options.dry_run && patch.operation == Operation::Rename)
                     remove_file_and_empty_parent_folders(file_to_patch);
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
 #include <patch/process.h>
@@ -327,6 +327,40 @@ PATCH_TEST(basic_patch_with_dry_run_to_stdout)
     EXPECT_EQ(process.stderr_data(), "checking file - (read from to_patch)\n");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("to_patch", to_patch);
+}
+
+PATCH_TEST(failed_patch_to_stdout)
+{
+    const std::string patch = R"(--- 1	2022-06-26 12:22:22.161398905 +1200
++++ 2	2022-06-26 12:22:44.105278030 +1200
+@@ -1,3 +1,2 @@
+ 1
+-2
+ 3
+)";
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << patch;
+        file.close();
+    }
+
+    std::string to_patch = "a\nb\nc\n";
+    {
+        Patch::File file("1", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-o", "-", "--force", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), to_patch);
+    EXPECT_EQ(process.stderr_data(), R"(patching file - (read from 1)
+Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file -.rej
+)");
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_FILE_EQ("1", to_patch);
+    EXPECT_FILE_EQ("-.rej", patch);
 }
 
 PATCH_TEST(failed_patch_dry_run)

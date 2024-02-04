@@ -30,6 +30,8 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-magic-numbers,
   -readability-named-parameter,
-  -cppcoreguidelines-pro-type-member-init
+  -cppcoreguidelines-pro-type-member-init,
+  -misc-use-anonymous-namespace,
+  -readability-identifier-length
 
 WarningsAsErrors: '*'

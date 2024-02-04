@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
 #include <patch/formatter.h>
@@ -142,12 +142,12 @@ void write_hunk_as_context(const Hunk& hunk, File& out)
 void write_patch_header_as_unified(const Patch& patch, File& out)
 {
     out << "--- " << patch.old_file_path;
-    if (!patch.old_file_time.empty())
+    if (!patch.old_file_time.empty() && patch.old_file_path != "/dev/null")
         out << '\t' << patch.old_file_time;
     out << '\n';
 
     out << "+++ " << patch.new_file_path;
-    if (!patch.new_file_time.empty())
+    if (!patch.new_file_time.empty() && patch.new_file_path != "/dev/null")
         out << '\t' << patch.new_file_time;
     out << '\n';
 }
@@ -155,12 +155,12 @@ void write_patch_header_as_unified(const Patch& patch, File& out)
 void write_patch_header_as_context(const Patch& patch, File& out)
 {
     out << "*** " << patch.old_file_path;
-    if (!patch.old_file_time.empty())
+    if (!patch.old_file_time.empty() && patch.old_file_path != "/dev/null")
         out << '\t' << patch.old_file_time;
     out << '\n';
 
     out << "--- " << patch.new_file_path;
-    if (!patch.new_file_time.empty())
+    if (!patch.new_file_time.empty() && patch.new_file_path != "/dev/null")
         out << '\t' << patch.new_file_time;
     out << '\n';
 

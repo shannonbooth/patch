@@ -368,6 +368,37 @@ private:
     std::vector<FileWrite> m_deferred_writes;
 };
 
+struct PermissionResult {
+    filesystem::perms old_permissions { filesystem::perms::none };
+    bool needed_to_fix_permissions { false };
+    bool had_failure { false };
+};
+
+static PermissionResult fix_permissions_if_needed(std::ostream& out, const Options& options, const std::string& output_file)
+{
+    PermissionResult result;
+    result.old_permissions = filesystem::get_permissions(output_file);
+    const auto write_perm_mask = filesystem::perms::group_write | filesystem::perms::owner_write | filesystem::perms::others_write;
+    result.needed_to_fix_permissions = (result.old_permissions & write_perm_mask) == filesystem::perms::none;
+
+    if (result.needed_to_fix_permissions) {
+        if (options.read_only_handling != Options::ReadOnlyHandling::Ignore) {
+            out << "File " << output_file << " is read-only;";
+            if (options.read_only_handling == Options::ReadOnlyHandling::Fail) {
+                result.had_failure = true;
+                return result;
+            }
+
+            out << " trying to patch anyway\n";
+        }
+
+        if (!options.dry_run)
+            filesystem::permissions(output_file, result.old_permissions | write_perm_mask);
+    }
+
+    return result;
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -472,26 +503,13 @@ int process_patch(const Options& options)
             continue;
         }
 
-        const auto old_permissions = filesystem::get_permissions(output_file);
-        const auto write_perm_mask = filesystem::perms::group_write | filesystem::perms::owner_write | filesystem::perms::others_write;
-        const bool fix_permissions = (old_permissions & write_perm_mask) == filesystem::perms::none;
-
-        if (fix_permissions) {
-            if (options.read_only_handling != Options::ReadOnlyHandling::Ignore) {
-                out << "File " << output_file << " is read-only;";
-                if (options.read_only_handling == Options::ReadOnlyHandling::Warn) {
-                    out << " trying to patch anyway\n";
-                } else {
-                    if (should_parse_body)
-                        parser.parse_patch_body(patch);
-                    refuse_to_patch(out, mode, output_file, patch, options);
-                    had_failure = true;
-                    continue;
-                }
-            }
-
-            if (!options.dry_run)
-                filesystem::permissions(output_file, old_permissions | write_perm_mask);
+        auto permission_result = fix_permissions_if_needed(out, options, output_file);
+        if (permission_result.had_failure) {
+            if (should_parse_body)
+                parser.parse_patch_body(patch);
+            refuse_to_patch(out, mode, output_file, patch, options);
+            had_failure = true;
+            continue;
         }
 
         File input_file;
@@ -546,13 +564,13 @@ int process_patch(const Options& options)
 
                 const auto new_mode_copy = patch.new_file_mode;
 
-                auto permission_callback = [fix_permissions, old_permissions, new_mode_copy](const std::string& path) {
+                auto permission_callback = [permission_result, new_mode_copy](const std::string& path) {
                     if (new_mode_copy != 0) {
                         auto perms = static_cast<filesystem::perms>(new_mode_copy) & filesystem::perms::mask;
                         filesystem::permissions(path, perms);
-                    } else if (fix_permissions) {
+                    } else if (permission_result.needed_to_fix_permissions) {
                         // Restore permissions to before they were changed.
-                        filesystem::permissions(path, old_permissions);
+                        filesystem::permissions(path, permission_result.old_permissions);
                     }
                 };
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <cassert>
@@ -175,13 +175,18 @@ static std::string reject_path(const Options& options, const std::string& output
     return options.reject_file_path.empty() ? output_file + ".rej" : options.reject_file_path;
 }
 
+static void inform_hunks_failed(std::ostream& out, const char* reason, const std::vector<Hunk>& hunks, size_t number_of_hunks_failed)
+{
+    out << number_of_hunks_failed << " out of " << hunks.size() << " hunk";
+    if (hunks.size() > 1)
+        out << 's';
+    out << ' ' << reason;
+}
+
 static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, const std::string& output_file, const Patch& patch, const Options& options)
 {
-    out << " refusing to patch\n"
-        << patch.hunks.size() << " out of " << patch.hunks.size() << " hunk";
-    if (patch.hunks.size() > 1)
-        out << 's';
-    out << " ignored";
+    out << " refusing to patch\n";
+    inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
 
     if (!options.dry_run) {
         const auto reject_file = reject_path(options, output_file);
@@ -578,11 +583,8 @@ int process_patch(const Options& options)
 
             if (result.failed_hunks != 0) {
                 had_failure = true;
-                const char* reason = result.was_skipped ? " ignored" : " FAILED";
-                out << result.failed_hunks << " out of " << patch.hunks.size() << " hunk";
-                if (patch.hunks.size() > 1)
-                    out << 's';
-                out << reason;
+                const char* reason = result.was_skipped ? "ignored" : "FAILED";
+                inform_hunks_failed(out, reason, patch.hunks, result.failed_hunks);
                 if (!options.dry_run) {
                     const auto reject_file = reject_path(options, output_file);
                     out << " -- saving rejects to file " << reject_file;

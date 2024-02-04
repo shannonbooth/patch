@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <climits>
 #include <patch/options.h>
@@ -264,12 +264,12 @@ void OptionHandler::apply_environment_defaults()
 void show_version(std::ostream& out)
 {
     out << "patch 0.0.1\n"
-           "Copyright (C) 2022 Shannon Booth\n";
+           "Copyright (C) 2022-2024 Shannon Booth\n";
 }
 
 void show_usage(std::ostream& out)
 {
-    out << "patch - (C) 2022 Shannon Booth\n"
+    out << "patch - (C) 2022-2024 Shannon Booth\n"
            "\n"
            "patch reads a patch file containing a difference (diff) and applies it to files.\n"
            "\n"

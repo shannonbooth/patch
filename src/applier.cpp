@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <istream>
 #include <limits>
@@ -336,6 +336,11 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, const std::vecto
 
 void reverse(Patch& patch)
 {
+    if (patch.operation == Operation::Delete)
+        patch.operation = Operation::Add;
+    else if (patch.operation == Operation::Add)
+        patch.operation = Operation::Delete;
+
     std::swap(patch.old_file_path, patch.new_file_path);
     std::swap(patch.old_file_time, patch.new_file_time);
     std::swap(patch.old_file_mode, patch.new_file_mode);

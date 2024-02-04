@@ -517,11 +517,10 @@ int process_patch(const Options& options)
         if (file_to_patch.empty()) {
             if (should_parse_body)
                 parser.parse_patch_body(patch);
-            out << "Skipping patch.\n"
-                << patch.hunks.size() << " out of " << patch.hunks.size() << " hunk";
-            if (patch.hunks.size() > 1)
-                out << 's';
-            out << " ignored\n";
+
+            out << "Skipping patch.\n";
+            inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
+            out << '\n';
             had_failure = true;
             continue;
         }

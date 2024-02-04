@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
 #include <patch/process.h>
@@ -11,7 +11,7 @@ PATCH_TEST(version_message)
     Process process(patch_path, { patch_path, "--version", nullptr });
 
     EXPECT_EQ(process.stdout_data(), R"(patch 0.0.1
-Copyright (C) 2022 Shannon Booth
+Copyright (C) 2022-2024 Shannon Booth
 )");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
@@ -21,7 +21,7 @@ PATCH_TEST(help_message)
 {
     Process process(patch_path, { patch_path, "--help", nullptr });
 
-    EXPECT_TRUE(Patch::starts_with(process.stdout_data(), R"(patch - (C) 2022 Shannon Booth
+    EXPECT_TRUE(Patch::starts_with(process.stdout_data(), R"(patch - (C) 2022-2024 Shannon Booth
 
 patch reads a patch file containing a difference (diff) and applies it to files.
 )"));

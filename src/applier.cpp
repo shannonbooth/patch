@@ -188,13 +188,7 @@ static bool should_check_if_patch_is_reversed(const Location& location, const Op
     return true;
 }
 
-enum class ReverseHandling {
-    Reverse,
-    Ignore,
-    ApplyAnyway,
-};
-
-static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, const Options& options)
+static ReverseHandling handle_probably_reversed_patch(std::ostream& out, const Options& options)
 {
     // We may have a reversed patch, tell the user and determine how to handle it.
     if (options.reverse_patch)
@@ -204,6 +198,11 @@ static ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, con
 
     out << " patch detected!  ";
 
+    return check_how_to_handle_reversed_patch(out, options);
+}
+
+ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, const Options& options)
+{
     // Check whether we've been told to ignore this on the command line.
     if (!options.ignore_reversed) {
         // Or if we have been told to assume patches have been reversed.
@@ -278,7 +277,7 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, const std::vecto
             // If either of these is true, check with the user how to handle this.
             auto reverse_handling = ReverseHandling::ApplyAnyway;
             if ((reversed_location.offset == 0 && reversed_location.fuzz == 0) || (!location.is_found() && reversed_location.is_found()))
-                reverse_handling = check_how_to_handle_reversed_patch(out, options);
+                reverse_handling = handle_probably_reversed_patch(out, options);
 
             switch (reverse_handling) {
             case ReverseHandling::Reverse:

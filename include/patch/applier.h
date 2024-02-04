@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -46,5 +46,13 @@ Result apply_patch(File& out_file, RejectWriter& reject_writer, const std::vecto
 void reverse(Patch& patch);
 
 void reverse(Hunk& hunk);
+
+enum class ReverseHandling {
+    Reverse,
+    Ignore,
+    ApplyAnyway,
+};
+
+ReverseHandling check_how_to_handle_reversed_patch(std::ostream& out, const Options& options);
 
 } // namespace Patch

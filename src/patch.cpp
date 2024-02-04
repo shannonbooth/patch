@@ -399,6 +399,50 @@ static PermissionResult fix_permissions_if_needed(std::ostream& out, const Optio
     return result;
 }
 
+void write_patched_result_to_file(const Patch& patch, const std::string& output_file_path, const PermissionResult& permission_result,
+    std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file)
+{
+    // Ensure that parent directories exist if we are adding a file.
+    if (patch.operation == Operation::Add)
+        ensure_parent_directories(output_file_path);
+
+    const auto new_mode_copy = patch.new_file_mode;
+
+    auto permission_callback = [permission_result, new_mode_copy](const std::string& path) {
+        if (new_mode_copy != 0) {
+            auto perms = static_cast<filesystem::perms>(new_mode_copy) & filesystem::perms::mask;
+            filesystem::permissions(path, perms);
+        } else if (permission_result.needed_to_fix_permissions) {
+            // Restore permissions to before they were changed.
+            filesystem::permissions(path, permission_result.old_permissions);
+        }
+    };
+
+    // A git commit may consist of many different patches changing multiple files.
+    // This is special in that the entire collection of changes to every file is
+    // intended to be one atomic change. This is problematic as patch otherwise
+    // patches individual patches one after another. To solve this problem and
+    // implement atomic changes for a git style collection of patches, we defer
+    // writing to any output file until all patches have finished applying.
+    //
+    // Removals are applied immediately as only a single removal of a file should
+    // be present in any git commit - and deferring the write causes issues when
+    // checking if we should be removing the file if empty.
+    if (patch.format == Format::Git && patch.operation != Operation::Delete) {
+        if (filesystem::is_symlink(patch.new_file_mode)) {
+            // A symlink patch should contain the filename in the contents of the patched file.
+            const auto symlink_target = patched_file.read_all_as_string();
+            filesystem::symlink(symlink_target, output_file_path);
+        } else {
+            deferred_writer.deferred_write(std::move(patched_file), output_file_path, std::move(permission_callback));
+        }
+    } else {
+        File file(output_file_path, mode | std::ios::trunc);
+        patched_file.write_entire_contents_to(file);
+        permission_callback(output_file_path);
+    }
+}
+
 int process_patch(const Options& options)
 {
     if (options.show_help) {
@@ -554,46 +598,7 @@ int process_patch(const Options& options)
             if (!options.dry_run) {
                 if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes))
                     backup.make_backup_for(output_file);
-
-                // Ensure that parent directories exist if we are adding a file.
-                if (patch.operation == Operation::Add)
-                    ensure_parent_directories(output_file);
-
-                const auto new_mode_copy = patch.new_file_mode;
-
-                auto permission_callback = [permission_result, new_mode_copy](const std::string& path) {
-                    if (new_mode_copy != 0) {
-                        auto perms = static_cast<filesystem::perms>(new_mode_copy) & filesystem::perms::mask;
-                        filesystem::permissions(path, perms);
-                    } else if (permission_result.needed_to_fix_permissions) {
-                        // Restore permissions to before they were changed.
-                        filesystem::permissions(path, permission_result.old_permissions);
-                    }
-                };
-
-                // A git commit may consist of many different patches changing multiple files.
-                // This is special in that the entire collection of changes to every file is
-                // intended to be one atomic change. This is problematic as patch otherwise
-                // patches individual patches one after another. To solve this problem and
-                // implement atomic changes for a git style collection of patches, we defer
-                // writing to any output file until all patches have finished applying.
-                //
-                // Removals are applied immediately as only a single removal of a file should
-                // be present in any git commit - and deferring the write causes issues when
-                // checking if we should be removing the file if empty.
-                if (patch.format == Format::Git && patch.operation != Operation::Delete) {
-                    if (filesystem::is_symlink(patch.new_file_mode)) {
-                        // A symlink patch should contain the filename in the contents of the patched file.
-                        const auto symlink_target = tmp_out_file.read_all_as_string();
-                        filesystem::symlink(symlink_target, output_file);
-                    } else {
-                        deferred_writer.deferred_write(std::move(tmp_out_file), output_file, std::move(permission_callback));
-                    }
-                } else {
-                    File file(output_file, mode | std::ios::trunc);
-                    tmp_out_file.write_entire_contents_to(file);
-                    permission_callback(output_file);
-                }
+                write_patched_result_to_file(patch, output_file, permission_result, mode, deferred_writer, tmp_out_file);
             }
 
             if (result.failed_hunks != 0) {

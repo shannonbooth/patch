@@ -110,6 +110,8 @@ public:
 
     std::string read_all_as_string();
 
+    uintmax_t size();
+
 private:
     static FILE* cfile_open_impl(const std::string& path, std::ios_base::openmode mode);
 

@@ -478,33 +478,6 @@ uintmax_t file_size(FILE* file)
     return buf.st_size;
 }
 
-uintmax_t file_size(const std::string& path)
-{
-#ifdef _WIN32
-    WIN32_FILE_ATTRIBUTE_DATA data;
-
-    if (!GetFileAttributesExW(to_native(path).c_str(), GetFileExInfoStandard, &data))
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to determine file size for " + path);
-
-    if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-        throw std::system_error(std::make_error_code(std::errc::is_a_directory), path + " is a directory, unable to determine file size");
-
-    return static_cast<uintmax_t>(data.nFileSizeHigh) << 32 | data.nFileSizeLow;
-#else
-    struct stat buf;
-    if (::stat(path.c_str(), &buf) != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to determine file size for " + path);
-
-    if (S_ISDIR(buf.st_mode))
-        throw std::system_error(std::make_error_code(std::errc::is_a_directory), path + " is a directory, unable to determine file size");
-
-    if (!S_ISREG(buf.st_mode))
-        throw std::system_error(std::make_error_code(std::errc::not_supported), path + " is not a regular file, unable to determine file size");
-
-    return static_cast<uintmax_t>(buf.st_size);
-#endif
-}
-
 } // namespace filesystem
 
 #ifdef _WIN32

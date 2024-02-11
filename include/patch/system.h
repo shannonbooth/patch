@@ -113,8 +113,6 @@ void permissions(const std::string& path, perms permissions);
 
 perms get_permissions(const std::string& path);
 
-uintmax_t file_size(const std::string& path);
-
 uintmax_t file_size(FILE* file);
 
 } // namespace filesystem

@@ -608,27 +608,30 @@ int process_patch(const Options& options)
             // Nothing else to do other than write to stdout :^)
             tmp_out_file.write_entire_contents_to(stdout);
         } else {
-            if (!options.dry_run) {
+            bool write_to_file = !options.dry_run;
+
+            // Clean up the file if it looks like it was removed.
+            // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
+            if (options.remove_empty_files == Options::OptionalBool::Yes && patch.operation == Operation::Delete) {
+                if (tmp_out_file.size() == 0) {
+                    if (!options.dry_run)
+                        remove_file_and_empty_parent_folders(output_file);
+                    write_to_file = false;
+                } else {
+                    out << "Not deleting file " << output_file << " as content differs from patch\n";
+                    had_failure = true;
+                }
+            }
+
+            if (write_to_file) {
                 if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes))
                     backup.make_backup_for(output_file);
                 write_patched_result_to_file(patch, output_file, permission_result, mode, deferred_writer, tmp_out_file);
             }
 
             if (result.failed_hunks == 0) {
-                if (!options.dry_run && patch.operation == Operation::Rename)
+                if (write_to_file && patch.operation == Operation::Rename)
                     remove_file_and_empty_parent_folders(file_to_patch);
-
-                // Clean up the file if it looks like it was removed.
-                // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
-                if (options.remove_empty_files == Options::OptionalBool::Yes && patch.operation == Operation::Delete) {
-                    if (filesystem::file_size(output_file) == 0) {
-                        if (!options.dry_run)
-                            remove_file_and_empty_parent_folders(output_file);
-                    } else {
-                        out << "Not deleting file " << output_file << " as content differs from patch\n";
-                        had_failure = true;
-                    }
-                }
             }
         }
     }

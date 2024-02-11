@@ -399,6 +399,32 @@ Hunk #1 FAILED at 1.
     EXPECT_FALSE(Patch::filesystem::exists("1.orig"));
 }
 
+PATCH_TEST(basic_patch_dry_run_remove_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(
+--- a
++++ /dev/null
+@@ -1 +0,0 @@
+-1
+)";
+    }
+
+    std::string to_patch = "1\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << to_patch;
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--dry-run", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "checking file a\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "1\n");
+}
+
 PATCH_TEST(set_patch_file)
 {
     {

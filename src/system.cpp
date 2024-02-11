@@ -469,6 +469,15 @@ perms get_permissions(const std::string& path)
 #endif
 }
 
+uintmax_t file_size(FILE* file)
+{
+    struct stat buf;
+    if (fstat(fileno(file), &buf) != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to fstat file");
+
+    return buf.st_size;
+}
+
 uintmax_t file_size(const std::string& path)
 {
 #ifdef _WIN32

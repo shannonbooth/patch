@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <array>
 #include <cstdio>
@@ -232,6 +232,12 @@ std::string File::read_all_as_string()
     }
 
     return content;
+}
+
+uintmax_t File::size()
+{
+    fflush(m_file, "Unable to flush file before determining its size");
+    return filesystem::file_size(m_file);
 }
 
 } // namespace Patch

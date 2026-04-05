@@ -164,7 +164,7 @@ char File::peek()
     int c = fgetc(m_file);
     ungetc(c, m_file);
 
-    return static_cast<char>(c);
+    return c == EOF ? '\0' : static_cast<char>(c);
 }
 
 bool File::get_line(std::string& line, NewLine* newline)

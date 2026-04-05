@@ -4,8 +4,10 @@
 #pragma once
 
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <patch/file.h>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -26,6 +28,54 @@ template<class T, typename std::enable_if<std::is_enum<T> {}>::type* = nullptr>
 void test_error_format(const T& a)
 {
     std::cerr << static_cast<typename std::underlying_type<T>::type>(a);
+}
+
+inline std::string escaped_string_for_test_output(const std::string& value)
+{
+    std::ostringstream out;
+    out << '"';
+
+    for (unsigned char c : value) {
+        switch (c) {
+        case '\\':
+            out << "\\\\";
+            break;
+        case '"':
+            out << "\\\"";
+            break;
+        case '\n':
+            out << "\\n";
+            break;
+        case '\r':
+            out << "\\r";
+            break;
+        case '\t':
+            out << "\\t";
+            break;
+        default:
+            if (c >= 0x20 && c < 0x7f) {
+                out << static_cast<char>(c);
+            } else {
+                out << "\\x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << std::dec;
+            }
+            break;
+        }
+    }
+
+    out << '"';
+    return out.str();
+}
+
+template<typename A, typename B>
+void maybe_print_string_diff_details(const A&, const B&)
+{
+}
+
+inline void maybe_print_string_diff_details(const std::string& lhs, const std::string& rhs)
+{
+    std::cerr << " (lhs len=" << lhs.size() << ", rhs len=" << rhs.size() << ")";
+    std::cerr << "\n  lhs escaped: " << ::Patch::escaped_string_for_test_output(lhs);
+    std::cerr << "\n  rhs escaped: " << ::Patch::escaped_string_for_test_output(rhs);
 }
 
 class test_assertion_failure : public std::runtime_error {
@@ -66,12 +116,15 @@ public:
 #define EXPECT_EQ(lhs, rhs)                                                      \
     do {                                                                         \
         /* NOLINTNEXTLINE(readability-container-size-empty) */                   \
-        if ((lhs) != (rhs)) {                                                    \
+        const auto patch_lhs = (lhs);                                            \
+        const auto patch_rhs = (rhs);                                            \
+        if (patch_lhs != patch_rhs) {                                            \
             std::cerr << "FAIL: " __FILE__ << ":" << __LINE__ << ": ";           \
             std::cerr << "'EXPECT_EQ(" << #lhs << ", " << #rhs << ")' failed, "; \
-            Patch::test_error_format(lhs);                                       \
+            Patch::test_error_format(patch_lhs);                                 \
             std::cerr << " != ";                                                 \
-            Patch::test_error_format(rhs);                                       \
+            Patch::test_error_format(patch_rhs);                                 \
+            Patch::maybe_print_string_diff_details(patch_lhs, patch_rhs);        \
             std::cerr << '\n';                                                   \
             throw Patch::test_assertion_failure("Test failed");                  \
         }                                                                        \

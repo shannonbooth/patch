@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <cmath>
 #include <istream>
 #include <limits>
 #include <ostream>
@@ -163,7 +164,7 @@ static void print_hunk_statistics(std::ostream& out, size_t hunk_num, bool skipp
             out << " with fuzz " << location.fuzz;
         if (offset_error != 0) {
             out << " (offset " << offset_error << " line";
-            if (offset_error > 1)
+            if (std::abs(offset_error) > 1)
                 out << "s";
             out << ")";
         }

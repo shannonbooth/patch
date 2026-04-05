@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/process.h>
 #include <patch/test.h>
@@ -970,6 +970,43 @@ int main()
 
     EXPECT_FILE_EQ("a.c", R"(
 int main()
+{
+	return 1;
+}
+)");
+}
+
+PATCH_TEST(applier_context_diff_with_negative_offset)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(
+--- a.c	2022-10-23 21:25:13.856207590 +1300
++++ b.c	2022-10-23 21:25:25.511912172 +1300
+@@ -3,4 +3,4 @@
+ int main()
+ {
+-	return 0;
++	return 1;
+ }
+)";
+    }
+
+    {
+        Patch::File file("a.c", std::ios_base::out);
+        file << R"(int main()
+{
+	return 0;
+}
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file a.c\nHunk #1 succeeded at 1 (offset -2 lines).\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("a.c", R"(int main()
 {
 	return 1;
 }

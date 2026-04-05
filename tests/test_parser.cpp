@@ -805,3 +805,24 @@ TEST(parser_malformed_range_line_fails)
         "+1\n");
     EXPECT_THROW(Patch::parse_patch(patch_file), std::runtime_error);
 }
+
+TEST(parser_unified_patch_that_empties_file_is_not_delete)
+{
+    Patch::File patch_file = Patch::File::create_temporary_with_content(R"(
+--- old.txt	2026-04-05 13:10:37
++++ new.txt	2026-04-05 13:10:37
+@@ -1,2 +0,0 @@
+-
+-n[@CuBYRF+w.Ul.jw]M)e=XYaAc
+)");
+
+    auto patch = Patch::parse_patch(patch_file);
+    EXPECT_EQ(patch.operation, Patch::Operation::Change);
+    EXPECT_EQ(patch.old_file_path, "old.txt");
+    EXPECT_EQ(patch.new_file_path, "new.txt");
+    EXPECT_EQ(patch.hunks.size(), 1);
+    EXPECT_EQ(patch.hunks[0].old_file_range.start_line, 1);
+    EXPECT_EQ(patch.hunks[0].old_file_range.number_of_lines, 2);
+    EXPECT_EQ(patch.hunks[0].new_file_range.start_line, 0);
+    EXPECT_EQ(patch.hunks[0].new_file_range.number_of_lines, 0);
+}

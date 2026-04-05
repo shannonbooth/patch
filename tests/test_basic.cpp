@@ -769,6 +769,33 @@ PATCH_TEST(remove_file_successfully_posix_and_remove_flag)
     remove_file(patch_path, true, { "--posix", "--remove-empty-files" });
 }
 
+PATCH_TEST(unified_patch_that_empties_file_keeps_empty_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- old.txt	2026-04-05 13:10:37
++++ new.txt	2026-04-05 13:10:37
+@@ -1,2 +0,0 @@
+-
+-n[@CuBYRF+w.Ul.jw]M)e=XYaAc
+)";
+    }
+
+    {
+        Patch::File file("target.txt", std::ios_base::out);
+        file << "\n"
+                "n[@CuBYRF+w.Ul.jw]M)e=XYaAc\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "target.txt", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file target.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_TRUE(Patch::filesystem::exists("target.txt"));
+    EXPECT_FILE_EQ("target.txt", "");
+}
+
 PATCH_TEST(git_patch_remove_file)
 {
     {

@@ -631,10 +631,16 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
     }
 
     if (patch.operation == Operation::Change) {
-        if (hunk.new_file_range.start_line == 0)
+        if (patch.new_file_path == "/dev/null") {
             patch.operation = Operation::Delete;
-        else if (hunk.old_file_range.start_line == 0)
+        } else if (patch.old_file_path == "/dev/null") {
             patch.operation = Operation::Add;
+        } else if (patch.old_file_path.empty() && patch.new_file_path.empty()) {
+            if (hunk.new_file_range.start_line == 0)
+                patch.operation = Operation::Delete;
+            else if (hunk.old_file_range.start_line == 0)
+                patch.operation = Operation::Add;
+        }
     }
 
     return should_parse_body;

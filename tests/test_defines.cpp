@@ -314,3 +314,28 @@ int main()
 }
 )");
 }
+
+PATCH_TEST(defines_add_file_from_empty_input)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- /dev/null	2022-01-30 13:57:31.173528027 +1300
++++ added.cpp	2022-01-30 13:57:36.321216497 +1300
+@@ -0,0 +1,3 @@
++int main()
++{
++}
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--ifdef", "TEST_PATCH", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file added.cpp\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("added.cpp", R"(#ifdef TEST_PATCH
+int main()
+{
+}
+#endif
+)");
+}

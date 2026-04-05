@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <istream>
 #include <limits>
@@ -117,8 +117,10 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
         }
     }
 
-    if (define_state != DefineState::Outside)
-        output << "#endif" << lines.at(lines.size() - 1).newline;
+    if (define_state != DefineState::Outside) {
+        const auto newline = lines.empty() ? NewLine::LF : lines.at(lines.size() - 1).newline;
+        output << "#endif" << newline;
+    }
 
     return static_cast<LineNumber>(line_number);
 }

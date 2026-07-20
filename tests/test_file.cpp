@@ -181,6 +181,67 @@ TEST(file_move_construct_move_assign)
     EXPECT_EQ(file_move_assigned.read_all_as_string(), "abc\n");
 }
 
+TEST(file_reopen_after_eof)
+{
+    {
+        Patch::File file("first-file", std::ios_base::out);
+        file << "first\n";
+    }
+
+    {
+        Patch::File file("second-file", std::ios_base::out);
+        file << "second\n";
+    }
+
+    Patch::File file("first-file", std::ios_base::in);
+    std::string line;
+
+    EXPECT_TRUE(file.get_line(line));
+    EXPECT_EQ(line, "first");
+    EXPECT_FALSE(file.get_line(line));
+    EXPECT_TRUE(file.eof());
+    EXPECT_FALSE(file.get_line(line));
+    EXPECT_FALSE(file);
+
+    EXPECT_TRUE(file.open("second-file", std::ios_base::in));
+    EXPECT_FALSE(file.eof());
+    EXPECT_TRUE(file);
+    EXPECT_TRUE(file.get_line(line));
+    EXPECT_EQ(line, "second");
+}
+
+TEST(file_failed_reopen_preserves_stream)
+{
+    {
+        Patch::File file("existing-file", std::ios_base::out);
+        file << "first\nsecond\n";
+    }
+
+    Patch::File file("existing-file", std::ios_base::in);
+    std::string line;
+
+    EXPECT_TRUE(file.get_line(line));
+    EXPECT_EQ(line, "first");
+
+    EXPECT_FALSE(file.open("file-that-does-not-exist", std::ios_base::in));
+    EXPECT_TRUE(file);
+    EXPECT_FALSE(file.eof());
+
+    EXPECT_TRUE(file.get_line(line));
+    EXPECT_EQ(line, "second");
+}
+
+TEST(file_reopen_closes_existing_file)
+{
+    Patch::File file("first-file", std::ios_base::out);
+    file << "first";
+
+    EXPECT_TRUE(file.open("second-file", std::ios_base::out));
+    file << "second";
+
+    EXPECT_FILE_EQ("first-file", "first");
+}
+
 PATCH_TEST(file_append)
 {
     (void)patch_path;

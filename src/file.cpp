@@ -141,8 +141,16 @@ File::File(const std::string& path, std::ios_base::openmode mode)
 
 bool File::open(const std::string& path, std::ios_base::openmode mode)
 {
-    m_file = cfile_open_impl(path, mode);
-    return m_file;
+    auto* file = cfile_open_impl(path, mode);
+    if (!file)
+        return false;
+
+    if (m_file)
+        std::fclose(m_file);
+
+    m_file = file;
+    clear();
+    return true;
 }
 
 fpos_t File::tellg()

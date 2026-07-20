@@ -658,6 +658,8 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
                 patch.operation = Operation::Delete;
             else if (hunk.old_file_range.start_line == 0)
                 patch.operation = Operation::Add;
+        } else if (hunk.old_file_range.start_line == 0) {
+            patch.operation = Operation::Add;
         }
     }
 

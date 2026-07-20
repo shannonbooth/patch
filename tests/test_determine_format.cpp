@@ -323,7 +323,7 @@ TEST(determine_format_looks_like_normal_command)
 
     // Possibilities given in POSIX diff utility guidelines, with %d substituted for a random integer.
     EXPECT_TRUE(Patch::parse_normal_range(hunk, "1a2"));
-    EXPECT_TRUE(Patch::parse_normal_range(hunk, "1a23,3"));
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "1a2,3"));
     EXPECT_TRUE(Patch::parse_normal_range(hunk, "12d2"));
     EXPECT_TRUE(Patch::parse_normal_range(hunk, "1,2d3"));
     EXPECT_TRUE(Patch::parse_normal_range(hunk, "10c20"));

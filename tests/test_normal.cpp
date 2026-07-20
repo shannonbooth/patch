@@ -6,6 +6,120 @@
 #include <patch/system.h>
 #include <patch/test.h>
 
+static void expect_invalid_normal_range(const char* patch_path, const std::string& range)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << range << '\n';
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+        file << "unchanged\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-n", "to_patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** Unable to parse normal range command: " + range + "\n");
+    EXPECT_EQ(process.return_code(), 2);
+    EXPECT_FILE_EQ("to_patch", "unchanged\n");
+}
+
+PATCH_TEST(normal_patch_multiline_change_range)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(5,7c5,7
+< 5
+< 6
+< 7
+---
+> five
+> six
+> seven
+)";
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+        file << "1\n2\n3\n4\n5\n6\n7\n8\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-n", "to_patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("to_patch", "1\n2\n3\n4\nfive\nsix\nseven\n8\n");
+}
+
+PATCH_TEST(normal_patch_multiline_append_range)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(4a5,7
+> five
+> six
+> seven
+)";
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+        file << "1\n2\n3\n4\n8\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-n", "to_patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("to_patch", "1\n2\n3\n4\nfive\nsix\nseven\n8\n");
+}
+
+PATCH_TEST(normal_patch_multiline_delete_range)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(5,7d4
+< 5
+< 6
+< 7
+)";
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out);
+        file << "1\n2\n3\n4\n5\n6\n7\n8\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-n", "to_patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("to_patch", "1\n2\n3\n4\n8\n");
+}
+
+// GNU patch seems to reject these invalid ranges before printing the target file name, so its stdout differs from ours.
+PATCH_TEST(COMPAT_XFAIL_normal_patch_reversed_ranges_fail)
+{
+    expect_invalid_normal_range(patch_path, "7,5c5,7");
+    expect_invalid_normal_range(patch_path, "5,7c7,5");
+    expect_invalid_normal_range(patch_path, "4a7,5");
+    expect_invalid_normal_range(patch_path, "7,5d4");
+}
+
+PATCH_TEST(COMPAT_XFAIL_normal_patch_overflowing_ranges_fail)
+{
+    expect_invalid_normal_range(patch_path, "0,9223372036854775807c1");
+    expect_invalid_normal_range(patch_path, "1c0,9223372036854775807");
+    expect_invalid_normal_range(patch_path, "1a0,9223372036854775807");
+    expect_invalid_normal_range(patch_path, "0,9223372036854775807d0");
+    expect_invalid_normal_range(patch_path, "9223372036854775808c1");
+}
+
 PATCH_TEST(normal_patch_corrupted_add_line)
 {
     {

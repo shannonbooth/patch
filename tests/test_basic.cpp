@@ -492,6 +492,33 @@ PATCH_TEST(add_file)
 )");
 }
 
+PATCH_TEST(add_file_without_dev_null_header)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- add
++++ add
+@@ -0,0 +1,3 @@
++int main()
++{
++}
+)";
+    }
+
+    EXPECT_FALSE(Patch::filesystem::exists("add"));
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file add\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("add", R"(int main()
+{
+}
+)");
+}
+
 PATCH_TEST(add_file_using_basename)
 {
     {

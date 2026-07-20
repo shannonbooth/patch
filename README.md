@@ -34,7 +34,8 @@ echo 'a\nc\n' > file-new.txt
 diff -u file-orig.txt file-new.txt > diff.patch
 ```
 
-Supported patch formats are "normal", "context" and "unified".
+Supported patch formats are "normal", "context", "unified" and ed scripts
+produced by `diff -e`.
 
 ### Applying the patch
 

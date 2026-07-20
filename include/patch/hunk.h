@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -81,6 +81,19 @@ struct Hunk {
     std::vector<PatchLine> lines;
 };
 
+enum class EdOperation {
+    Append,
+    Change,
+    Delete,
+    SubstituteFirstCharacter,
+};
+
+struct EdCommand {
+    Range range;
+    EdOperation operation { EdOperation::Append };
+    std::vector<Line> lines;
+};
+
 enum class Operation {
     Change,
     Rename,
@@ -117,6 +130,7 @@ struct Patch {
     uint16_t new_file_mode { 0 };
 
     std::vector<Hunk> hunks;
+    std::vector<EdCommand> ed_commands;
 };
 
 } // namespace Patch

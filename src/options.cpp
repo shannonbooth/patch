@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <climits>
 #include <patch/options.h>
@@ -273,7 +273,7 @@ void show_usage(std::ostream& out)
            "\n"
            "patch reads a patch file containing a difference (diff) and applies it to files.\n"
            "\n"
-           "By default, patch will read the patch from stdin. Unified, context and normal format diffs are\n"
+           "By default, patch will read the patch from stdin. Unified, context, normal and ed format diffs are\n"
            "supported. Unless told otherwise, patch will try to determine the format of the diff listing\n"
            "automatically.\n"
            "\n"
@@ -292,6 +292,9 @@ void show_usage(std::ostream& out)
            "\n"
            "    -c, --context\n"
            "                Interpret the patch as a context format patch.\n"
+           "\n"
+           "    -e, --ed\n"
+           "                Interpret the patch file as an ed script produced by 'diff -e'.\n"
            "\n"
            "    -n, --normal\n"
            "                Interpret the patch file in the normal format.\n"

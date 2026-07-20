@@ -513,13 +513,15 @@ int process_patch(const Options& options)
         if (options.verbose || file_to_patch.empty())
             parser.print_header_info(info, out);
 
-        if (file_to_patch.empty())
+        if (file_to_patch.empty() && !options.force && !options.batch)
             file_to_patch = prompt_for_filepath(out);
 
         if (file_to_patch.empty()) {
             if (should_parse_body)
                 parser.parse_patch_body(patch);
 
+            if (options.force || options.batch)
+                out << "No file to patch.  ";
             out << "Skipping patch.\n";
             inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
             out << '\n';

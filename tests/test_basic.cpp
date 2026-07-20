@@ -519,6 +519,47 @@ PATCH_TEST(add_file_without_dev_null_header)
 )");
 }
 
+static void file_not_found_does_not_prompt(const char* patch_path, const char* option)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- a	2023-01-03 11:23:35.634966282 +1300
++++ b	2023-01-03 11:23:41.598960625 +1300
+@@ -1,3 +1,3 @@
+ 1
+-2
++b
+ 3
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", option, nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(can't find file to patch at input line 3
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a	2023-01-03 11:23:35.634966282 +1300
+|+++ b	2023-01-03 11:23:41.598960625 +1300
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+}
+
+PATCH_TEST(file_not_found_force_does_not_prompt)
+{
+    file_not_found_does_not_prompt(patch_path, "--force");
+}
+
+PATCH_TEST(file_not_found_batch_does_not_prompt)
+{
+    file_not_found_does_not_prompt(patch_path, "--batch");
+}
+
 PATCH_TEST(add_file_using_basename)
 {
     {

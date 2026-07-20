@@ -13,6 +13,7 @@
 #include <patch/options.h>
 #include <patch/patch.h>
 #include <sstream>
+#include <stdexcept>
 #include <system_error>
 
 namespace Patch {
@@ -147,6 +148,74 @@ static LineNumber write_hunk(LineWriter& output, const Hunk& hunk, const Locatio
     return static_cast<LineNumber>(line_number);
 }
 
+static Result apply_ed_patch(File& out_file, const std::vector<Line>& input_lines, const Patch& patch, const Options& options)
+{
+    if (options.reverse_patch)
+        throw std::invalid_argument("ed patches cannot be reversed");
+    if (!options.define_macro.empty())
+        throw std::invalid_argument("--ifdef cannot be used with ed patches");
+
+    auto lines = input_lines;
+
+    auto terminate_last_line = [&](NewLine newline) {
+        if (!lines.empty() && lines.back().newline == NewLine::None)
+            lines.back().newline = newline;
+    };
+
+    for (size_t command_number = 0; command_number < patch.ed_commands.size(); ++command_number) {
+        const auto& command = patch.ed_commands[command_number];
+        const auto start_line = command.range.start_line;
+        const auto number_of_lines = command.range.number_of_lines;
+
+        auto invalid_address = [&] {
+            std::ostringstream message;
+            message << "ed command #" << command_number + 1 << " has an invalid address";
+            if (number_of_lines == 1)
+                message << ": " << start_line;
+            else
+                message << " range: " << start_line << ',' << start_line + number_of_lines - 1;
+            throw std::invalid_argument(message.str());
+        };
+
+        if (command.operation == EdOperation::Append) {
+            if (static_cast<size_t>(start_line) > lines.size())
+                invalid_address();
+
+            if (static_cast<size_t>(start_line) == lines.size() && !command.lines.empty())
+                terminate_last_line(command.lines.front().newline);
+
+            lines.insert(std::next(lines.begin(), start_line), command.lines.begin(), command.lines.end());
+            continue;
+        }
+
+        if (start_line < 1 || number_of_lines < 1)
+            invalid_address();
+
+        const auto first = static_cast<size_t>(start_line - 1);
+        const auto count = static_cast<size_t>(number_of_lines);
+        if (first >= lines.size() || count > lines.size() - first)
+            invalid_address();
+
+        if (command.operation == EdOperation::SubstituteFirstCharacter) {
+            if (lines[first].content.empty())
+                throw std::invalid_argument("ed command #" + std::to_string(command_number + 1) + " cannot substitute in an empty line");
+            lines[first].content.erase(0, 1);
+            continue;
+        }
+
+        auto erase_first = std::next(lines.begin(), static_cast<std::vector<Line>::difference_type>(first));
+        auto insert_at = lines.erase(erase_first, std::next(erase_first, static_cast<std::vector<Line>::difference_type>(count)));
+        if (command.operation == EdOperation::Change)
+            lines.insert(insert_at, command.lines.begin(), command.lines.end());
+    }
+
+    LineWriter output(out_file, options);
+    for (const auto& line : lines)
+        output << line;
+
+    return { 0, false, true };
+}
+
 static void print_hunk_statistics(std::ostream& out, size_t hunk_num, bool skipped, const Location& location, const Hunk& hunk, LineNumber offset_old_lines_to_new, LineNumber offset_error)
 {
     out << "Hunk #" << hunk_num + 1;
@@ -252,6 +321,9 @@ bool RejectWriter::should_write_as_unified() const
 
 Result apply_patch(File& out_file, RejectWriter& reject_writer, const std::vector<Line>& lines, Patch& patch, const Options& options, std::ostream& out)
 {
+    if (patch.format == Format::Ed)
+        return apply_ed_patch(out_file, lines, patch, options);
+
     if (options.reverse_patch)
         reverse(patch);
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -35,6 +35,7 @@ private:
     bool get_line(std::string& line, NewLine* newline = nullptr);
 
     Patch parse_context_patch(Patch& patch);
+    Patch parse_ed_patch(Patch& patch);
     Patch parse_unified_patch(Patch& patch);
     Patch parse_normal_patch(Patch& patch);
     void parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& old_start_line, std::vector<PatchLine>& new_lines, LineNumber& new_start_line);
@@ -82,6 +83,7 @@ Patch parse_patch(File& file, Format format = Format::Unknown, int strip = -1);
 
 bool parse_unified_range(Hunk& hunk, const std::string& line);
 bool parse_normal_range(Hunk& hunk, const std::string& line);
+bool parse_ed_command(EdCommand& command, const std::string& line);
 
 std::string strip_path(const std::string& path, int amount);
 std::string parse_path(const std::string& input, int strip);

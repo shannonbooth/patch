@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <cassert>
@@ -354,6 +354,57 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
     return parser.is_eof();
 }
 
+bool parse_ed_command(EdCommand& command, const std::string& line)
+{
+    LineParser parser(line);
+
+    LineNumber start_line = 0;
+    if (!parser.consume_line_number(start_line))
+        return false;
+
+    LineNumber end_line = start_line;
+    const bool has_range = parser.consume_specific(',');
+    if (has_range && !parser.consume_line_number(end_line))
+        return false;
+
+    if (end_line < start_line)
+        return false;
+
+    const auto difference = end_line - start_line;
+    if (difference == std::numeric_limits<LineNumber>::max())
+        return false;
+
+    command.range.start_line = start_line;
+    command.range.number_of_lines = difference + 1;
+    command.lines.clear();
+
+    const char operation = parser.consume();
+    switch (operation) {
+    case 'a':
+        if (has_range || !parser.is_eof())
+            return false;
+        command.operation = EdOperation::Append;
+        return true;
+    case 'c':
+        if (start_line == 0 || !parser.is_eof())
+            return false;
+        command.operation = EdOperation::Change;
+        return true;
+    case 'd':
+        if (start_line == 0 || !parser.is_eof())
+            return false;
+        command.operation = EdOperation::Delete;
+        return true;
+    case 's':
+        if (has_range || start_line == 0 || !parser.consume_specific("/.//") || !parser.is_eof())
+            return false;
+        command.operation = EdOperation::SubstituteFirstCharacter;
+        return true;
+    default:
+        return false;
+    }
+}
+
 static uint16_t parse_mode(const std::string& mode_str)
 {
     // Ignore any mode strings which are not in the format which we expect.
@@ -618,6 +669,17 @@ bool Parser::parse_patch_header(Patch& patch, PatchHeaderInfo& header_info, int 
             }
         }
 
+        if (patch.format == Format::Unknown || patch.format == Format::Ed) {
+            EdCommand command;
+            if (parse_ed_command(command, line)) {
+                patch.format = Format::Ed;
+                if (command.operation == EdOperation::Append && command.range.start_line == 0)
+                    patch.operation = Operation::Add;
+                header_info.lines_till_first_hunk = lines;
+                break;
+            }
+        }
+
         if (patch.format == Format::Unknown || patch.format == Format::Context) {
             if (last_line_looks_like == Format::Context && starts_with(line, "*** ")) {
                 patch.format = Format::Context;
@@ -865,8 +927,43 @@ void Parser::parse_patch_body(Patch& patch)
         parse_context_patch(patch);
     else if (patch.format == Format::Normal)
         parse_normal_patch(patch);
+    else if (patch.format == Format::Ed)
+        parse_ed_patch(patch);
     else
         throw std::runtime_error("Unable to determine patch format");
+}
+
+Patch Parser::parse_ed_patch(Patch& patch)
+{
+    std::string patch_line;
+
+    while (get_line(patch_line)) {
+        if (m_file.eof() && patch_line.empty())
+            break;
+
+        EdCommand command;
+        if (!parse_ed_command(command, patch_line))
+            throw parser_error("Unable to parse ed command at line " + std::to_string(m_line_number - 1) + ": " + patch_line);
+
+        if (command.operation == EdOperation::Append || command.operation == EdOperation::Change) {
+            bool found_terminator = false;
+            NewLine newline;
+            while (get_line(patch_line, &newline)) {
+                if (patch_line == ".") {
+                    found_terminator = true;
+                    break;
+                }
+                command.lines.emplace_back(patch_line, newline);
+            }
+
+            if (!found_terminator)
+                throw parser_error("unexpected end of file in ed patch; '.' expected at line " + std::to_string(m_line_number - 1));
+        }
+
+        patch.ed_commands.emplace_back(std::move(command));
+    }
+
+    return patch;
 }
 
 Patch Parser::parse_unified_patch(Patch& patch)

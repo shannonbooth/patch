@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <cassert>
@@ -132,7 +132,7 @@ static Format diff_format_from_options(const Options& options)
     else if (options.interpret_as_unified)
         format = Format::Unified;
     else if (options.interpret_as_ed)
-        throw std::invalid_argument("ed format patches are not supported by this version of patch");
+        format = Format::Ed;
     return format;
 }
 
@@ -616,7 +616,8 @@ int process_patch(const Options& options)
 
             // Clean up the file if it looks like it was removed.
             // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
-            if (options.remove_empty_files == Options::OptionalBool::Yes && patch.operation == Operation::Delete) {
+            if (options.remove_empty_files == Options::OptionalBool::Yes
+                && (patch.operation == Operation::Delete || (patch.format == Format::Ed && tmp_out_file.size() == 0))) {
                 if (tmp_out_file.size() == 0) {
                     if (!options.dry_run)
                         remove_file_and_empty_parent_folders(output_file);

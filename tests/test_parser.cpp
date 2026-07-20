@@ -54,6 +54,59 @@ TEST(parser_normal_diff_remove_header)
     EXPECT_EQ(hunk.new_file_range.number_of_lines, 0);
 }
 
+TEST(parser_normal_diff_inclusive_ranges)
+{
+    Patch::Hunk hunk;
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "5,7c5,7"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 3);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 3);
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "4a5,7"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 0);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 3);
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "5,7d4"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 3);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 0);
+}
+
+TEST(parser_normal_diff_range_boundaries)
+{
+    Patch::Hunk hunk;
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "0a1"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 0);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "1d0"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 1);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 0);
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "9223372036854775807c9223372036854775807"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 1);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "9223372036854775806a9223372036854775807"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 0);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 1);
+
+    EXPECT_TRUE(Patch::parse_normal_range(hunk, "9223372036854775807d9223372036854775806"));
+    EXPECT_EQ(hunk.old_file_range.number_of_lines, 1);
+    EXPECT_EQ(hunk.new_file_range.number_of_lines, 0);
+
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "7,5c5,7"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "5,7c7,5"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "4a7,5"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "7,5d4"));
+
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "0,9223372036854775807c1"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "1c0,9223372036854775807"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "1a0,9223372036854775807"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "0,9223372036854775807d0"));
+    EXPECT_FALSE(Patch::parse_normal_range(hunk, "9223372036854775808c1"));
+}
+
 TEST(parser_normal_diff_simple)
 {
     Patch::File patch_file = Patch::File::create_temporary_with_content(R"(2a3

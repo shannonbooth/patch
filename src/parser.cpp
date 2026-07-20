@@ -292,6 +292,18 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
 {
     LineParser parser(line);
 
+    auto inclusive_range_size = [](LineNumber start_line, LineNumber end_line, LineNumber& number_of_lines) {
+        if (end_line < start_line)
+            return false;
+
+        auto difference = end_line - start_line;
+        if (difference == std::numeric_limits<LineNumber>::max())
+            return false;
+
+        number_of_lines = difference + 1;
+        return true;
+    };
+
     // Ensure that the first character is an integer.
     if (!parser.consume_line_number(hunk.old_file_range.start_line))
         return false;
@@ -299,8 +311,13 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
     // The next character must either be a ',' followed by a number of lines, or just a command.
     // Skip any optional ',' - remembering whether we found it for later on.
     bool has_first_comma = parser.consume_specific(',');
-    if (has_first_comma && !parser.consume_line_number(hunk.old_file_range.number_of_lines))
-        return false;
+    if (has_first_comma) {
+        LineNumber old_range_end_line = 0;
+        if (!parser.consume_line_number(old_range_end_line))
+            return false;
+        if (!inclusive_range_size(hunk.old_file_range.start_line, old_range_end_line, hunk.old_file_range.number_of_lines))
+            return false;
+    }
 
     // Ensure we've now reached a valid normal command.
     char command = parser.consume();
@@ -329,7 +346,8 @@ bool parse_normal_range(Hunk& hunk, const std::string& line)
         new_range_end_line = hunk.new_file_range.start_line;
     }
 
-    hunk.new_file_range.number_of_lines = new_range_end_line - hunk.new_file_range.start_line + 1;
+    if (!inclusive_range_size(hunk.new_file_range.start_line, new_range_end_line, hunk.new_file_range.number_of_lines))
+        return false;
     if (command == 'd')
         --hunk.new_file_range.number_of_lines;
 

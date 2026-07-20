@@ -53,6 +53,52 @@ PATCH_TEST(both_patch_and_input_as_crlf_output_keep)
         "}\r\n");
 }
 
+PATCH_TEST(git_patch_with_preserve_does_not_translate_crlf)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out | std::ios_base::binary);
+
+        file << "diff --git a/to_patch b/to_patch\n"
+                "--- a/to_patch\n"
+                "+++ b/to_patch\n"
+                "@@ -1,2 +1,2 @@\n"
+                " one\r\n"
+                "-two\r\n"
+                "+second\r\n";
+    }
+
+    {
+        Patch::File file("to_patch", std::ios_base::out | std::ios_base::binary);
+        file << "one\r\ntwo\r\n";
+    }
+
+    Process first_process(patch_path, { patch_path, "-i", "diff.patch", "--newline-output", "preserve", nullptr });
+
+    EXPECT_EQ(first_process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(first_process.stderr_data(), "");
+    EXPECT_EQ(first_process.return_code(), 0);
+    EXPECT_FILE_BINARY_EQ("to_patch", "one\r\nsecond\r\n");
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out | std::ios_base::binary);
+
+        file << "diff --git a/to_patch b/to_patch\n"
+                "--- a/to_patch\n"
+                "+++ b/to_patch\n"
+                "@@ -1,2 +1,2 @@\n"
+                " one\r\n"
+                "-second\r\n"
+                "+third\r\n";
+    }
+
+    Process second_process(patch_path, { patch_path, "-i", "diff.patch", "--newline-output", "preserve", nullptr });
+
+    EXPECT_EQ(second_process.stdout_data(), "patching file to_patch\n");
+    EXPECT_EQ(second_process.stderr_data(), "");
+    EXPECT_EQ(second_process.return_code(), 0);
+    EXPECT_FILE_BINARY_EQ("to_patch", "one\r\nthird\r\n");
+}
+
 PATCH_TEST(mix_patch_and_input_as_crlf_with_preserve)
 {
     {

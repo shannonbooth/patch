@@ -344,15 +344,16 @@ private:
 
 class DeferredWriter {
 public:
-    void deferred_write(File&& file, const std::string& destination_path, std::function<void(const std::string&)> permission_callback)
+    void deferred_write(File&& file, const std::string& destination_path, std::ios_base::openmode mode,
+        std::function<void(const std::string&)> permission_callback)
     {
-        m_deferred_writes.push_back(FileWrite { std::move(file), destination_path, std::move(permission_callback) });
+        m_deferred_writes.push_back(FileWrite { std::move(file), destination_path, mode, std::move(permission_callback) });
     }
 
     void finalize()
     {
         for (auto& deferred_write : m_deferred_writes) {
-            File file(deferred_write.destination_path, std::ios_base::out | std::ios::trunc);
+            File file(deferred_write.destination_path, deferred_write.mode | std::ios::trunc);
             deferred_write.source.write_entire_contents_to(file);
             deferred_write.permission_callback(deferred_write.destination_path);
         }
@@ -362,6 +363,7 @@ private:
     struct FileWrite {
         File source;
         std::string destination_path;
+        std::ios_base::openmode mode;
         std::function<void(const std::string&)> permission_callback;
     };
 
@@ -434,7 +436,7 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
             const auto symlink_target = patched_file.read_all_as_string();
             filesystem::symlink(symlink_target, output_file_path);
         } else {
-            deferred_writer.deferred_write(std::move(patched_file), output_file_path, std::move(permission_callback));
+            deferred_writer.deferred_write(std::move(patched_file), output_file_path, mode, std::move(permission_callback));
         }
     } else {
         File file(output_file_path, mode | std::ios::trunc);

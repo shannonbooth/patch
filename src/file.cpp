@@ -80,6 +80,12 @@ static void fflush(FILE* file, const char* operation)
         throw std::system_error(errno, std::generic_category(), operation);
 }
 
+static void checked_rewind(FILE* file, const char* operation)
+{
+    if (std::fseek(file, 0, SEEK_SET) != 0)
+        throw std::system_error(errno, std::generic_category(), operation);
+}
+
 void File::copy_from(FILE* from, FILE* to)
 {
     std::array<char, 4096> buffer;
@@ -100,7 +106,7 @@ void File::copy_from(FILE* from, FILE* to)
 
 void File::write_entire_contents_to(FILE* file)
 {
-    std::rewind(m_file);
+    checked_rewind(m_file, "Unable to rewind source file before copying");
     copy_from(m_file, file);
 }
 
@@ -108,7 +114,7 @@ File File::create_temporary(FILE* initial_content)
 {
     File file(create_temporary_file());
     copy_from(initial_content, file.m_file);
-    std::rewind(file.m_file);
+    checked_rewind(file.m_file, "Unable to rewind temporary file");
     return file;
 }
 
@@ -118,7 +124,7 @@ File File::create_temporary_with_content(const std::string& initial_content)
     file << initial_content;
     fflush(file.m_file, "Unable to create temporary file");
 
-    std::rewind(file.m_file);
+    checked_rewind(file.m_file, "Unable to rewind temporary file");
 
     return file;
 }
@@ -235,7 +241,7 @@ bool File::get_line(std::string& line, NewLine* newline)
 
 std::string File::read_all_as_string()
 {
-    std::rewind(m_file);
+    checked_rewind(m_file, "Unable to rewind file before reading");
 
     std::string content;
 

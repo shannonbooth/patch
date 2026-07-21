@@ -93,13 +93,7 @@ public:
 
     bool eof() const { return m_is_eof; }
 
-    void close()
-    {
-        if (m_file) {
-            fclose(m_file);
-            m_file = nullptr;
-        }
-    }
+    void close();
 
     explicit operator bool() const { return !fail(); }
 

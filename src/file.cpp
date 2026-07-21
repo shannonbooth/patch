@@ -123,6 +123,17 @@ File File::create_temporary_with_content(const std::string& initial_content)
     return file;
 }
 
+void File::close()
+{
+    if (!m_file)
+        return;
+
+    auto* file = m_file;
+    m_file = nullptr;
+    if (std::fclose(file) != 0)
+        throw std::system_error(errno, std::generic_category(), "Failed closing file");
+}
+
 FILE* File::cfile_open_impl(const std::string& path, std::ios_base::openmode mode)
 {
 #ifdef _WIN32

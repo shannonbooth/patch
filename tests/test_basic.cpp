@@ -6,6 +6,12 @@
 #include <patch/system.h>
 #include <patch/test.h>
 
+#ifndef _WIN32
+#    include <dirent.h>
+#    include <sys/stat.h>
+#    include <sys/types.h>
+#endif
+
 PATCH_TEST(basic_unified_patch)
 {
     {
@@ -2674,4 +2680,175 @@ index 0000000..2e65efe
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_TRUE(Patch::filesystem::is_symlink("active"));
     EXPECT_FILE_EQ("active", content);
+}
+
+#ifndef _WIN32
+static bool directory_has_staged_temporary(const std::string& directory)
+{
+    DIR* dir = ::opendir(directory.c_str());
+    if (!dir)
+        return false;
+
+    bool found = false;
+    while (dirent* entry = ::readdir(dir)) {
+        if (std::string(entry->d_name).find(".patch-") != std::string::npos) {
+            found = true;
+            break;
+        }
+    }
+    ::closedir(dir);
+    return found;
+}
+#endif
+
+PATCH_TEST(replace_read_only_mode_file_not_widened_under_umask)
+{
+#ifndef _WIN32
+    const auto old_umask = ::umask(022);
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "old\n";
+    }
+
+    // A private 0600 file. Under a 0022 umask a temporary created 0666 would be
+    // exposed as 0644; the final file must remain exactly 0600.
+    const auto private_mode = Patch::filesystem::perms::owner_read | Patch::filesystem::perms::owner_write;
+    Patch::filesystem::permissions("a", private_mode);
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "new\n");
+    EXPECT_EQ(Patch::filesystem::get_permissions("a"), private_mode);
+
+    ::umask(old_umask);
+#endif
+}
+
+PATCH_TEST(replace_file_preserves_owner_and_group)
+{
+#ifndef _WIN32
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "old\n";
+    }
+
+    struct stat before;
+    EXPECT_EQ(::stat("a", &before), 0);
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "new\n");
+
+    // The atomic rename creates a new inode; owner and group must be preserved.
+    // Changing them requires privilege, so an unprivileged run simply confirms
+    // they still match the invoking user.
+    struct stat after;
+    EXPECT_EQ(::stat("a", &after), 0);
+    EXPECT_EQ(before.st_uid, after.st_uid);
+    EXPECT_EQ(before.st_gid, after.st_gid);
+#endif
+}
+
+PATCH_TEST(staged_temporary_removed_after_failure)
+{
+#ifndef _WIN32
+    // The second file's hunk is malformed, so parsing fails after the first file
+    // has been staged. The abandoned staged file must be cleaned up.
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/a b/a
+--- a/a
++++ b/a
+@@ -1 +1 @@
+-old a
++new a
+diff --git a/b b/b
+--- a/b
++++ b/b
+@@ -1 +1 @@
+-old b
+dnew b
+)";
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "old a\n";
+    }
+    {
+        Patch::File file("b", std::ios_base::out);
+        file << "old b\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 2);
+    EXPECT_FILE_EQ("a", "old a\n");
+    EXPECT_FILE_EQ("b", "old b\n");
+    EXPECT_FALSE(directory_has_staged_temporary("."));
+#endif
+}
+
+PATCH_TEST(git_deletion_then_malformed_patch_is_not_transactional)
+{
+    // A git deletion is applied immediately while regular replacements are
+    // deferred, so a later malformed patch cannot roll the deletion back. This
+    // documents that the multi-file patch is not an atomic transaction.
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/gone b/gone
+deleted file mode 100644
+index 2e65efe..0000000
+--- a/gone
++++ /dev/null
+@@ -1 +0,0 @@
+-gone
+diff --git a/b b/b
+--- a/b
++++ b/b
+@@ -1 +1 @@
+-old b
+dnew b
+)";
+    }
+
+    {
+        Patch::File file("gone", std::ios_base::out);
+        file << "gone\n";
+    }
+    {
+        Patch::File file("b", std::ios_base::out);
+        file << "old b\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 2);
+    // The deletion already happened; it is not undone by the later failure.
+    EXPECT_FALSE(Patch::filesystem::exists("gone"));
+    // The deferred replacement never published, leaving its destination intact.
+    EXPECT_FILE_EQ("b", "old b\n");
 }

@@ -43,6 +43,10 @@ constexpr bool is_seperator(char c)
 
 void symlink(const std::string& target, const std::string& linkpath);
 
+// Non-throwing variant reporting failure through ec, for use in retry and
+// cleanup paths.
+void symlink(const std::string& target, const std::string& linkpath, std::error_code& ec) noexcept;
+
 std::string basename(const std::string& path);
 
 bool create_directory(const std::string& path);

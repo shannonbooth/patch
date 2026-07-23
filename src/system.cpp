@@ -341,7 +341,7 @@ static bool target_is_directory(const std::string& target, const std::string& li
 }
 #endif
 
-void symlink(const std::string& target, const std::string& linkpath)
+void symlink(const std::string& target, const std::string& linkpath, std::error_code& ec) noexcept
 {
 #ifdef _WIN32
     const auto native_target = to_native(target);
@@ -351,8 +351,10 @@ void symlink(const std::string& target, const std::string& linkpath)
     if (target_is_directory(target, linkpath))
         flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
 
-    if (CreateSymbolicLinkW(native_linkpath.c_str(), native_target.c_str(), flags) != 0)
+    if (CreateSymbolicLinkW(native_linkpath.c_str(), native_target.c_str(), flags) != 0) {
+        ec.clear();
         return;
+    }
 
     auto error = GetLastError();
 
@@ -360,17 +362,28 @@ void symlink(const std::string& target, const std::string& linkpath)
     // If returned, retry without it (creation then needs privilege).
     if (error == ERROR_INVALID_PARAMETER) {
         flags &= ~static_cast<DWORD>(SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE);
-        if (CreateSymbolicLinkW(native_linkpath.c_str(), native_target.c_str(), flags) != 0)
+        if (CreateSymbolicLinkW(native_linkpath.c_str(), native_target.c_str(), flags) != 0) {
+            ec.clear();
             return;
+        }
         error = GetLastError();
     }
 
-    throw std::system_error(error, std::system_category(), "Can't create symbolic link " + target + " ");
+    ec = std::error_code(static_cast<int>(error), std::system_category());
 #else
-    int ret = ::symlink(target.c_str(), linkpath.c_str());
-    if (ret != 0)
-        throw std::system_error(errno, std::generic_category(), "Can't create symbolic link " + target + " ");
+    if (::symlink(target.c_str(), linkpath.c_str()) != 0)
+        ec = std::error_code(errno, std::generic_category());
+    else
+        ec.clear();
 #endif
+}
+
+void symlink(const std::string& target, const std::string& linkpath)
+{
+    std::error_code ec;
+    symlink(target, linkpath, ec);
+    if (ec)
+        throw std::system_error(ec, "Can't create symbolic link " + target + " ");
 }
 
 std::string basename(const std::string& path)

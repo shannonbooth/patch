@@ -112,6 +112,36 @@ private:
     filesystem::file_metadata m_metadata;
 };
 
+// Create a symlink to target and rename it over destination. symlink() will not
+// overwrite an existing path, so an existing regular file or symlink is replaced
+// by staging the link beside the destination and renaming it into place.
+static void replace_with_symlink(const std::string& target, const std::string& destination)
+{
+    constexpr int max_attempts = 256;
+
+    for (int i = 0; i < max_attempts; ++i) {
+        auto temporary_path = destination + ".patch-" + generate_random_alphanumeric_string(6);
+
+        std::error_code ec;
+        filesystem::symlink(target, temporary_path, ec);
+        if (ec == std::errc::file_exists)
+            continue;
+        if (ec)
+            throw std::system_error(ec, "Unable to create symbolic link " + temporary_path);
+
+        try {
+            filesystem::rename(temporary_path, destination);
+        } catch (...) {
+            std::error_code ignored;
+            filesystem::remove(temporary_path, ignored);
+            throw;
+        }
+        return;
+    }
+
+    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary symbolic link near " + destination);
+}
+
 } // namespace
 
 static std::vector<Line> file_as_lines(File& input_file)
@@ -521,7 +551,7 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
             const auto symlink_target = patched_file.read_all_as_string();
             if (make_backup)
                 backup.make_backup_for(output_file_path);
-            filesystem::symlink(symlink_target, output_file_path);
+            replace_with_symlink(symlink_target, output_file_path);
         } else {
             auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_metadata);
             if (make_backup)
@@ -629,7 +659,13 @@ int process_patch(const Options& options)
         File tmp_reject_file = File::create_temporary();
         RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
-        if (filesystem::exists(file_to_patch) && !filesystem::is_regular_file(file_to_patch)) {
+        // Refuse to patch anything that is not a plain regular file. is_regular_file
+        // does not follow symlinks, so a symbolic link is refused here (matching GNU
+        // patch) rather than written through or silently replaced; there is no
+        // follow-symlinks policy to opt into that. A patch that itself creates a
+        // symlink is handled separately and manages its own link target.
+        const bool patch_creates_symlink = filesystem::is_symlink(patch.new_file_mode);
+        if (!patch_creates_symlink && filesystem::exists(file_to_patch) && !filesystem::is_regular_file(file_to_patch)) {
             if (should_parse_body)
                 parser.parse_patch_body(patch);
             out << "File " << file_to_patch << " is not a regular file --";

@@ -2615,6 +2615,9 @@ PATCH_TEST(regular_patch_refuses_to_follow_symlink)
         file << content;
     }
 
+    // 'a' is a symbolic link to a regular file. Skip where the environment cannot
+    // create symbolic links (for example Windows without the create-symlink
+    // privilege) rather than failing.
     try {
         Patch::filesystem::symlink("real", "a");
     } catch (const std::system_error&) {
@@ -2623,11 +2626,52 @@ PATCH_TEST(regular_patch_refuses_to_follow_symlink)
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
+    // A regular-file patch must refuse the symlink rather than write through or
+    // replace it. This matches GNU patch, which refuses it identically.
     EXPECT_EQ(process.return_code(), 1);
     EXPECT_EQ(process.stdout_data(),
         "File a is not a regular file -- refusing to patch\n"
         "1 out of 1 hunk ignored -- saving rejects to file a.rej\n");
 
+    // Neither the link nor the file it points at was modified.
     EXPECT_TRUE(Patch::filesystem::is_symlink("a"));
     EXPECT_FILE_EQ("real", content);
+}
+
+PATCH_TEST(git_symlink_replaces_existing_symlink)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/active b/active
+new file mode 120000
+index 0000000..2e65efe
+--- /dev/null
++++ b/active
+@@ -0,0 +1 @@
++a
+\ No newline at end of file
+)";
+        file.close();
+    }
+
+    const std::string content = "some file content that the symlink is pointing to!\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << content;
+    }
+
+    // A pre-existing symlink at the destination must be replaced atomically. Skip
+    // where the environment cannot create symbolic links.
+    try {
+        Patch::filesystem::symlink("stale-target", "active");
+    } catch (const std::system_error&) {
+        Patch::skip_test("cannot create symbolic links in this environment");
+    }
+    EXPECT_TRUE(Patch::filesystem::is_symlink("active"));
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_TRUE(Patch::filesystem::is_symlink("active"));
+    EXPECT_FILE_EQ("active", content);
 }

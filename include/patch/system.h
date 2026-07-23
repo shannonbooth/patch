@@ -49,6 +49,8 @@ bool is_regular_file(const std::string& path);
 
 bool is_symlink(const std::string& path);
 
+void remove(const std::string& path);
+
 void rename(const std::string& old_path, const std::string& new_path);
 
 enum class perms : unsigned {

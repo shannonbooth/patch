@@ -121,14 +121,7 @@ static bool remove_empty_directory(const std::string& path)
 
 void remove_file_and_empty_parent_folders(std::string path)
 {
-#ifdef _WIN32
-    int ret = _wremove(to_native(path).c_str());
-#else
-    int ret = std::remove(path.c_str());
-#endif
-
-    if (ret != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
+    filesystem::remove(path);
 
     while (true) {
 
@@ -397,6 +390,17 @@ bool is_symlink(const std::string& path)
 
     return S_ISLNK(buf.st_mode);
 #endif
+}
+
+void remove(const std::string& path)
+{
+#ifdef _WIN32
+    const int result = ::_wremove(to_native(path).c_str());
+#else
+    const int result = ::unlink(path.c_str());
+#endif
+    if (result != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
 }
 
 void rename(const std::string& old_path, const std::string& new_path)

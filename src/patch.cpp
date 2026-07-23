@@ -5,7 +5,6 @@
 #include <cassert>
 #include <climits>
 #include <cstring>
-#include <functional>
 #include <iostream>
 #include <limits>
 #include <patch/applier.h>
@@ -22,8 +21,95 @@
 #include <string>
 #include <system_error>
 #include <unordered_set>
+#include <utility>
 
 namespace Patch {
+namespace {
+
+// Owns a uniquely named temporary file staged beside its destination along with
+// the pathnames and cleanup responsibility. The staged file is removed on
+// destruction unless commit() has published it over the destination.
+class StagedReplacement {
+public:
+    // Stage source's contents into a fresh temporary beside destination. When the
+    // final permissions are known the temporary is created privately (0600) and
+    // tightened to those permissions at commit time; a genuinely new file whose
+    // mode is unknown keeps the umask-filtered default applied at creation.
+    static StagedReplacement stage_regular_file(const std::string& destination, File& source,
+        bool binary, filesystem::perms permissions)
+    {
+        const unsigned create_permissions = permissions == filesystem::perms::unknown ? 0666 : 0600;
+        StagedReplacement replacement(destination, permissions);
+        replacement.m_file = File::create_temporary_near(destination, replacement.m_temporary_path, binary, create_permissions);
+        source.write_entire_contents_to(replacement.m_file);
+        return replacement;
+    }
+
+    ~StagedReplacement()
+    {
+        cleanup();
+    }
+
+    StagedReplacement(const StagedReplacement&) = delete;
+    StagedReplacement& operator=(const StagedReplacement&) = delete;
+
+    StagedReplacement(StagedReplacement&& other) noexcept
+        : m_file(std::move(other.m_file))
+        , m_destination(std::move(other.m_destination))
+        , m_temporary_path(std::move(other.m_temporary_path))
+        , m_permissions(other.m_permissions)
+    {
+        other.m_temporary_path.clear();
+    }
+
+    StagedReplacement& operator=(StagedReplacement&& other) noexcept
+    {
+        if (this != &other) {
+            cleanup();
+            m_file = std::move(other.m_file);
+            m_destination = std::move(other.m_destination);
+            m_temporary_path = std::move(other.m_temporary_path);
+            m_permissions = other.m_permissions;
+            other.m_temporary_path.clear();
+        }
+        return *this;
+    }
+
+    void commit()
+    {
+        // Apply the final permissions to the open descriptor, close it with error
+        // checking, then rename it over the destination. Retain ownership of the
+        // staged file until the rename succeeds so a failure still cleans up.
+        m_file.set_permissions(m_permissions);
+        m_file.close();
+        filesystem::rename(m_temporary_path, m_destination);
+        m_temporary_path.clear();
+    }
+
+private:
+    StagedReplacement(std::string destination, filesystem::perms permissions)
+        : m_destination(std::move(destination))
+        , m_permissions(permissions)
+    {
+    }
+
+    void cleanup() noexcept
+    {
+        if (m_temporary_path.empty())
+            return;
+
+        std::error_code ignored;
+        filesystem::remove(m_temporary_path, ignored);
+        m_temporary_path.clear();
+    }
+
+    File m_file;
+    std::string m_destination;
+    std::string m_temporary_path;
+    filesystem::perms m_permissions { filesystem::perms::unknown };
+};
+
+} // namespace
 
 static std::vector<Line> file_as_lines(File& input_file)
 {
@@ -327,12 +413,23 @@ public:
         // Per POSIX:
         // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
         if (m_backed_up_files.emplace(backup_file).second) {
-            // If the output file being backed up exists, rename name that as the backup.
-            // For a missing output file just create an empty backup file instead.
-            if (filesystem::exists(file_path))
-                filesystem::rename(file_path, backup_file);
-            else
-                File::touch(backup_file);
+            // Attempt to open the original directly rather than probing with a
+            // separate exists() check. A missing original is expected and just
+            // means the backup source is empty; any other error is fatal.
+            File contents;
+            auto permissions = filesystem::perms::unknown;
+            if (contents.open(file_path, std::ios_base::in | std::ios_base::binary)) {
+                permissions = contents.get_permissions();
+            } else {
+                const auto saved_errno = errno;
+                if (saved_errno != ENOENT)
+                    throw std::system_error(saved_errno, std::generic_category(), "Unable to open input file " + file_path);
+                contents = File::create_temporary();
+            }
+
+            auto replacement = StagedReplacement::stage_regular_file(backup_file, contents,
+                true, permissions);
+            replacement.commit();
         }
     }
 
@@ -344,88 +441,69 @@ private:
 
 class DeferredWriter {
 public:
-    void deferred_write(File&& file, const std::string& destination_path, std::ios_base::openmode mode,
-        std::function<void(const std::string&)> permission_callback)
+    void deferred_write(StagedReplacement&& replacement)
     {
-        m_deferred_writes.push_back(FileWrite { std::move(file), destination_path, mode, std::move(permission_callback) });
+        m_deferred_writes.emplace_back(std::move(replacement));
     }
 
     void finalize()
     {
-        for (auto& deferred_write : m_deferred_writes) {
-            File file(deferred_write.destination_path, deferred_write.mode | std::ios::trunc);
-            deferred_write.source.write_entire_contents_to(file);
-            deferred_write.permission_callback(deferred_write.destination_path);
-        }
+        for (auto& deferred_write : m_deferred_writes)
+            deferred_write.commit();
     }
 
 private:
-    struct FileWrite {
-        File source;
-        std::string destination_path;
-        std::ios_base::openmode mode;
-        std::function<void(const std::string&)> permission_callback;
-    };
-
-    std::vector<FileWrite> m_deferred_writes;
+    std::vector<StagedReplacement> m_deferred_writes;
 };
 
 struct PermissionResult {
-    filesystem::perms old_permissions { filesystem::perms::none };
-    bool needed_to_fix_permissions { false };
+    filesystem::perms old_permissions { filesystem::perms::unknown };
     bool had_failure { false };
 };
 
-static PermissionResult fix_permissions_if_needed(std::ostream& out, const Options& options, const std::string& output_file)
+static PermissionResult check_read_only_handling(std::ostream& out, const Options& options, const std::string& output_file)
 {
     PermissionResult result;
     result.old_permissions = filesystem::get_permissions(output_file);
     const auto write_perm_mask = filesystem::perms::group_write | filesystem::perms::owner_write | filesystem::perms::others_write;
-    result.needed_to_fix_permissions = (result.old_permissions & write_perm_mask) == filesystem::perms::none;
+    const bool is_read_only = result.old_permissions != filesystem::perms::unknown
+        && (result.old_permissions & write_perm_mask) == filesystem::perms::none;
 
-    if (result.needed_to_fix_permissions) {
-        if (options.read_only_handling != Options::ReadOnlyHandling::Ignore) {
-            out << "File " << output_file << " is read-only;";
-            if (options.read_only_handling == Options::ReadOnlyHandling::Fail) {
-                result.had_failure = true;
-                return result;
-            }
-
-            out << " trying to patch anyway\n";
+    // The replacement is staged and renamed into place rather than opened for
+    // writing, so a read-only destination no longer needs its permissions widened
+    // and restored. Only the read-only policy warning/failure remains.
+    if (is_read_only && options.read_only_handling != Options::ReadOnlyHandling::Ignore) {
+        out << "File " << output_file << " is read-only;";
+        if (options.read_only_handling == Options::ReadOnlyHandling::Fail) {
+            result.had_failure = true;
+            return result;
         }
 
-        if (!options.dry_run)
-            filesystem::permissions(output_file, result.old_permissions | write_perm_mask);
+        out << " trying to patch anyway\n";
     }
 
     return result;
 }
 
 void write_patched_result_to_file(const Patch& patch, const std::string& output_file_path, const PermissionResult& permission_result,
-    std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file)
+    std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file, Backup& backup, bool make_backup)
 {
     // Ensure that parent directories exist if we are adding a file.
     if (patch.operation == Operation::Add)
         ensure_parent_directories(output_file_path);
 
-    const auto new_mode_copy = patch.new_file_mode;
+    auto output_permissions = permission_result.old_permissions;
+    if (patch.new_file_mode != 0)
+        output_permissions = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
 
-    auto permission_callback = [permission_result, new_mode_copy](const std::string& path) {
-        if (new_mode_copy != 0) {
-            auto perms = static_cast<filesystem::perms>(new_mode_copy) & filesystem::perms::mask;
-            filesystem::permissions(path, perms);
-        } else if (permission_result.needed_to_fix_permissions) {
-            // Restore permissions to before they were changed.
-            filesystem::permissions(path, permission_result.old_permissions);
-        }
-    };
+    const bool binary = (mode & std::ios_base::binary) != 0;
 
-    // A git commit may consist of many different patches changing multiple files.
-    // This is special in that the entire collection of changes to every file is
-    // intended to be one atomic change. This is problematic as patch otherwise
-    // patches individual patches one after another. To solve this problem and
-    // implement atomic changes for a git style collection of patches, we defer
-    // writing to any output file until all patches have finished applying.
+    // A git commit may consist of many patches changing multiple files. Defer
+    // publishing each regular-file replacement until every patch has parsed and
+    // applied, so a later parse failure leaves the already-staged files unpublished
+    // and their destinations untouched. Each replacement is atomic on its own, but
+    // the collection is not a transaction: rolling back replacements already
+    // renamed into place when a later one fails needs a separate transaction layer.
     //
     // Removals are applied immediately as only a single removal of a file should
     // be present in any git commit - and deferring the write causes issues when
@@ -434,14 +512,20 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
         if (filesystem::is_symlink(patch.new_file_mode)) {
             // A symlink patch should contain the filename in the contents of the patched file.
             const auto symlink_target = patched_file.read_all_as_string();
+            if (make_backup)
+                backup.make_backup_for(output_file_path);
             filesystem::symlink(symlink_target, output_file_path);
         } else {
-            deferred_writer.deferred_write(std::move(patched_file), output_file_path, mode, std::move(permission_callback));
+            auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_permissions);
+            if (make_backup)
+                backup.make_backup_for(output_file_path);
+            deferred_writer.deferred_write(std::move(replacement));
         }
     } else {
-        File file(output_file_path, mode | std::ios::trunc);
-        patched_file.write_entire_contents_to(file);
-        permission_callback(output_file_path);
+        auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_permissions);
+        if (make_backup)
+            backup.make_backup_for(output_file_path);
+        replacement.commit();
     }
 }
 
@@ -547,7 +631,7 @@ int process_patch(const Options& options)
             continue;
         }
 
-        auto permission_result = fix_permissions_if_needed(out, options, output_file);
+        auto permission_result = check_read_only_handling(out, options, output_file);
         if (permission_result.had_failure) {
             if (should_parse_body)
                 parser.parse_patch_body(patch);
@@ -556,8 +640,14 @@ int process_patch(const Options& options)
             continue;
         }
 
+        // Open the original read-only. The patched result is staged separately and
+        // renamed into place, so a read-only destination no longer has to be opened
+        // for writing (which would fail without first widening its permissions).
         File input_file;
-        input_file.open(file_to_patch, mode | std::ios_base::in);
+        auto input_mode = std::ios_base::in;
+        if (options.newline_output != Options::NewlineOutput::Native)
+            input_mode |= std::ios_base::binary;
+        input_file.open(file_to_patch, input_mode);
         if (!input_file && (errno != ENOENT || patch.operation != Operation::Add))
             throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
 
@@ -629,9 +719,9 @@ int process_patch(const Options& options)
             }
 
             if (write_to_file) {
-                if (options.save_backup || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes))
-                    backup.make_backup_for(output_file);
-                write_patched_result_to_file(patch, output_file, permission_result, mode, deferred_writer, tmp_out_file);
+                const bool make_backup = options.save_backup
+                    || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes);
+                write_patched_result_to_file(patch, output_file, permission_result, mode, deferred_writer, tmp_out_file, backup, make_backup);
             }
 
             if (result.failed_hunks == 0) {

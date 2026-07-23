@@ -46,7 +46,7 @@ static std::mt19937 random_generator()
     return std::mt19937(seed_seq);
 }
 
-static std::string generate_random_alphanumeric_string(std::size_t len)
+std::string generate_random_alphanumeric_string(std::size_t len)
 {
     static const char* chars = "0123456789"
                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -202,7 +202,7 @@ std::string current_path()
 #endif
 }
 
-static FILE* create_file_exclusively(const std::string& path, bool binary, unsigned permissions, bool delete_on_close)
+static FILE* open_exclusive_file(const std::string& path, bool binary, unsigned permissions, bool delete_on_close)
 {
 #ifdef _WIN32
     const int flags = _O_CREAT | _O_EXCL | _O_RDWR | _O_NOINHERIT
@@ -248,7 +248,7 @@ FILE* create_temporary_file()
     for (int i = 0; i < max_attempts; i++) {
         std::string tmpname = filesystem::temp_directory_path() + "/patch-" + generate_random_alphanumeric_string(6);
         try {
-            return create_file_exclusively(tmpname, true, 0600, true);
+            return open_exclusive_file(tmpname, true, 0600, true);
         } catch (const std::system_error& error) {
             if (error.code() == std::errc::file_exists)
                 continue;
@@ -258,6 +258,11 @@ FILE* create_temporary_file()
 
     // Ran out of attempts creating the file :(
     throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file");
+}
+
+FILE* create_file_exclusively(const std::string& path, bool binary, unsigned permissions)
+{
+    return open_exclusive_file(path, binary, permissions, false);
 }
 
 namespace filesystem {
@@ -560,6 +565,60 @@ perms get_permissions(const std::string& path)
 
     struct stat buf;
     if (::stat(path.c_str(), &buf) != 0)
+        return perms::unknown;
+
+    return static_cast<perms>(buf.st_mode) & perms::mask;
+#endif
+}
+
+void permissions(FILE* file, perms permissions)
+{
+    if (permissions == perms::unknown)
+        return;
+
+#ifdef _WIN32
+    // Windows has no fchmod(); toggle the read-only attribute on the open handle.
+    const HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+    if (handle == INVALID_HANDLE_VALUE)
+        throw std::system_error(errno, std::generic_category(), "Unable to change permissions");
+
+    FILE_BASIC_INFO info;
+    if (GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info)) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to change permissions");
+
+    const auto write_perms = perms::owner_write | perms::group_write | perms::others_write;
+    if ((permissions & write_perms) == perms::none)
+        info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
+    else
+        info.FileAttributes &= ~static_cast<DWORD>(FILE_ATTRIBUTE_READONLY);
+
+    if (SetFileInformationByHandle(handle, FileBasicInfo, &info, sizeof(info)) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to change permissions");
+#else
+    if (::fchmod(fileno(file), static_cast<mode_t>(permissions)) != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to change permissions");
+#endif
+}
+
+perms get_permissions(FILE* file)
+{
+#ifdef _WIN32
+    const HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+    if (handle == INVALID_HANDLE_VALUE)
+        return perms::unknown;
+
+    FILE_BASIC_INFO info;
+    if (GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info)) == 0)
+        return perms::unknown;
+
+    perms permissions = perms::owner_read | perms::group_read | perms::others_read;
+    if (!(info.FileAttributes & FILE_ATTRIBUTE_READONLY))
+        permissions |= perms::owner_write | perms::group_write | perms::others_write;
+
+    return permissions;
+#else
+    struct stat buf;
+    if (::fstat(fileno(file), &buf) != 0)
         return perms::unknown;
 
     return static_cast<perms>(buf.st_mode) & perms::mask;

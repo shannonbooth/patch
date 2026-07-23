@@ -13,6 +13,13 @@ namespace Patch {
 
 FILE* create_temporary_file();
 
+std::string generate_random_alphanumeric_string(std::size_t len);
+
+// Exclusively create (O_CREAT | O_EXCL) a named file at path with the given
+// creation permissions, returning an open read/write stream positioned at the
+// start. Throws std::system_error with errc::file_exists if path already exists.
+FILE* create_file_exclusively(const std::string& path, bool binary, unsigned permissions);
+
 std::string read_tty_until_enter();
 
 void chdir(const std::string& path);
@@ -119,6 +126,12 @@ inline perms& operator^=(perms& left, perms right)
 void permissions(const std::string& path, perms permissions);
 
 perms get_permissions(const std::string& path);
+
+// Descriptor-based variants that operate on an open stream, avoiding a second
+// pathname lookup and the associated time-of-check/time-of-use race.
+void permissions(FILE* file, perms permissions);
+
+perms get_permissions(FILE* file);
 
 uintmax_t file_size(FILE* file);
 

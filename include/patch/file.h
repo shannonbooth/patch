@@ -6,6 +6,7 @@
 #include <cinttypes>
 #include <cstdio>
 #include <ios>
+#include <patch/system.h>
 #include <system_error>
 
 namespace Patch {
@@ -63,9 +64,25 @@ public:
 
     static File create_temporary_with_content(const std::string& initial_content);
 
+    // Exclusively create a uniquely named temporary file in the same directory as
+    // destination (so it can later be renamed over it without crossing a
+    // filesystem boundary), created with the given permissions. The chosen path is
+    // returned through temporary_path.
+    static File create_temporary_near(const std::string& destination, std::string& temporary_path, bool binary, unsigned permissions);
+
     static void touch(const std::string& name)
     {
         File file(name, std::ios_base::out);
+    }
+
+    void set_permissions(filesystem::perms permissions)
+    {
+        filesystem::permissions(m_file, permissions);
+    }
+
+    filesystem::perms get_permissions()
+    {
+        return filesystem::get_permissions(m_file);
     }
 
     void write_entire_contents_to(FILE* file);

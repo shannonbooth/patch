@@ -129,6 +129,26 @@ File File::create_temporary_with_content(const std::string& initial_content)
     return file;
 }
 
+File File::create_temporary_near(const std::string& destination, std::string& temporary_path, bool binary, unsigned permissions)
+{
+    constexpr int max_attempts = 256;
+
+    for (int i = 0; i < max_attempts; ++i) {
+        auto path = destination + ".patch-" + generate_random_alphanumeric_string(6);
+        try {
+            File file(create_file_exclusively(path, binary, permissions));
+            temporary_path = std::move(path);
+            return file;
+        } catch (const std::system_error& error) {
+            if (error.code() == std::errc::file_exists)
+                continue;
+            throw;
+        }
+    }
+
+    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file near " + destination);
+}
+
 void File::close()
 {
     if (!m_file)

@@ -36,10 +36,10 @@ public:
     // tightened to those permissions at commit time; a genuinely new file whose
     // mode is unknown keeps the umask-filtered default applied at creation.
     static StagedReplacement stage_regular_file(const std::string& destination, File& source,
-        bool binary, filesystem::perms permissions)
+        bool binary, const filesystem::file_metadata& metadata)
     {
-        const unsigned create_permissions = permissions == filesystem::perms::unknown ? 0666 : 0600;
-        StagedReplacement replacement(destination, permissions);
+        const unsigned create_permissions = metadata.permissions == filesystem::perms::unknown ? 0666 : 0600;
+        StagedReplacement replacement(destination, metadata);
         replacement.m_file = File::create_temporary_near(destination, replacement.m_temporary_path, binary, create_permissions);
         source.write_entire_contents_to(replacement.m_file);
         return replacement;
@@ -57,7 +57,7 @@ public:
         : m_file(std::move(other.m_file))
         , m_destination(std::move(other.m_destination))
         , m_temporary_path(std::move(other.m_temporary_path))
-        , m_permissions(other.m_permissions)
+        , m_metadata(other.m_metadata)
     {
         other.m_temporary_path.clear();
     }
@@ -69,7 +69,7 @@ public:
             m_file = std::move(other.m_file);
             m_destination = std::move(other.m_destination);
             m_temporary_path = std::move(other.m_temporary_path);
-            m_permissions = other.m_permissions;
+            m_metadata = other.m_metadata;
             other.m_temporary_path.clear();
         }
         return *this;
@@ -77,19 +77,22 @@ public:
 
     void commit()
     {
-        // Apply the final permissions to the open descriptor, close it with error
-        // checking, then rename it over the destination. Retain ownership of the
-        // staged file until the rename succeeds so a failure still cleans up.
-        m_file.set_permissions(m_permissions);
+        // Copy the original's metadata onto the staged file, close it with error
+        // checking, then rename it over the destination. Ownership is applied
+        // before permissions because chown may clear the setuid/setgid bits.
+        // Retain ownership of the staged file until the rename succeeds so a
+        // failure still cleans up.
+        m_file.set_ownership(m_metadata);
+        m_file.set_permissions(m_metadata.permissions);
         m_file.close();
         filesystem::rename(m_temporary_path, m_destination);
         m_temporary_path.clear();
     }
 
 private:
-    StagedReplacement(std::string destination, filesystem::perms permissions)
+    StagedReplacement(std::string destination, filesystem::file_metadata metadata)
         : m_destination(std::move(destination))
-        , m_permissions(permissions)
+        , m_metadata(metadata)
     {
     }
 
@@ -106,7 +109,7 @@ private:
     File m_file;
     std::string m_destination;
     std::string m_temporary_path;
-    filesystem::perms m_permissions { filesystem::perms::unknown };
+    filesystem::file_metadata m_metadata;
 };
 
 } // namespace
@@ -417,9 +420,9 @@ public:
             // separate exists() check. A missing original is expected and just
             // means the backup source is empty; any other error is fatal.
             File contents;
-            auto permissions = filesystem::perms::unknown;
+            filesystem::file_metadata metadata;
             if (contents.open(file_path, std::ios_base::in | std::ios_base::binary)) {
-                permissions = contents.get_permissions();
+                metadata = contents.get_metadata();
             } else {
                 const auto saved_errno = errno;
                 if (saved_errno != ENOENT)
@@ -428,7 +431,7 @@ public:
             }
 
             auto replacement = StagedReplacement::stage_regular_file(backup_file, contents,
-                true, permissions);
+                true, metadata);
             replacement.commit();
         }
     }
@@ -485,16 +488,20 @@ static PermissionResult check_read_only_handling(std::ostream& out, const Option
     return result;
 }
 
-void write_patched_result_to_file(const Patch& patch, const std::string& output_file_path, const PermissionResult& permission_result,
+void write_patched_result_to_file(const Patch& patch, const std::string& output_file_path, const filesystem::file_metadata& input_metadata,
     std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file, Backup& backup, bool make_backup)
 {
     // Ensure that parent directories exist if we are adding a file.
     if (patch.operation == Operation::Add)
         ensure_parent_directories(output_file_path);
 
-    auto output_permissions = permission_result.old_permissions;
+    // The atomic rename creates a new inode, so carry the original's mode and
+    // ownership onto the staged replacement rather than leaving it owned by the
+    // caller with default permissions. An explicit git file mode wins over the
+    // preserved mode.
+    auto output_metadata = input_metadata;
     if (patch.new_file_mode != 0)
-        output_permissions = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
+        output_metadata.permissions = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
 
     const bool binary = (mode & std::ios_base::binary) != 0;
 
@@ -516,13 +523,13 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
                 backup.make_backup_for(output_file_path);
             filesystem::symlink(symlink_target, output_file_path);
         } else {
-            auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_permissions);
+            auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_metadata);
             if (make_backup)
                 backup.make_backup_for(output_file_path);
             deferred_writer.deferred_write(std::move(replacement));
         }
     } else {
-        auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_permissions);
+        auto replacement = StagedReplacement::stage_regular_file(output_file_path, patched_file, binary, output_metadata);
         if (make_backup)
             backup.make_backup_for(output_file_path);
         replacement.commit();
@@ -653,6 +660,12 @@ int process_patch(const Options& options)
 
         const auto input_lines = file_as_lines(input_file);
 
+        // Capture the original's metadata from the open descriptor so it can be
+        // reapplied to the staged replacement after the atomic rename.
+        filesystem::file_metadata input_metadata;
+        if (input_file)
+            input_metadata = input_file.get_metadata();
+
         input_file.close();
 
         if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))
@@ -721,7 +734,7 @@ int process_patch(const Options& options)
             if (write_to_file) {
                 const bool make_backup = options.save_backup
                     || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes);
-                write_patched_result_to_file(patch, output_file, permission_result, mode, deferred_writer, tmp_out_file, backup, make_backup);
+                write_patched_result_to_file(patch, output_file, input_metadata, mode, deferred_writer, tmp_out_file, backup, make_backup);
             }
 
             if (result.failed_hunks == 0) {

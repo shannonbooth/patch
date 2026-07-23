@@ -85,6 +85,19 @@ public:
         return filesystem::get_permissions(m_file);
     }
 
+    filesystem::file_metadata get_metadata()
+    {
+        return filesystem::get_metadata(m_file);
+    }
+
+    // Best-effort ownership preservation; failures (typically lack of privilege)
+    // are ignored so a normal user can still patch their own files.
+    void set_ownership(const filesystem::file_metadata& metadata)
+    {
+        std::error_code ignored;
+        filesystem::set_ownership(m_file, metadata, ignored);
+    }
+
     void write_entire_contents_to(FILE* file);
 
     void write_entire_contents_to(File& file)

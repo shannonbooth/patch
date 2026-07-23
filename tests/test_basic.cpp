@@ -2390,6 +2390,36 @@ dnew b
     EXPECT_EQ(Patch::filesystem::get_permissions("b"), original_b_permissions);
 }
 
+PATCH_TEST(preserve_mode_when_replacing_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "old\n";
+    }
+
+    // Give the original a distinctive, non-default mode. The atomic rename creates
+    // a new inode, so the replacement must carry this mode across.
+    Patch::filesystem::permissions("a",
+        Patch::filesystem::perms::owner_read | Patch::filesystem::perms::owner_write | Patch::filesystem::perms::group_read);
+    const auto original_permissions = Patch::filesystem::get_permissions("a");
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "new\n");
+    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
+}
+
 PATCH_TEST(git_swap_files)
 {
     {

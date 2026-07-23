@@ -625,6 +625,39 @@ perms get_permissions(FILE* file)
 #endif
 }
 
+file_metadata get_metadata(FILE* file)
+{
+    file_metadata metadata;
+#ifdef _WIN32
+    metadata.permissions = get_permissions(file);
+#else
+    struct stat buf;
+    if (::fstat(fileno(file), &buf) != 0)
+        return metadata;
+
+    metadata.permissions = static_cast<perms>(buf.st_mode) & perms::mask;
+    metadata.owner = static_cast<uint32_t>(buf.st_uid);
+    metadata.group = static_cast<uint32_t>(buf.st_gid);
+    metadata.has_ownership = true;
+#endif
+    return metadata;
+}
+
+void set_ownership(FILE* file, const file_metadata& metadata, std::error_code& ec) noexcept
+{
+    ec.clear();
+#ifdef _WIN32
+    (void)file;
+    (void)metadata;
+#else
+    if (!metadata.has_ownership)
+        return;
+
+    if (::fchown(fileno(file), static_cast<uid_t>(metadata.owner), static_cast<gid_t>(metadata.group)) != 0)
+        ec = std::error_code(errno, std::generic_category());
+#endif
+}
+
 uintmax_t file_size(FILE* file)
 {
     struct stat buf;

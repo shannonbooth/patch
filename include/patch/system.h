@@ -133,6 +133,23 @@ void permissions(FILE* file, perms permissions);
 
 perms get_permissions(FILE* file);
 
+struct file_metadata {
+    perms permissions { perms::unknown };
+    uint32_t owner { 0 };
+    uint32_t group { 0 };
+    // Ownership is only meaningful where the platform reports it (POSIX); it is
+    // false on Windows and when the stat failed.
+    bool has_ownership { false };
+};
+
+// Read mode and ownership from an open stream with a single fstat().
+file_metadata get_metadata(FILE* file);
+
+// Best-effort ownership preservation. Restoring owner/group generally requires
+// privilege, so failures (typically EPERM) are reported through ec for the
+// caller to ignore rather than thrown.
+void set_ownership(FILE* file, const file_metadata& metadata, std::error_code& ec) noexcept;
+
 uintmax_t file_size(FILE* file);
 
 } // namespace filesystem

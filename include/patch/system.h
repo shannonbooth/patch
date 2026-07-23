@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace Patch {
@@ -50,6 +51,10 @@ bool is_regular_file(const std::string& path);
 bool is_symlink(const std::string& path);
 
 void remove(const std::string& path);
+
+// Best-effort removal that reports through an error code instead of throwing,
+// for use on cleanup paths that must not mask a primary error.
+void remove(const std::string& path, std::error_code& ec) noexcept;
 
 void rename(const std::string& old_path, const std::string& new_path);
 

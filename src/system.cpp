@@ -202,34 +202,62 @@ std::string current_path()
 #endif
 }
 
+static FILE* create_file_exclusively(const std::string& path, bool binary, unsigned permissions, bool delete_on_close)
+{
+#ifdef _WIN32
+    const int flags = _O_CREAT | _O_EXCL | _O_RDWR | _O_NOINHERIT
+        | (binary ? _O_BINARY : _O_TEXT)
+        | (delete_on_close ? _O_TEMPORARY : 0);
+    const int native_permissions = ((permissions & 0400) != 0 ? _S_IREAD : 0)
+        | ((permissions & 0200) != 0 ? _S_IWRITE : 0);
+    const int fd = ::_wopen(to_native(path).c_str(), flags, native_permissions);
+#else
+    (void)binary;
+    const int fd = ::open(path.c_str(), O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, static_cast<mode_t>(permissions));
+#endif
+    if (fd < 0)
+        throw std::system_error(errno, std::generic_category(), "Failed exclusively creating file " + path);
+
+#ifndef _WIN32
+    if (delete_on_close && ::unlink(path.c_str()) != 0) {
+        const auto saved_errno = errno;
+        ::close(fd);
+        throw std::system_error(saved_errno, std::generic_category(), "Failed unlinking temporary file " + path);
+    }
+#endif
+
+    FILE* file = ::fdopen(fd, binary ? "wb+" : "w+");
+    if (!file) {
+        const auto saved_errno = errno;
+        ::close(fd);
+        if (!delete_on_close) {
+            // Best-effort: a cleanup failure must not mask the fdopen error below.
+            std::error_code ignored;
+            filesystem::remove(path, ignored);
+        }
+        throw std::system_error(saved_errno, std::generic_category(), "Failed opening exclusively created file " + path);
+    }
+
+    return file;
+}
+
 FILE* create_temporary_file()
 {
     constexpr int max_attempts = 256; // something very wrong if this fails.
 
     for (int i = 0; i < max_attempts; i++) {
         std::string tmpname = filesystem::temp_directory_path() + "/patch-" + generate_random_alphanumeric_string(6);
-#ifdef _WIN32
-        int fd = ::_open(tmpname.c_str(), _O_BINARY | _O_CREAT | _O_EXCL | _O_RDWR | _O_TEMPORARY, _S_IREAD | _S_IWRITE);
-#else
-        int fd = ::open(tmpname.c_str(), O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
-#endif
-        if (fd == -1)
-            continue;
-
-#ifndef _WIN32
-        if (::unlink(tmpname.c_str()) != 0)
-            throw std::system_error(errno, std::generic_category(), "Failed unlinking temporary file " + tmpname);
-#endif
-
-        FILE* fp = ::fdopen(fd, "wb+");
-        if (!fp)
-            throw std::system_error(errno, std::generic_category(), "Failed running fdopen to create temporary file");
-
-        return fp;
+        try {
+            return create_file_exclusively(tmpname, true, 0600, true);
+        } catch (const std::system_error& error) {
+            if (error.code() == std::errc::file_exists)
+                continue;
+            throw;
+        }
     }
 
     // Ran out of attempts creating the file :(
-    throw std::system_error(errno, std::generic_category(), "Failed creating temporary file");
+    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file");
 }
 
 namespace filesystem {
@@ -449,13 +477,23 @@ bool is_symlink(const std::string& path)
 
 void remove(const std::string& path)
 {
+    std::error_code ec;
+    remove(path, ec);
+    if (ec)
+        throw std::system_error(ec, "Unable to remove file " + path);
+}
+
+void remove(const std::string& path, std::error_code& ec) noexcept
+{
 #ifdef _WIN32
     const int result = ::_wremove(to_native(path).c_str());
 #else
     const int result = ::unlink(path.c_str());
 #endif
     if (result != 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to remove file " + path);
+        ec = std::error_code(errno, std::generic_category());
+    else
+        ec.clear();
 }
 
 void rename(const std::string& old_path, const std::string& new_path)

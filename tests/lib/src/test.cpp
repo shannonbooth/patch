@@ -15,6 +15,17 @@
 
 namespace Patch {
 
+enum class Outcome {
+    Passed,
+    Failed,
+    Skipped,
+};
+
+void skip_test(const std::string& reason)
+{
+    throw test_skipped(reason);
+}
+
 void unset_env(const char* name)
 {
 #ifdef _WIN32
@@ -57,7 +68,7 @@ public:
 
     const std::string& name() const { return m_name; }
 
-    bool run(const char* patch_path, bool is_compat = false);
+    Outcome run(const char* patch_path, bool is_compat = false);
 
     enum class ExpectedResult {
         Pass,
@@ -97,15 +108,16 @@ void Test::tear_down()
     unset_env("QUOTING_STYLE");
 }
 
-bool Test::run(const char* patch_path, bool is_compat)
+Outcome Test::run(const char* patch_path, bool is_compat)
 {
     const auto expected = expected_result(is_compat);
     if (expected == ExpectedResult::Disabled) {
         std::cout << "[ DISABLED ] " << m_name << '\n';
-        return true;
+        return Outcome::Passed;
     }
 
-    bool success = true;
+    Outcome outcome = Outcome::Passed;
+    std::string skip_reason;
 
     setup();
 
@@ -116,35 +128,38 @@ bool Test::run(const char* patch_path, bool is_compat)
     try {
         test(patch_path);
         if (expected == ExpectedResult::ExpectedFail)
-            success = false;
+            outcome = Outcome::Failed;
+    } catch (const test_skipped& e) {
+        outcome = Outcome::Skipped;
+        skip_reason = e.what();
     } catch (const std::exception& e) {
         if (expected != ExpectedResult::ExpectedFail) {
             std::cerr << e.what() << '\n';
             std::cerr << m_name << " FAILED!\n";
-            success = false;
-        } else {
-            success = true;
+            outcome = Outcome::Failed;
         }
     }
 
     const auto test_finish = std::chrono::high_resolution_clock::now();
     const auto test_time = std::chrono::duration_cast<std::chrono::milliseconds>(test_finish - test_start);
 
-    if (success) {
-        if (expected == ExpectedResult::Pass) {
-            std::cout << "[       OK ] " << m_name;
-        } else {
-            std::cout << "[    XFAIL ] " << m_name;
-        }
-    } else {
+    switch (outcome) {
+    case Outcome::Passed:
+        std::cout << (expected == ExpectedResult::Pass ? "[       OK ] " : "[    XFAIL ] ") << m_name;
+        break;
+    case Outcome::Skipped:
+        std::cout << "[ SKIPPED  ] " << m_name << " (" << skip_reason << ')';
+        break;
+    case Outcome::Failed:
         std::cout << "[  FAILED  ] " << m_name;
+        break;
     }
 
     std::cout << " (" << test_time.count() << " ms)\n";
 
     tear_down();
 
-    return success;
+    return outcome;
 }
 
 Test::ExpectedResult Test::expected_result(bool is_compat) const
@@ -172,7 +187,7 @@ public:
 
     bool run_all_tests(const char* patch_path);
 
-    bool run_test(const char* patch_path, const char* test_name);
+    Outcome run_test(const char* patch_path, const char* test_name);
 
     const std::vector<Test>& tests() const { return m_tests; }
 
@@ -185,7 +200,7 @@ void TestRunner::register_test(std::string name, std::function<void(const char*)
     m_tests.emplace_back(std::move(name), std::move(test_function));
 }
 
-bool TestRunner::run_test(const char* patch_path, const char* test_name)
+Outcome TestRunner::run_test(const char* patch_path, const char* test_name)
 {
     // Determine if this is a compatability test if it begins with 'compat.'
     // When looking for the test to run, strip this prefix when performing a name lookup.
@@ -200,7 +215,7 @@ bool TestRunner::run_test(const char* patch_path, const char* test_name)
     }
 
     std::cerr << "Unable to find test " << test_name << '\n';
-    return false;
+    return Outcome::Failed;
 }
 
 bool TestRunner::run_all_tests(const char* patch_path)
@@ -208,15 +223,23 @@ bool TestRunner::run_all_tests(const char* patch_path)
     std::cout << "[==========] Running " << m_tests.size() << " tests.\n";
 
     size_t passed_tests = 0;
+    size_t skipped_tests = 0;
     std::vector<std::string> failed_test_names;
 
     const auto overall_start = std::chrono::high_resolution_clock::now();
 
     for (Test& test : m_tests) {
-        if (test.run(patch_path))
+        switch (test.run(patch_path)) {
+        case Outcome::Passed:
             ++passed_tests;
-        else
+            break;
+        case Outcome::Skipped:
+            ++skipped_tests;
+            break;
+        case Outcome::Failed:
             failed_test_names.emplace_back(test.name());
+            break;
+        }
     }
 
     const auto overall_finish = std::chrono::high_resolution_clock::now();
@@ -224,6 +247,9 @@ bool TestRunner::run_all_tests(const char* patch_path)
 
     std::cout << "\n[==========] " << m_tests.size() << " tests ran. (" << overall_time.count() << " ms total)\n"
               << "[  PASSED  ] " << passed_tests << " tests.\n";
+
+    if (skipped_tests != 0)
+        std::cout << "[ SKIPPED  ] " << skipped_tests << " tests.\n";
 
     if (!failed_test_names.empty()) {
         std::cout << "[  FAILED  ] " << failed_test_names.size() << " test";
@@ -275,7 +301,15 @@ int main(int argc, const char* const* argv)
 
     // Run specific test
     if (argc == 3) {
-        return r.run_test(argv[1], argv[2]) ? 0 : 1;
+        switch (r.run_test(argv[1], argv[2])) {
+        case Patch::Outcome::Passed:
+            return 0;
+        case Patch::Outcome::Skipped:
+            return 77;
+        case Patch::Outcome::Failed:
+            return 1;
+        }
+        return 1;
     }
 
     std::cerr << argc << " - Wrong number of arguments given\n";

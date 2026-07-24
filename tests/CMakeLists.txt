@@ -51,8 +51,11 @@ function(patch_add_tests target_name patch_target test_compat_gnu_patch)
     read_test_names_for_file(${file} tests)
     foreach(test ${tests})
       add_test(NAME ${test} COMMAND ${target_name} $<TARGET_FILE:${patch_target}> ${test})
+      # A test exits with a magic number 77 to report that it skipped itself.
+      set_tests_properties("${test}" PROPERTIES SKIP_RETURN_CODE 77)
       if(test_compat_gnu_patch AND GNU_PATCH)
         add_test(NAME compat.${test} COMMAND ${target_name} ${GNU_PATCH} "compat.${test}")
+        set_tests_properties("compat.${test}" PROPERTIES SKIP_RETURN_CODE 77)
       endif()
 
       if (${test} MATCHES "^DISABLED_" AND ${CMAKE_VERSION} VERSION_GREATER "3.9")

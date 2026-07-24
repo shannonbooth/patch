@@ -1176,7 +1176,7 @@ PATCH_TEST(applier_multi_line_addition_from_empty_file)
 )");
 }
 
-PATCH_TEST(PATCH_XFAIL_applier_add_file_but_file_already_exits_with_conflicts)
+PATCH_TEST(applier_add_file_but_file_already_exists_with_conflicts)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

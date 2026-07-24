@@ -610,6 +610,11 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
         const auto input_lines = file_as_lines(input_file);
         const auto input_permissions = input_file ? input_file.get_permissions() : filesystem::perms::unknown;
 
+        if (options.force && patch.operation == Operation::Add && input_file) {
+            out << "The next patch would create the file " << file_to_patch
+                << ",\nwhich already exists!  Applying it anyway.\n";
+        }
+
         input_file.close();
 
         if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))

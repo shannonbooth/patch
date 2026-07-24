@@ -416,7 +416,7 @@ bool is_regular_file(const std::string& path)
     return true;
 #else
     struct stat buf;
-    return ::stat(path.c_str(), &buf) == 0 && S_ISREG(buf.st_mode);
+    return ::lstat(path.c_str(), &buf) == 0 && S_ISREG(buf.st_mode);
 #endif
 }
 

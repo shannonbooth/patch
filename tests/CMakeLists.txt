@@ -116,3 +116,15 @@ add_executable(test_unit
 )
 target_link_libraries(test_unit PRIVATE patch_test)
 patch_add_tests(test_unit sb_patch OFF)
+
+add_test(NAME cmake.install_consumer
+  COMMAND ${CMAKE_COMMAND}
+    "-DTEST_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/install-consumer-$<CONFIG>"
+    "-DTEST_GENERATOR=${CMAKE_GENERATOR}"
+    "-DTEST_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+    "-DTEST_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}"
+    "-DTEST_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+    "-DTEST_CONFIG=$<CONFIG>"
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_install_consumer.cmake
+)

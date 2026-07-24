@@ -2434,3 +2434,38 @@ index 0000000..2e65efe
     EXPECT_EQ(process.stderr_data(), "patching symbolic link - (read from b)\n");
     EXPECT_EQ(process.return_code(), 0);
 }
+
+PATCH_TEST(regular_patch_refuses_to_follow_symlink)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    const std::string content = "old\n";
+    {
+        Patch::File file("real", std::ios_base::out);
+        file << content;
+    }
+
+    try {
+        Patch::filesystem::symlink("real", "a");
+    } catch (const std::system_error&) {
+        Patch::skip_test("cannot create symbolic links in this environment");
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_EQ(process.stdout_data(),
+        "File a is not a regular file -- refusing to patch\n"
+        "1 out of 1 hunk ignored -- saving rejects to file a.rej\n");
+
+    EXPECT_TRUE(Patch::filesystem::is_symlink("a"));
+    EXPECT_FILE_EQ("real", content);
+}

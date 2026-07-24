@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <system_error>
+#include <utility>
 
 #ifdef _WIN32
 #    include <direct.h>
@@ -202,34 +203,82 @@ std::string current_path()
 #endif
 }
 
-FILE* create_temporary_file()
+static FILE* open_exclusive_file(const std::string& path, bool binary, filesystem::perms permissions, bool delete_on_close)
 {
-    constexpr int max_attempts = 256; // something very wrong if this fails.
-
-    for (int i = 0; i < max_attempts; i++) {
-        std::string tmpname = filesystem::temp_directory_path() + "/patch-" + generate_random_alphanumeric_string(6);
 #ifdef _WIN32
-        int fd = ::_open(tmpname.c_str(), _O_BINARY | _O_CREAT | _O_EXCL | _O_RDWR | _O_TEMPORARY, _S_IREAD | _S_IWRITE);
+    (void)permissions;
+    const auto native_path = to_native(path);
+    const int flags = _O_CREAT | _O_EXCL | _O_RDWR | _O_NOINHERIT
+        | (binary ? _O_BINARY : _O_TEXT)
+        | (delete_on_close ? _O_TEMPORARY : 0);
+    const int fd = ::_wopen(native_path.c_str(), flags, _S_IREAD | _S_IWRITE);
 #else
-        int fd = ::open(tmpname.c_str(), O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
+    (void)binary;
+    const int fd = ::open(path.c_str(), O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, static_cast<mode_t>(permissions));
 #endif
-        if (fd == -1)
-            continue;
+    if (fd < 0)
+        throw std::system_error(errno, std::generic_category(), "Failed exclusively creating file " + path);
 
 #ifndef _WIN32
-        if (::unlink(tmpname.c_str()) != 0)
-            throw std::system_error(errno, std::generic_category(), "Failed unlinking temporary file " + tmpname);
+    if (delete_on_close && ::unlink(path.c_str()) != 0) {
+        const auto saved_errno = errno;
+        ::close(fd);
+        throw std::system_error(saved_errno, std::generic_category(), "Failed unlinking temporary file " + path);
+    }
 #endif
 
-        FILE* fp = ::fdopen(fd, "wb+");
-        if (!fp)
-            throw std::system_error(errno, std::generic_category(), "Failed running fdopen to create temporary file");
-
-        return fp;
+    FILE* stream = ::fdopen(fd, binary ? "wb+" : "w+");
+    if (!stream) {
+        const auto saved_errno = errno;
+        ::close(fd);
+        if (!delete_on_close) {
+#ifdef _WIN32
+            ::_wremove(native_path.c_str());
+#else
+            ::unlink(path.c_str());
+#endif
+        }
+        throw std::system_error(saved_errno, std::generic_category(), "Failed opening exclusively created file " + path);
     }
 
-    // Ran out of attempts creating the file :(
-    throw std::system_error(errno, std::generic_category(), "Failed creating temporary file");
+    return stream;
+}
+
+FILE* create_temporary_file()
+{
+    constexpr int max_attempts = 256;
+    const auto permissions = filesystem::perms::owner_read | filesystem::perms::owner_write;
+
+    for (int i = 0; i < max_attempts; ++i) {
+        auto path = filesystem::temp_directory_path() + "/patch-" + generate_random_alphanumeric_string(6);
+        try {
+            return open_exclusive_file(path, true, permissions, true);
+        } catch (const std::system_error& error) {
+            if (error.code() == std::errc::file_exists)
+                continue;
+            throw;
+        }
+    }
+
+    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file");
+}
+
+TemporaryFile create_temporary_file_near(const std::string& destination, bool binary, filesystem::perms permissions)
+{
+    constexpr int max_attempts = 256;
+
+    for (int i = 0; i < max_attempts; ++i) {
+        auto path = destination + ".patch-" + generate_random_alphanumeric_string(6);
+        try {
+            return { open_exclusive_file(path, binary, permissions, false), std::move(path) };
+        } catch (const std::system_error& error) {
+            if (error.code() == std::errc::file_exists)
+                continue;
+            throw;
+        }
+    }
+
+    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file near " + destination);
 }
 
 namespace filesystem {

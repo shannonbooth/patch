@@ -381,8 +381,21 @@ bool is_regular_file(const std::string& path)
 bool is_symlink(const std::string& path)
 {
 #ifdef _WIN32
-    // FIXME: support this
-    return false;
+    const auto native = to_native(path);
+    const DWORD attributes = GetFileAttributesW(native.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES)
+        return false;
+
+    if ((attributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+        return false;
+
+    WIN32_FIND_DATAW find_data;
+    const HANDLE handle = FindFirstFileW(native.c_str(), &find_data);
+    if (handle == INVALID_HANDLE_VALUE)
+        return false;
+
+    FindClose(handle);
+    return find_data.dwReserved0 == IO_REPARSE_TAG_SYMLINK;
 #else
     struct stat buf;
     if (::lstat(path.c_str(), &buf) != 0)

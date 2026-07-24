@@ -119,6 +119,13 @@ uintmax_t file_size(FILE* file);
 
 } // namespace filesystem
 
+struct TemporaryFile {
+    FILE* stream;
+    std::string path;
+};
+
+TemporaryFile create_temporary_file_near(const std::string& destination, bool binary, filesystem::perms permissions);
+
 #ifdef _WIN32
 
 std::wstring to_wide(const std::string& str);

@@ -286,11 +286,53 @@ std::string make_temp_directory()
 #endif
 }
 
+#ifdef _WIN32
+#    ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#        define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE 0x2
+#    endif
+
+static bool target_is_directory(const std::string& target, const std::string& linkpath)
+{
+    // A symlink target is relative to the directory containing the link, so resolve it against that directory.
+    std::string resolved = target;
+    const bool is_absolute = (target.size() >= 2 && target[1] == ':')
+        || (!target.empty() && (target[0] == '/' || target[0] == '\\'));
+    if (!is_absolute) {
+        const auto slash = linkpath.find_last_of("/\\");
+        if (slash != std::string::npos)
+            resolved = linkpath.substr(0, slash + 1) + target;
+    }
+
+    const DWORD attributes = GetFileAttributesW(to_native(resolved).c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+#endif
+
 void symlink(const std::string& target, const std::string& linkpath)
 {
 #ifdef _WIN32
-    // FIXME: How do we implement this properly on Windows??
-    throw std::system_error(ENOSYS, std::generic_category(), "Can't create symbolic link " + target + " ");
+    const auto native_target = to_native(target);
+    const auto native_linkpath = to_native(linkpath);
+
+    DWORD flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    if (target_is_directory(target, linkpath))
+        flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+
+    if (CreateSymbolicLinkW(native_linkpath.c_str(), native_target.c_str(), flags) != 0)
+        return;
+
+    auto error = GetLastError();
+
+    // Windows without Developer Mode rejects the unprivileged-create flag with ERROR_INVALID_PARAMETER.
+    // If returned, retry without it (creation then needs privilege).
+    if (error == ERROR_INVALID_PARAMETER) {
+        flags &= ~static_cast<DWORD>(SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE);
+        if (CreateSymbolicLinkW(native_linkpath.c_str(), native_target.c_str(), flags) != 0)
+            return;
+        error = GetLastError();
+    }
+
+    throw std::system_error(error, std::system_category(), "Can't create symbolic link " + target + " ");
 #else
     int ret = ::symlink(target.c_str(), linkpath.c_str());
     if (ret != 0)

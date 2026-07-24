@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
 #include <patch/process.h>
@@ -2256,6 +2256,137 @@ PATCH_TEST(read_only_file_fail)
 
     const auto new_mode = Patch::filesystem::get_permissions("a");
     EXPECT_TRUE(old_mode == new_mode);
+}
+
+static Patch::filesystem::perms make_file_read_only(const std::string& path)
+{
+    const auto write_permissions = Patch::filesystem::perms::owner_write
+        | Patch::filesystem::perms::group_write
+        | Patch::filesystem::perms::others_write;
+    const auto permissions = Patch::filesystem::get_permissions(path) & (Patch::filesystem::perms::all ^ write_permissions);
+    Patch::filesystem::permissions(path, permissions);
+    return permissions;
+}
+
+PATCH_TEST(malformed_patch_does_not_modify_read_only_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1,4 +1,3 @@
+ 1
+ 2
+-3
+d4
+ 4
+)";
+    }
+
+    const std::string original = "1\n2\n3\n4\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << original;
+    }
+    const auto original_permissions = make_file_read_only("a");
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 2);
+    EXPECT_FILE_EQ("a", original);
+    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
+}
+
+PATCH_TEST(backup_failure_does_not_modify_read_only_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    const std::string original = "old\n";
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << original;
+    }
+    const auto original_permissions = make_file_read_only("a");
+    Patch::File::touch("not-a-directory");
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "--backup", "--prefix", "not-a-directory/", nullptr });
+
+    EXPECT_EQ(process.return_code(), 2);
+    EXPECT_FILE_EQ("a", original);
+    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
+}
+
+PATCH_TEST(replacement_preserves_file_mode)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "old\n";
+    }
+
+    const auto mode = Patch::filesystem::perms::owner_read
+        | Patch::filesystem::perms::owner_write
+        | Patch::filesystem::perms::group_read;
+    Patch::filesystem::permissions("a", mode);
+    const auto original_mode = Patch::filesystem::get_permissions("a");
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "new\n");
+    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_mode);
+}
+
+PATCH_TEST(late_parse_failure_keeps_completed_files)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/a b/a
+--- a/a
++++ b/a
+@@ -1 +1 @@
+-old a
++new a
+diff --git a/b b/b
+--- a/b
++++ b/b
+@@ -1 +1 @@
+-old b
+dnew b
+)";
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << "old a\n";
+    }
+    {
+        Patch::File file("b", std::ios_base::out);
+        file << "old b\n";
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 2);
+    EXPECT_FILE_EQ("a", "new a\n");
+    EXPECT_FILE_EQ("b", "old b\n");
 }
 
 PATCH_TEST(git_swap_files)

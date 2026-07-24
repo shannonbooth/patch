@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
 #include <cinttypes>
 #include <cstdio>
 #include <ios>
+#include <patch/system.h>
 #include <system_error>
 
 namespace Patch {
+
+struct NamedTemporaryFile;
 
 enum class NewLine {
     LF,
@@ -62,6 +65,12 @@ public:
     static File create_temporary(FILE* initial_content);
 
     static File create_temporary_with_content(const std::string& initial_content);
+
+    static NamedTemporaryFile create_temporary_near(const std::string& destination, bool binary, filesystem::perms permissions);
+
+    void set_permissions(filesystem::perms permissions);
+
+    filesystem::perms get_permissions();
 
     static void touch(const std::string& name)
     {
@@ -125,6 +134,11 @@ private:
     FILE* m_file { nullptr };
     bool m_is_bad { false };
     bool m_is_eof { false };
+};
+
+struct NamedTemporaryFile {
+    File file;
+    std::string path;
 };
 
 } // namespace Patch

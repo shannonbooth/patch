@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <array>
@@ -213,7 +213,6 @@ static FILE* open_exclusive_file(const std::string& path, bool binary, filesyste
         | (delete_on_close ? _O_TEMPORARY : 0);
     const int fd = ::_wopen(native_path.c_str(), flags, _S_IREAD | _S_IWRITE);
 #else
-    (void)binary;
     const int fd = ::open(path.c_str(), O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, static_cast<mode_t>(permissions));
 #endif
     if (fd < 0)
@@ -592,6 +591,59 @@ perms get_permissions(const std::string& path)
     struct stat buf;
     if (::stat(path.c_str(), &buf) != 0)
         return perms::unknown;
+
+    return static_cast<perms>(buf.st_mode) & perms::mask;
+#endif
+}
+
+void permissions(FILE* file, perms permissions)
+{
+    if (permissions == perms::unknown)
+        return;
+
+#ifdef _WIN32
+    const HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+    if (handle == INVALID_HANDLE_VALUE)
+        throw std::system_error(errno, std::generic_category(), "Unable to change permissions");
+
+    FILE_BASIC_INFO info;
+    if (GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info)) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to change permissions");
+
+    const auto write_permissions = perms::owner_write | perms::group_write | perms::others_write;
+    if ((permissions & write_permissions) == perms::none)
+        info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
+    else
+        info.FileAttributes &= ~static_cast<DWORD>(FILE_ATTRIBUTE_READONLY);
+
+    if (SetFileInformationByHandle(handle, FileBasicInfo, &info, sizeof(info)) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to change permissions");
+#else
+    if (::fchmod(fileno(file), static_cast<mode_t>(permissions)) != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to change permissions");
+#endif
+}
+
+perms get_permissions(FILE* file)
+{
+#ifdef _WIN32
+    const HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+    if (handle == INVALID_HANDLE_VALUE)
+        throw std::system_error(errno, std::generic_category(), "Unable to get permissions");
+
+    FILE_BASIC_INFO info;
+    if (GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info)) == 0)
+        throw std::system_error(GetLastError(), std::system_category(), "Unable to get permissions");
+
+    perms permissions = perms::owner_read | perms::group_read | perms::others_read;
+    if (!(info.FileAttributes & FILE_ATTRIBUTE_READONLY))
+        permissions |= perms::owner_write | perms::group_write | perms::others_write;
+
+    return permissions;
+#else
+    struct stat buf;
+    if (::fstat(fileno(file), &buf) != 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to get permissions");
 
     return static_cast<perms>(buf.st_mode) & perms::mask;
 #endif

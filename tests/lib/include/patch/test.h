@@ -83,6 +83,13 @@ public:
     using runtime_error::runtime_error;
 };
 
+class test_skipped : public std::runtime_error {
+public:
+    using runtime_error::runtime_error;
+};
+
+[[noreturn]] void skip_test(const std::string& reason);
+
 #define EXPECT_TRUE(condition)                                                                                  \
     do {                                                                                                        \
         if (!(condition)) {                                                                                     \

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+# Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 '''
 clang_format.py
 
@@ -122,7 +122,7 @@ def main():
 
     ret = 0
     for file_to_format in args.files:
-        ret |= format_file(file_to_format, quiet=args.quiet, no_write=False)
+        ret |= format_file(file_to_format, quiet=args.quiet, no_write=args.no_write)
     sys.exit(ret)
 
 if __name__ == '__main__':

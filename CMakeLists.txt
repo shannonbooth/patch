@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+# Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(VERSION 3.15)
@@ -39,6 +39,8 @@ add_library(patch
   src/system.cpp
   src/file.cpp
 )
+
+target_compile_features(patch PUBLIC cxx_std_11)
 
 target_include_directories(patch
   PUBLIC

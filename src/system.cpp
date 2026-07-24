@@ -510,9 +510,29 @@ void remove(const std::string& path)
 void rename(const std::string& old_path, const std::string& new_path)
 {
 #ifdef _WIN32
-    // rename on Windows does not follow Dr.POSIX and overwrite existing files, so we need to use MoveFileEx with MOVEFILE_REPLACE_EXISTING set.
-    if (MoveFileExW(to_native(old_path).c_str(), to_native(new_path).c_str(), MOVEFILE_REPLACE_EXISTING) == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to rename " + old_path + " to " + new_path);
+    const auto native_old_path = to_native(old_path);
+    const auto native_new_path = to_native(new_path);
+    if (MoveFileExW(native_old_path.c_str(), native_new_path.c_str(), MOVEFILE_REPLACE_EXISTING) != 0)
+        return;
+
+    auto error = GetLastError();
+    if (error == ERROR_ACCESS_DENIED) {
+        const DWORD attributes = GetFileAttributesW(native_new_path.c_str());
+        if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_READONLY)) {
+            const DWORD writable_attributes = attributes & ~static_cast<DWORD>(FILE_ATTRIBUTE_READONLY);
+            if (SetFileAttributesW(native_new_path.c_str(), writable_attributes) == 0)
+                throw std::system_error(GetLastError(), std::system_category(), "Unable to make file writable " + new_path);
+
+            if (MoveFileExW(native_old_path.c_str(), native_new_path.c_str(), MOVEFILE_REPLACE_EXISTING) != 0)
+                return;
+
+            error = GetLastError();
+            if (SetFileAttributesW(native_new_path.c_str(), attributes) == 0)
+                throw std::system_error(GetLastError(), std::system_category(), "Unable to restore permissions to " + new_path);
+        }
+    }
+
+    throw std::system_error(error, std::system_category(), "Unable to rename " + old_path + " to " + new_path);
 #else
     if (std::rename(old_path.c_str(), new_path.c_str()) != 0)
         throw std::system_error(errno, std::generic_category(), "Unable to rename " + old_path + " to " + new_path);

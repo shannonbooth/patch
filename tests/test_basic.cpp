@@ -1775,6 +1775,28 @@ PATCH_TEST(backup_when_patch_is_adding_a_file)
     EXPECT_FILE_EQ("f.orig", "");
 }
 
+PATCH_TEST(backup_creates_parent_directories)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+--- /dev/null
++++ nested/file
+@@ -0,0 +1 @@
++a line
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-p0", "--backup", "--prefix", "backups/", "--suffix", ".orig", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file nested/file\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("nested/file", "a line\n");
+    EXPECT_FILE_EQ("backups/nested/file.orig", "");
+}
+
 PATCH_TEST(backup_prefix_only)
 {
     {

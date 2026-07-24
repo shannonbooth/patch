@@ -397,6 +397,8 @@ public:
         // Per POSIX:
         // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
         if (m_backed_up_files.emplace(backup_file).second) {
+            ensure_parent_directories(backup_file);
+
             File contents;
             auto permissions = filesystem::perms::unknown;
             if (contents.open(file_path, std::ios_base::in | std::ios_base::binary)) {

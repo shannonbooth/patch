@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #pragma once
 
@@ -114,6 +114,10 @@ inline perms& operator^=(perms& left, perms right)
 void permissions(const std::string& path, perms permissions);
 
 perms get_permissions(const std::string& path);
+
+void permissions(FILE* file, perms permissions);
+
+perms get_permissions(FILE* file);
 
 uintmax_t file_size(FILE* file);
 

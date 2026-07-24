@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2024 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <array>
 #include <cstdio>
 #include <patch/file.h>
 #include <patch/system.h>
+#include <utility>
 
 namespace Patch {
 
@@ -127,6 +128,22 @@ File File::create_temporary_with_content(const std::string& initial_content)
     checked_rewind(file.m_file, "Unable to rewind temporary file");
 
     return file;
+}
+
+NamedTemporaryFile File::create_temporary_near(const std::string& destination, bool binary, filesystem::perms permissions)
+{
+    auto temporary = Patch::create_temporary_file_near(destination, binary, permissions);
+    return { File(temporary.stream), std::move(temporary.path) };
+}
+
+void File::set_permissions(filesystem::perms permissions)
+{
+    filesystem::permissions(m_file, permissions);
+}
+
+filesystem::perms File::get_permissions()
+{
+    return filesystem::get_permissions(m_file);
 }
 
 void File::close()

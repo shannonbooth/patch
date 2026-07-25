@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/hunk.h>
 #include <patch/locator.h>
@@ -323,13 +323,8 @@ TEST(locator_remove_file_does_not_apply)
     EXPECT_FALSE(location.is_found());
 }
 
-TEST(DISABLED_addition_patch_is_locating_against_preexisting_file)
+TEST(addition_patch_is_locating_against_preexisting_file)
 {
-    // Test a behavioral difference found by testing against GNU patch
-    // for the situation that a patch that is creating a file already
-    // exists and has some content that does not match what the patch
-    // specifies. We always apply the patch without even any fuzz!
-
     const std::vector<Patch::Line> file_content = {
         { "x", Patch::NewLine::LF },
         { "y", Patch::NewLine::LF },
@@ -354,19 +349,6 @@ TEST(DISABLED_addition_patch_is_locating_against_preexisting_file)
 
 TEST(locator_hunk_at_beginning_of_file_is_offset)
 {
-    // Test a behavioral difference that was noticed between this implementation
-    // and GNU patch where GNU patch seems to be saying that fuzz needs to be
-    // applied when a hunk which was at the beginning of a file is now no longer
-    // at the beginning of a file.
-    //
-    // I'm not sure what the requirement here is actually from the specification,
-    // or if it is a bug - or if this results in any undesirable side effects.
-    // Instead of blindly adjusting our behaviour to match, write this test
-    // for the future if our behaviour ever adjusts to match what GNU patch does
-    // (intended or not).
-    //
-    // Change this test case if this is behaviour that we want!
-
     const std::vector<Patch::Line> file_content = {
         { "// newly added line", Patch::NewLine::LF },
         { "// ... and another", Patch::NewLine::LF },
@@ -377,11 +359,6 @@ TEST(locator_hunk_at_beginning_of_file_is_offset)
         { "int another()", Patch::NewLine::LF },
     };
 
-    // Theory for difference - GNU patch may be considering before the start of the file
-    // as part of the context, whereas in our implementation we set the context for both
-    // pre and post as max(thing, 0) to prevent negative contexts. Perhaps we should
-    // consider negative contexts as a 'fail' to be stripped by fuzz until it is not
-    // negative?
     Patch::Hunk hunk;
     hunk.lines = {
         { ' ', "int main()" },
@@ -401,5 +378,5 @@ TEST(locator_hunk_at_beginning_of_file_is_offset)
     EXPECT_TRUE(location.is_found());
     EXPECT_EQ(location.offset, 2);
     EXPECT_EQ(location.line_number, 2);
-    EXPECT_EQ(location.fuzz, 0); // GNU patch seems to get 2 here
+    EXPECT_EQ(location.fuzz, 1);
 }

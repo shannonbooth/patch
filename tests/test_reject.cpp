@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/process.h>
 #include <patch/test.h>
@@ -102,7 +102,7 @@ Hunk #1 FAILED at 1.
     EXPECT_FILE_EQ("a.cpp.rej", patch);
 }
 
-COMPAT_TEST(COMPAT_XFAIL_reject_offset_in_previous_hunk_applies_to_reject)
+COMPAT_TEST(reject_offset_in_previous_hunk_applies_to_reject)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -148,7 +148,7 @@ int one_more() // comments to
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", "--force", nullptr });
     EXPECT_EQ(process.stdout_data(), R"(patching file main.cpp
-Hunk #1 succeeded at 3 (offset 2 lines).
+Hunk #1 succeeded at 3 with fuzz 1 (offset 2 lines).
 Hunk #2 FAILED at 10.
 1 out of 2 hunks FAILED -- saving rejects to file main.cpp.rej
 )");

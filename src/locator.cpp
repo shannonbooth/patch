@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
+// Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
 #include <patch/hunk.h>
@@ -126,8 +126,12 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
 
     for (LineNumber fuzz = 0; fuzz <= max_fuzz; ++fuzz) {
 
-        auto suffix_fuzz = std::max<LineNumber>(fuzz + patch_suffix_content - context, 0);
-        auto prefix_fuzz = std::max<LineNumber>(fuzz + patch_prefix_content - context, 0);
+        auto suffix_fuzz = fuzz + patch_suffix_content - context;
+        auto prefix_fuzz = fuzz + patch_prefix_content - context;
+        const bool must_match_at_end = suffix_fuzz < 0;
+        const bool must_match_at_start = prefix_fuzz < 0 && hunk.old_file_range.start_line <= 1;
+        suffix_fuzz = std::max<LineNumber>(suffix_fuzz, 0);
+        prefix_fuzz = std::max<LineNumber>(prefix_fuzz, 0);
 
         // If the fuzz is greater than the total number of lines for a hunk,
         // then it may be possible for the hunk to match anything - so ignore
@@ -157,6 +161,17 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
                 return true;
             });
         };
+
+        // Reduced leading or trailing context anchors a hunk to the beginning
+        // or end of the file until enough fuzz permits matching elsewhere.
+        if (must_match_at_start || must_match_at_end) {
+            const auto end_line = static_cast<LineNumber>(content.size()) - hunk.old_file_range.number_of_lines;
+            const auto line = must_match_at_start ? 0 : end_line;
+
+            if (line >= 0 && (!must_match_at_end || line == end_line) && hunk_matches_starting_from_line(line))
+                return { line, fuzz, line - offset_guess };
+            continue;
+        }
 
         // First look for the hunk in the forward direction
         for (LineNumber line = offset_guess; static_cast<size_t>(line) < content.size(); ++line) {

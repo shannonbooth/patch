@@ -2595,6 +2595,106 @@ index 0000000..2ab5a7b
     file.close();
 }
 
+static void write_escaping_patch(const std::string& name)
+{
+    Patch::File file("diff.patch", std::ios_base::out);
+    file << "--- " << name << "\n+++ " << name << "\n@@ -1 +1 @@\n-ORIGINAL\n+PATCHED\n";
+    file.close();
+}
+
+static void write_outside_file()
+{
+    Patch::filesystem::create_directory("work");
+    Patch::File file("outside.txt", std::ios_base::out);
+    file << "ORIGINAL\n";
+    file.close();
+}
+
+// NOTE: not a COMPAT_TEST. GNU patch also refuses this name, but says nothing about why.
+PATCH_TEST(patch_refuses_name_escaping_the_directory)
+{
+    write_outside_file();
+    Patch::chdir("work");
+    write_escaping_patch("a/../../outside.txt");
+
+    Process process(patch_path, { patch_path, "--batch", "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(Ignoring potentially dangerous file name ../../outside.txt
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- a/../../outside.txt
+|+++ a/../../outside.txt
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+)");
+    EXPECT_EQ(process.return_code(), 1);
+
+    Patch::chdir("..");
+    EXPECT_FILE_EQ("outside.txt", "ORIGINAL\n");
+}
+
+COMPAT_TEST(patch_refuses_name_with_dot_dot_inside_the_directory)
+{
+    Patch::filesystem::create_directory("sub");
+    {
+        Patch::File file("target.txt", std::ios_base::out);
+        file << "ORIGINAL\n";
+        file.close();
+    }
+    write_escaping_patch("sub/../target.txt");
+
+    Process process(patch_path, { patch_path, "--batch", "-p0", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(Ignoring potentially dangerous file name sub/../target.txt
+can't find file to patch at input line 3
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|--- sub/../target.txt
+|+++ sub/../target.txt
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+)");
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_FILE_EQ("target.txt", "ORIGINAL\n");
+}
+
+COMPAT_TEST(patch_allows_strip_to_remove_dot_dot)
+{
+    Patch::filesystem::create_directory("foo");
+    {
+        Patch::File file("foo/bar.txt", std::ios_base::out);
+        file << "ORIGINAL\n";
+        file.close();
+    }
+    write_escaping_patch("../../foo/bar.txt");
+
+    Process process(patch_path, { patch_path, "--batch", "-p2", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file foo/bar.txt\n");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("foo/bar.txt", "PATCHED\n");
+}
+
+COMPAT_TEST(patch_allows_explicit_path_outside_the_directory)
+{
+    write_outside_file();
+    Patch::chdir("work");
+    write_escaping_patch("whatever");
+
+    Process process(patch_path, { patch_path, "--batch", "-p0", "-i", "diff.patch", "../outside.txt", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file ../outside.txt\n");
+    EXPECT_EQ(process.return_code(), 0);
+
+    Patch::chdir("..");
+    EXPECT_FILE_EQ("outside.txt", "PATCHED\n");
+}
+
 COMPAT_TEST(git_add_submodule_is_not_a_symlink)
 {
     write_add_submodule_patch();

@@ -349,6 +349,24 @@ static std::string format_filename(Options::QuotingStyle quote_style, const std:
     return input;
 }
 
+static void reject_unsafe_paths(Patch& patch, const Options& options, std::ostream& out)
+{
+    std::string* const paths[] = { &patch.old_file_path, &patch.new_file_path, &patch.index_file_path };
+
+    for (auto* path : paths) {
+        if (is_safe_patch_path(*path))
+            continue;
+
+        out << "Ignoring potentially dangerous file name " << format_filename(options.quoting_style, *path) << '\n';
+
+        const std::string name = *path;
+        for (auto* other : paths) {
+            if (*other == name)
+                other->clear();
+        }
+    }
+}
+
 static const char* patch_operation(const Options& options)
 {
     return options.dry_run ? "checking" : "patching";
@@ -545,6 +563,8 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
 
         if (options.verbose)
             out << "Hmm...  Looks like a " << to_string(info.format) << " diff to me...\n";
+
+        reject_unsafe_paths(patch, options, out);
 
         auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch) : options.file_to_patch;
 

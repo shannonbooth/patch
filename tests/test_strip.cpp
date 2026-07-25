@@ -2,6 +2,7 @@
 // Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/parser.h>
+#include <patch/system.h>
 #include <patch/test.h>
 #include <stdexcept>
 
@@ -9,6 +10,53 @@ static void parse_file_line(const std::string& line, int strip, std::string& pat
 {
     Patch::LineParser parser(line);
     parser.parse_file_line(strip, path, timestamp);
+}
+
+TEST(is_absolute_path)
+{
+    EXPECT_FALSE(Patch::filesystem::is_absolute(""));
+    EXPECT_FALSE(Patch::filesystem::is_absolute("file.txt"));
+    EXPECT_FALSE(Patch::filesystem::is_absolute("dir/file.txt"));
+    EXPECT_FALSE(Patch::filesystem::is_absolute("../file.txt"));
+
+    EXPECT_TRUE(Patch::filesystem::is_absolute("/"));
+    EXPECT_TRUE(Patch::filesystem::is_absolute("/etc/passwd"));
+
+#ifdef _WIN32
+    EXPECT_TRUE(Patch::filesystem::is_absolute("\\windows\\file.txt"));
+    EXPECT_TRUE(Patch::filesystem::is_absolute("C:\\file.txt"));
+    EXPECT_TRUE(Patch::filesystem::is_absolute("C:file.txt"));
+#else
+    EXPECT_FALSE(Patch::filesystem::is_absolute("C:\\file.txt"));
+#endif
+}
+
+TEST(is_safe_patch_path)
+{
+    EXPECT_TRUE(Patch::is_safe_patch_path(""));
+    EXPECT_TRUE(Patch::is_safe_patch_path("file.txt"));
+    EXPECT_TRUE(Patch::is_safe_patch_path("dir/file.txt"));
+    EXPECT_TRUE(Patch::is_safe_patch_path("./file.txt"));
+    EXPECT_TRUE(Patch::is_safe_patch_path("..file.txt"));
+    EXPECT_TRUE(Patch::is_safe_patch_path("dir/..file/x.txt"));
+    EXPECT_TRUE(Patch::is_safe_patch_path("dir/..."));
+
+    // Absolute, but a magic name rather than a path to patch.
+    EXPECT_TRUE(Patch::is_safe_patch_path("/dev/null"));
+
+    EXPECT_FALSE(Patch::is_safe_patch_path("/etc/passwd"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("../file.txt"));
+    EXPECT_FALSE(Patch::is_safe_patch_path(".."));
+    EXPECT_FALSE(Patch::is_safe_patch_path("dir/../file.txt"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("dir/.."));
+    EXPECT_FALSE(Patch::is_safe_patch_path("a/../../b.txt"));
+
+#ifdef _WIN32
+    EXPECT_FALSE(Patch::is_safe_patch_path("\\windows\\file.txt"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("C:\\file.txt"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("C:file.txt"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("dir\\..\\file.txt"));
+#endif
 }
 
 TEST(strip_linux_path)

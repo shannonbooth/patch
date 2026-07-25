@@ -864,6 +864,113 @@ COMPAT_TEST(unified_patch_that_empties_file_keeps_empty_file)
     EXPECT_FILE_EQ("target.txt", "");
 }
 
+COMPAT_TEST(git_patch_modifying_the_same_file_twice)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(diff --git a/f.txt b/f.txt
+index 1111111..2222222 100644
+--- a/f.txt
++++ b/f.txt
+@@ -1 +1 @@
+-one
++two
+diff --git a/f.txt b/f.txt
+index 2222222..3333333 100644
+--- a/f.txt
++++ b/f.txt
+@@ -1 +1 @@
+-two
++three
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("f.txt", std::ios_base::out);
+        file << "one\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file f.txt\npatching file f.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("f.txt", "three\n");
+}
+
+COMPAT_TEST(git_patch_creating_then_modifying_a_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(diff --git a/c.txt b/c.txt
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/c.txt
+@@ -0,0 +1 @@
++first
+diff --git a/c.txt b/c.txt
+index 1111111..2222222 100644
+--- a/c.txt
++++ b/c.txt
+@@ -1 +1 @@
+-first
++second
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file c.txt\npatching file c.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("c.txt", "second\n");
+}
+
+// Two renames which swap a pair of files are both written against the original
+// content, so neither may be installed until the whole input has been read.
+COMPAT_TEST(git_patch_renames_swapping_two_files)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(diff --git a/a.txt b/b.txt
+similarity index 100%
+rename from a.txt
+rename to b.txt
+diff --git a/b.txt b/a.txt
+similarity index 100%
+rename from b.txt
+rename to a.txt
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("a.txt", std::ios_base::out);
+        file << "content A\n";
+        file.close();
+    }
+
+    {
+        Patch::File file("b.txt", std::ios_base::out);
+        file << "content B\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a.txt", "content B\n");
+    EXPECT_FILE_EQ("b.txt", "content A\n");
+}
+
 COMPAT_TEST(git_patch_remove_file)
 {
     {

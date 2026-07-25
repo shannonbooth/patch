@@ -149,7 +149,7 @@ int one_more() // comments to
     Process process(patch_path, { patch_path, "-i", "diff.patch", "--force", nullptr });
     EXPECT_EQ(process.stdout_data(), R"(patching file main.cpp
 Hunk #1 succeeded at 3 (offset 2 lines).
-Hunk #2 FAILED at 11.
+Hunk #2 FAILED at 10.
 1 out of 2 hunks FAILED -- saving rejects to file main.cpp.rej
 )");
     EXPECT_EQ(process.stderr_data(), "");

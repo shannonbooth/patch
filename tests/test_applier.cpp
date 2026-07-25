@@ -90,6 +90,35 @@ int another()
     EXPECT_FILE_EQ("a.rej", patch);
 }
 
+static void write_three_line_file()
+{
+    Patch::File file("a", std::ios_base::out);
+    file << "a\nb\nc\n";
+    file.close();
+}
+
+COMPAT_TEST(applier_insertion_past_end_of_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -100,0 +100,1 @@
++inserted
+)";
+        file.close();
+    }
+
+    write_three_line_file();
+
+    Process process(patch_path, { patch_path, "--force", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file a\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "a\nb\nc\ninserted\n");
+}
+
 COMPAT_TEST(applier_end_of_file_hunk_requires_fuzz_when_no_longer_at_end)
 {
     const std::string patch = R"(--- a

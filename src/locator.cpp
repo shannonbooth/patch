@@ -105,7 +105,8 @@ Location locate_hunk(const std::vector<Line>& content, const Hunk& hunk, bool ig
     if (hunk.old_file_range.number_of_lines == 0) {
         if (hunk.old_file_range.start_line == 0 && !content.empty())
             return {};
-        return { offset_guess, 0, 0 };
+        const auto end = static_cast<LineNumber>(content.size());
+        return { std::min(std::max<LineNumber>(offset_guess, 0), end), 0, 0 };
     }
 
     LineNumber patch_prefix_content = 0;

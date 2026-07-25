@@ -40,6 +40,106 @@ COMPAT_TEST(applier_add_oneline_patch)
 )");
 }
 
+COMPAT_TEST(applier_beginning_of_file_hunk_requires_fuzz_to_match_at_an_offset)
+{
+    const std::string patch = R"(--- a
++++ a
+@@ -1,5 +1,6 @@
+ int main()
+ {
++    return 0;
+ }
+ 
+ int another()
+)";
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << patch;
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << R"(// newly added line
+// ... and another
+int main()
+{
+}
+
+int another()
+)";
+    }
+
+    Process process(patch_path, { patch_path, "--force", "--fuzz=0", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(patching file a
+Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file a.rej
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+
+    EXPECT_FILE_EQ("a", R"(// newly added line
+// ... and another
+int main()
+{
+}
+
+int another()
+)");
+    EXPECT_FILE_EQ("a.rej", patch);
+}
+
+COMPAT_TEST(applier_end_of_file_hunk_requires_fuzz_when_no_longer_at_end)
+{
+    const std::string patch = R"(--- a
++++ a
+@@ -1,5 +1,6 @@
+ int another()
+ {
+     work();
++    return 0;
+ }
+ // end
+)";
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << patch;
+    }
+
+    {
+        Patch::File file("a", std::ios_base::out);
+        file << R"(int another()
+{
+    work();
+}
+// end
+// newly added line
+// ... and another
+)";
+    }
+
+    Process process(patch_path, { patch_path, "--force", "--fuzz=0", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(patching file a
+Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file a.rej
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+
+    EXPECT_FILE_EQ("a", R"(int another()
+{
+    work();
+}
+// end
+// newly added line
+// ... and another
+)");
+    EXPECT_FILE_EQ("a.rej", patch);
+}
+
 COMPAT_TEST(applier_add_oneline_normal_patch)
 {
     {

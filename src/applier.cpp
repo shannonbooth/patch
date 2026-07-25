@@ -88,6 +88,9 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
 
     for (const auto& patch_line : hunk.lines) {
         if (patch_line.operation == ' ') {
+            if (line_number >= lines.size())
+                continue;
+
             const auto& line = lines.at(line_number);
             ++line_number;
             if (define_state != DefineState::Outside) {
@@ -105,6 +108,9 @@ static LineNumber write_define_hunk(LineWriter& output, const Hunk& hunk, const 
             }
             output << patch_line.line;
         } else if (patch_line.operation == '-') {
+            if (line_number >= lines.size())
+                continue;
+
             const auto& line = lines.at(line_number);
             ++line_number;
 
@@ -136,12 +142,16 @@ static LineNumber write_hunk(LineWriter& output, const Hunk& hunk, const Locatio
 
     for (const auto& patch_line : hunk.lines) {
         if (patch_line.operation == ' ') {
+            if (line_number >= lines.size())
+                continue;
+
             output << lines.at(line_number);
             ++line_number;
         } else if (patch_line.operation == '+') {
             output << patch_line.line;
         } else if (patch_line.operation == '-') {
-            ++line_number;
+            if (line_number < lines.size())
+                ++line_number;
         }
     }
 

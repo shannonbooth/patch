@@ -90,6 +90,22 @@ int another()
     EXPECT_FILE_EQ("a.rej", patch);
 }
 
+static void write_context_past_end_of_file_patch()
+{
+    Patch::File file("diff.patch", std::ios_base::out);
+    file << R"(--- a
++++ a
+@@ -1,5 +1,5 @@
+ a
+-b
++B
+ c
+ ZZZ
+ QQQ
+)";
+    file.close();
+}
+
 static void write_three_line_file()
 {
     Patch::File file("a", std::ios_base::out);
@@ -117,6 +133,43 @@ COMPAT_TEST(applier_insertion_past_end_of_file)
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "a\nb\nc\ninserted\n");
+}
+
+COMPAT_TEST(applier_fuzz_matches_context_past_end_of_file)
+{
+    write_context_past_end_of_file_patch();
+    write_three_line_file();
+
+    Process process(patch_path, { patch_path, "--force", "--fuzz=3", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(patching file a
+Hunk #1 succeeded at 1 with fuzz 2.
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", "a\nB\nc\n");
+}
+
+COMPAT_TEST(applier_fuzz_matches_context_past_end_of_file_with_define)
+{
+    write_context_past_end_of_file_patch();
+    write_three_line_file();
+
+    Process process(patch_path, { patch_path, "--force", "--fuzz=3", "-D", "FOO", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), R"(patching file a
+Hunk #1 succeeded at 1 with fuzz 2.
+)");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("a", R"(a
+#ifndef FOO
+b
+#else
+B
+#endif
+c
+)");
 }
 
 COMPAT_TEST(applier_end_of_file_hunk_requires_fuzz_when_no_longer_at_end)

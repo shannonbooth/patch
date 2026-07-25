@@ -204,6 +204,10 @@ void register_test(std::string name, std::function<void(const char*)> test);
     /* NOLINTNEXTLINE(readability-function-cognitive-complexity) */     \
     static void TEST_FUNCTION_NAME(name)(const char* patch_path)
 
+// COMPAT_TEST has the same C++ interface as PATCH_TEST. CMake distinguishes
+// between them when deciding whether to also run a test against GNU patch.
+#define COMPAT_TEST(name) PATCH_TEST(name)
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST(name)                                                      \
     static void TEST_FUNCTION_NAME(name)();                             \

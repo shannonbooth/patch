@@ -40,25 +40,25 @@ static void test_quoting(const char* patch_path, const std::string& filename, co
     test_quoting(patch_path, filename, filename, output);
 }
 
-PATCH_TEST(quoting_c_style_basic)
+COMPAT_TEST(quoting_c_style_basic)
 {
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "add", "patching file \"add\"\n");
 }
 
-PATCH_TEST(quoting_c_style_space)
+COMPAT_TEST(quoting_c_style_space)
 {
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "add with space", "patching file \"add with space\"\n");
 }
 
-PATCH_TEST(quoting_c_style_single_quote)
+COMPAT_TEST(quoting_c_style_single_quote)
 {
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "with'quote", "patching file \"with'quote\"\n");
 }
 
-PATCH_TEST(quoting_c_style_double_quote)
+COMPAT_TEST(quoting_c_style_double_quote)
 {
 #ifndef _WIN32
     Patch::set_env("QUOTING_STYLE", "c");
@@ -66,7 +66,7 @@ PATCH_TEST(quoting_c_style_double_quote)
 #endif
 }
 
-PATCH_TEST(quoting_c_style_backslash)
+COMPAT_TEST(quoting_c_style_backslash)
 {
 #ifndef _WIN32
     Patch::set_env("QUOTING_STYLE", "c");
@@ -74,7 +74,7 @@ PATCH_TEST(quoting_c_style_backslash)
 #endif
 }
 
-PATCH_TEST(quoting_c_style_newline)
+COMPAT_TEST(quoting_c_style_newline)
 {
 #ifndef _WIN32
     Patch::set_env("QUOTING_STYLE", "c");
@@ -82,7 +82,7 @@ PATCH_TEST(quoting_c_style_newline)
 #endif
 }
 
-PATCH_TEST(quoting_c_style_tab)
+COMPAT_TEST(quoting_c_style_tab)
 {
 #ifndef _WIN32
     Patch::set_env("QUOTING_STYLE", "c");
@@ -90,19 +90,19 @@ PATCH_TEST(quoting_c_style_tab)
 #endif
 }
 
-PATCH_TEST(quoting_shell_always_style_basic)
+COMPAT_TEST(quoting_shell_always_style_basic)
 {
     Patch::set_env("QUOTING_STYLE", "shell-always");
     test_quoting(patch_path, "add", "patching file 'add'\n");
 }
 
-PATCH_TEST(quoting_shell_always_style_single_quote_only)
+COMPAT_TEST(quoting_shell_always_style_single_quote_only)
 {
     Patch::set_env("QUOTING_STYLE", "shell-always");
     test_quoting(patch_path, "with'quote", "patching file \"with'quote\"\n");
 }
 
-PATCH_TEST(quoting_shell_always_style_double_quote_only)
+COMPAT_TEST(quoting_shell_always_style_double_quote_only)
 {
 #ifndef _WIN32
     Patch::set_env("QUOTING_STYLE", "shell-always");
@@ -110,7 +110,7 @@ PATCH_TEST(quoting_shell_always_style_double_quote_only)
 #endif
 }
 
-PATCH_TEST(quoting_shell_style_double_quote_only)
+COMPAT_TEST(quoting_shell_style_double_quote_only)
 {
 #ifndef _WIN32
     Patch::set_env("QUOTING_STYLE", "shell");
@@ -118,24 +118,24 @@ PATCH_TEST(quoting_shell_style_double_quote_only)
 #endif
 }
 
-PATCH_TEST(quoting_shell_style_single_quote_only)
+COMPAT_TEST(quoting_shell_style_single_quote_only)
 {
     Patch::set_env("QUOTING_STYLE", "shell");
     test_quoting(patch_path, "with'quote", "patching file \"with'quote\"\n");
 }
 
-PATCH_TEST(quoting_shell_no_quote)
+COMPAT_TEST(quoting_shell_no_quote)
 {
     Patch::set_env("QUOTING_STYLE", "shell");
     test_quoting(patch_path, "add", "patching file add\n");
 }
 
-PATCH_TEST(quoting_shell_with_quote)
+COMPAT_TEST(quoting_shell_with_quote)
 {
     test_quoting(patch_path, "add!", "patching file 'add!'\n");
 }
 
-PATCH_TEST(quoting_literal_style)
+COMPAT_TEST(quoting_literal_style)
 {
     Patch::set_env("QUOTING_STYLE", "literal");
     test_quoting(patch_path, "add", "patching file add\n");

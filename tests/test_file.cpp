@@ -242,10 +242,8 @@ TEST(file_reopen_closes_existing_file)
     EXPECT_FILE_EQ("first-file", "first");
 }
 
-PATCH_TEST(file_append)
+TEST(file_append)
 {
-    (void)patch_path;
-
     {
         Patch::File file("some-file", std::ios_base::out);
         file << "first line!\n";
@@ -259,7 +257,7 @@ PATCH_TEST(file_append)
     EXPECT_FILE_EQ("some-file", "first line!\nsecond line!\n");
 }
 
-PATCH_TEST(file_open_failure)
+TEST(file_open_failure)
 {
     EXPECT_THROW(Patch::File("file-that-does-not-exist"), std::system_error);
 }

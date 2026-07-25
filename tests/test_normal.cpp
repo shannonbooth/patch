@@ -26,7 +26,7 @@ static void expect_invalid_normal_range(const char* patch_path, const std::strin
     EXPECT_FILE_EQ("to_patch", "unchanged\n");
 }
 
-PATCH_TEST(normal_patch_multiline_change_range)
+COMPAT_TEST(normal_patch_multiline_change_range)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -54,7 +54,7 @@ PATCH_TEST(normal_patch_multiline_change_range)
     EXPECT_FILE_EQ("to_patch", "1\n2\n3\n4\nfive\nsix\nseven\n8\n");
 }
 
-PATCH_TEST(normal_patch_multiline_append_range)
+COMPAT_TEST(normal_patch_multiline_append_range)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -78,7 +78,7 @@ PATCH_TEST(normal_patch_multiline_append_range)
     EXPECT_FILE_EQ("to_patch", "1\n2\n3\n4\nfive\nsix\nseven\n8\n");
 }
 
-PATCH_TEST(normal_patch_multiline_delete_range)
+COMPAT_TEST(normal_patch_multiline_delete_range)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -103,7 +103,7 @@ PATCH_TEST(normal_patch_multiline_delete_range)
 }
 
 // GNU patch seems to reject these invalid ranges before printing the target file name, so its stdout differs from ours.
-PATCH_TEST(COMPAT_XFAIL_normal_patch_reversed_ranges_fail)
+COMPAT_TEST(COMPAT_XFAIL_normal_patch_reversed_ranges_fail)
 {
     expect_invalid_normal_range(patch_path, "7,5c5,7");
     expect_invalid_normal_range(patch_path, "5,7c7,5");
@@ -111,7 +111,7 @@ PATCH_TEST(COMPAT_XFAIL_normal_patch_reversed_ranges_fail)
     expect_invalid_normal_range(patch_path, "7,5d4");
 }
 
-PATCH_TEST(COMPAT_XFAIL_normal_patch_overflowing_ranges_fail)
+COMPAT_TEST(COMPAT_XFAIL_normal_patch_overflowing_ranges_fail)
 {
     expect_invalid_normal_range(patch_path, "0,9223372036854775807c1");
     expect_invalid_normal_range(patch_path, "1c0,9223372036854775807");
@@ -120,7 +120,7 @@ PATCH_TEST(COMPAT_XFAIL_normal_patch_overflowing_ranges_fail)
     expect_invalid_normal_range(patch_path, "9223372036854775808c1");
 }
 
-PATCH_TEST(normal_patch_corrupted_add_line)
+COMPAT_TEST(normal_patch_corrupted_add_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -147,7 +147,7 @@ x 4
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(normal_patch_corrupted_remove_line)
+COMPAT_TEST(normal_patch_corrupted_remove_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -176,7 +176,7 @@ d 3
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(normal_patch_with_tab)
+COMPAT_TEST(normal_patch_with_tab)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -203,7 +203,7 @@ PATCH_TEST(normal_patch_with_tab)
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(normal_patch_corrupted_no_space_or_tab)
+COMPAT_TEST(normal_patch_corrupted_no_space_or_tab)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -230,7 +230,7 @@ PATCH_TEST(normal_patch_corrupted_no_space_or_tab)
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(normal_patch_corrupted_missing_lines)
+COMPAT_TEST(normal_patch_corrupted_missing_lines)
 {
 
     {
@@ -257,7 +257,7 @@ PATCH_TEST(normal_patch_corrupted_missing_lines)
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(normal_patch_add_file)
+COMPAT_TEST(normal_patch_add_file)
 {
 
     {
@@ -277,7 +277,7 @@ PATCH_TEST(normal_patch_add_file)
     EXPECT_FILE_EQ("a", "1\n");
 }
 
-PATCH_TEST(normal_patch_remove_file)
+COMPAT_TEST(normal_patch_remove_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

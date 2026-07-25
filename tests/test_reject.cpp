@@ -53,17 +53,18 @@ Hunk #1 FAILED at 2.
     EXPECT_FILE_EQ("1.rej", patch);
 }
 
-PATCH_TEST(reject_unified_remove_line_no_offset_no_args)
+COMPAT_TEST(reject_unified_remove_line_no_offset_no_args)
 {
     test_reject_unified_remove_line_no_offset(patch_path);
 }
 
-PATCH_TEST(reject_unified_remove_line_no_offset_flag_reject_unified)
+COMPAT_TEST(reject_unified_remove_line_no_offset_flag_reject_unified)
 {
     test_reject_unified_remove_line_no_offset(patch_path, { "--reject-format=unified" });
 }
 
-PATCH_TEST(reject_context_remove_line)
+// GNU patch includes unchanged new-file context in this deletion-only reject.
+COMPAT_TEST(COMPAT_XFAIL_reject_context_remove_line)
 {
     const std::string patch = R"(*** a.cpp	2022-04-25 10:47:18.388073392 +1200
 --- b.cpp	2022-04-25 10:04:06.012170915 +1200
@@ -101,7 +102,7 @@ Hunk #1 FAILED at 1.
     EXPECT_FILE_EQ("a.cpp.rej", patch);
 }
 
-PATCH_TEST(reject_offset_in_previous_hunk_applies_to_reject)
+COMPAT_TEST(COMPAT_XFAIL_reject_offset_in_previous_hunk_applies_to_reject)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

@@ -6,7 +6,7 @@
 #include <patch/system.h>
 #include <patch/test.h>
 
-PATCH_TEST(basic_unified_patch)
+COMPAT_TEST(basic_unified_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -46,7 +46,7 @@ PATCH_TEST(basic_unified_patch)
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(basic_verbose_unified_patch_with_trailing_garbage)
+COMPAT_TEST(basic_verbose_unified_patch_with_trailing_garbage)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -110,7 +110,7 @@ done
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(normal_patch_trailing_newlines)
+COMPAT_TEST(normal_patch_trailing_newlines)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -136,7 +136,7 @@ PATCH_TEST(normal_patch_trailing_newlines)
     EXPECT_FILE_EQ("a", "1\n3\n");
 }
 
-PATCH_TEST(less_basic_patch)
+COMPAT_TEST(less_basic_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -173,7 +173,7 @@ PATCH_TEST(less_basic_patch)
     EXPECT_FILE_EQ("x", "1\n2\n3a\n4\n5\n6\n8\n9\n");
 }
 
-PATCH_TEST(unknown_command_line)
+COMPAT_TEST(unknown_command_line)
 {
     std::string expected_stderr = patch_path;
     expected_stderr += ": unrecognized option '--garbage'\n";
@@ -218,17 +218,17 @@ static void read_patch_from_stdin(const char* patch_path, const std::vector<cons
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(read_patch_from_stdin)
+COMPAT_TEST(read_patch_from_stdin)
 {
     read_patch_from_stdin(patch_path);
 }
 
-PATCH_TEST(read_patch_from_stdin_dash_arg)
+COMPAT_TEST(read_patch_from_stdin_dash_arg)
 {
     read_patch_from_stdin(patch_path, { "-i", "-" });
 }
 
-PATCH_TEST(dash_filename)
+COMPAT_TEST(dash_filename)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -253,7 +253,7 @@ index 0000000..7a1c613
     EXPECT_FILE_EQ("-", "some file\n");
 }
 
-PATCH_TEST(basic_patch_with_dryrun)
+COMPAT_TEST(basic_patch_with_dryrun)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -289,7 +289,7 @@ PATCH_TEST(basic_patch_with_dryrun)
     EXPECT_FILE_EQ("to_patch", to_patch);
 }
 
-PATCH_TEST(basic_patch_with_dry_run_to_stdout)
+COMPAT_TEST(basic_patch_with_dry_run_to_stdout)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -329,7 +329,7 @@ PATCH_TEST(basic_patch_with_dry_run_to_stdout)
     EXPECT_FILE_EQ("to_patch", to_patch);
 }
 
-PATCH_TEST(failed_patch_to_stdout)
+COMPAT_TEST(failed_patch_to_stdout)
 {
     const std::string patch = R"(--- 1	2022-06-26 12:22:22.161398905 +1200
 +++ 2	2022-06-26 12:22:44.105278030 +1200
@@ -363,7 +363,7 @@ Hunk #1 FAILED at 1.
     EXPECT_FILE_EQ("-.rej", patch);
 }
 
-PATCH_TEST(failed_patch_dry_run)
+COMPAT_TEST(failed_patch_dry_run)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -399,7 +399,7 @@ Hunk #1 FAILED at 1.
     EXPECT_FALSE(Patch::filesystem::exists("1.orig"));
 }
 
-PATCH_TEST(basic_patch_dry_run_remove_file)
+COMPAT_TEST(basic_patch_dry_run_remove_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -425,7 +425,7 @@ PATCH_TEST(basic_patch_dry_run_remove_file)
     EXPECT_FILE_EQ("a", "1\n");
 }
 
-PATCH_TEST(set_patch_file)
+COMPAT_TEST(set_patch_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -463,7 +463,7 @@ PATCH_TEST(set_patch_file)
 )");
 }
 
-PATCH_TEST(add_file)
+COMPAT_TEST(add_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -492,7 +492,7 @@ PATCH_TEST(add_file)
 )");
 }
 
-PATCH_TEST(add_file_without_dev_null_header)
+COMPAT_TEST(add_file_without_dev_null_header)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -550,17 +550,17 @@ No file to patch.  Skipping patch.
     EXPECT_EQ(process.return_code(), 1);
 }
 
-PATCH_TEST(file_not_found_force_does_not_prompt)
+COMPAT_TEST(file_not_found_force_does_not_prompt)
 {
     file_not_found_does_not_prompt(patch_path, "--force");
 }
 
-PATCH_TEST(file_not_found_batch_does_not_prompt)
+COMPAT_TEST(file_not_found_batch_does_not_prompt)
 {
     file_not_found_does_not_prompt(patch_path, "--batch");
 }
 
-PATCH_TEST(add_file_using_basename)
+COMPAT_TEST(add_file_using_basename)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -589,7 +589,7 @@ PATCH_TEST(add_file_using_basename)
 )");
 }
 
-PATCH_TEST(add_file_missing_folders)
+COMPAT_TEST(add_file_missing_folders)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -618,7 +618,7 @@ PATCH_TEST(add_file_missing_folders)
 )");
 }
 
-PATCH_TEST(basic_output_to_stdout)
+COMPAT_TEST(basic_output_to_stdout)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -656,7 +656,7 @@ PATCH_TEST(basic_output_to_stdout)
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(basic_unicode_patch)
+COMPAT_TEST(basic_unicode_patch)
 {
     {
         Patch::File file("ハローワールド.patch", std::ios_base::out);
@@ -696,7 +696,7 @@ PATCH_TEST(basic_unicode_patch)
 )");
 }
 
-PATCH_TEST(write_empty_output_to_stdout)
+COMPAT_TEST(write_empty_output_to_stdout)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -725,7 +725,7 @@ PATCH_TEST(write_empty_output_to_stdout)
     EXPECT_FILE_EQ("a", "1\n");
 }
 
-PATCH_TEST(remove_file_in_folders)
+COMPAT_TEST(remove_file_in_folders)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -816,28 +816,28 @@ static void remove_file(const char* patch_path, bool expect_removed, const std::
         EXPECT_FILE_EQ("to_remove", "");
 }
 
-PATCH_TEST(remove_file_successfully_no_args)
+COMPAT_TEST(remove_file_successfully_no_args)
 {
     remove_file(patch_path, true, {});
 }
 
-PATCH_TEST(no_remove_file_posix)
+COMPAT_TEST(no_remove_file_posix)
 {
     remove_file(patch_path, false, { "--posix" });
 }
 
-PATCH_TEST(no_remove_file_posix_as_env)
+COMPAT_TEST(no_remove_file_posix_as_env)
 {
     Patch::set_env("POSIXLY_CORRECT", "1");
     remove_file(patch_path, false, {});
 }
 
-PATCH_TEST(remove_file_successfully_posix_and_remove_flag)
+COMPAT_TEST(remove_file_successfully_posix_and_remove_flag)
 {
     remove_file(patch_path, true, { "--posix", "--remove-empty-files" });
 }
 
-PATCH_TEST(unified_patch_that_empties_file_keeps_empty_file)
+COMPAT_TEST(unified_patch_that_empties_file_keeps_empty_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -864,7 +864,7 @@ PATCH_TEST(unified_patch_that_empties_file_keeps_empty_file)
     EXPECT_FILE_EQ("target.txt", "");
 }
 
-PATCH_TEST(git_patch_remove_file)
+COMPAT_TEST(git_patch_remove_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -899,7 +899,7 @@ index 01e79c3..0000000
     EXPECT_FALSE(Patch::filesystem::exists("a"));
 }
 
-PATCH_TEST(remove_file_that_has_trailing_garbage)
+COMPAT_TEST(remove_file_that_has_trailing_garbage)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -937,7 +937,7 @@ Not deleting file remove as content differs from patch
     EXPECT_FILE_EQ("remove", "// some trailing garbage\n");
 }
 
-PATCH_TEST(remove_git_submodule)
+COMPAT_TEST(remove_git_submodule)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -983,7 +983,7 @@ File libarchive is not a regular file -- refusing to patch
     EXPECT_EQ(process.return_code(), 1);
 }
 
-PATCH_TEST(git_binary_patch)
+COMPAT_TEST(git_binary_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1021,7 +1021,7 @@ HcmV?d00001
     EXPECT_EQ(process.return_code(), 1);
 }
 
-PATCH_TEST(basic_unicode_patch_filepaths)
+COMPAT_TEST(basic_unicode_patch_filepaths)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1050,7 +1050,7 @@ PATCH_TEST(basic_unicode_patch_filepaths)
     EXPECT_FILE_EQ("שלום עולם!", "a\nc\n");
 }
 
-PATCH_TEST(override_reject_file)
+COMPAT_TEST(override_reject_file)
 {
     const std::string patch = R"(--- a	2022-07-08 10:34:03.860546761 +1200
 +++ b	2022-07-08 10:34:20.096714313 +1200
@@ -1086,7 +1086,7 @@ Hunk #1 FAILED at 1.
     EXPECT_FILE_EQ("override.rej", patch);
 }
 
-PATCH_TEST(reject_format_context)
+COMPAT_TEST(reject_format_context)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1133,7 +1133,7 @@ Hunk #1 FAILED at 1.
 )");
 }
 
-PATCH_TEST(unicode_rename_git_no_quoting)
+COMPAT_TEST(unicode_rename_git_no_quoting)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1204,17 +1204,17 @@ static void test_chdir(const char* patch_path, const std::string& folder)
     EXPECT_FILE_EQ(folder + "/1", "1\n3\n");
 }
 
-PATCH_TEST(chdir_unicode)
+COMPAT_TEST(chdir_unicode)
 {
     test_chdir(patch_path, "गिलास");
 }
 
-PATCH_TEST(chdir_good_case)
+COMPAT_TEST(chdir_good_case)
 {
     test_chdir(patch_path, "folder");
 }
 
-PATCH_TEST(rename_no_change)
+COMPAT_TEST(rename_no_change)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1242,7 +1242,7 @@ rename to another_new
     EXPECT_FALSE(Patch::filesystem::exists("orig_file"));
 }
 
-PATCH_TEST(reverse_rename_no_change)
+COMPAT_TEST(reverse_rename_no_change)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1270,7 +1270,7 @@ rename to y
     EXPECT_FALSE(Patch::filesystem::exists("y"));
 }
 
-PATCH_TEST(rename_with_change)
+COMPAT_TEST(rename_with_change)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1308,7 +1308,7 @@ index 71ac1b5..fc3102f 100644
     EXPECT_FALSE(Patch::filesystem::exists("thing"));
 }
 
-PATCH_TEST(copy_no_change)
+COMPAT_TEST(copy_no_change)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1340,7 +1340,7 @@ copy to y
     EXPECT_FILE_EQ("y", to_patch);
 }
 
-PATCH_TEST(copy_with_change)
+COMPAT_TEST(copy_with_change)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1385,7 +1385,7 @@ index 905869d..2227c3a 100644
 )");
 }
 
-PATCH_TEST(rename_already_exists_no_content)
+COMPAT_TEST(rename_already_exists_no_content)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1427,7 +1427,7 @@ rename to b
     EXPECT_FALSE(Patch::filesystem::exists("a"));
 }
 
-PATCH_TEST(rename_already_exists_with_content)
+COMPAT_TEST(rename_already_exists_with_content)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1463,7 +1463,7 @@ index de98044..0f673f8 100644
     EXPECT_FALSE(Patch::filesystem::exists("b"));
 }
 
-PATCH_TEST(reverse_rename_already_exists_with_content)
+COMPAT_TEST(reverse_rename_already_exists_with_content)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1499,7 +1499,7 @@ index de98044..0f673f8 100644
     EXPECT_FALSE(Patch::filesystem::exists("b"));
 }
 
-PATCH_TEST(backup_rename_patch)
+COMPAT_TEST(backup_rename_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1540,7 +1540,7 @@ rename to b
     EXPECT_FALSE(Patch::filesystem::exists("a"));
 }
 
-PATCH_TEST(backup_on_top_of_existing_file)
+COMPAT_TEST(backup_on_top_of_existing_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1624,22 +1624,22 @@ static void backup_if_mismatch(const char* patch_path, const std::vector<const c
     EXPECT_FILE_EQ("a.orig", to_patch);
 }
 
-PATCH_TEST(backup_if_mismatch_done_by_default)
+COMPAT_TEST(backup_if_mismatch_done_by_default)
 {
     backup_if_mismatch(patch_path, {});
 }
 
-PATCH_TEST(backup_if_mismatch_done_with_flag)
+COMPAT_TEST(backup_if_mismatch_done_with_flag)
 {
     backup_if_mismatch(patch_path, { "--backup-if-mismatch" });
 }
 
-PATCH_TEST(backup_if_mismatch_done_posix_and_done_with_flag)
+COMPAT_TEST(backup_if_mismatch_done_posix_and_done_with_flag)
 {
     backup_if_mismatch(patch_path, { "--backup-if-mismatch", "--posix" });
 }
 
-PATCH_TEST(backup_if_mismatch_done_posix_and_backup_given)
+COMPAT_TEST(backup_if_mismatch_done_posix_and_backup_given)
 {
     backup_if_mismatch(patch_path, { "-b", "--posix" });
 }
@@ -1682,25 +1682,25 @@ static void no_backup_if_mismatch(const char* patch_path, const std::vector<cons
     EXPECT_FALSE(Patch::filesystem::exists("a.orig"));
 }
 
-PATCH_TEST(backup_if_mismatch_not_done_with_flag)
+COMPAT_TEST(backup_if_mismatch_not_done_with_flag)
 {
     no_backup_if_mismatch(patch_path, { "--no-backup-if-mismatch" });
 }
 
-PATCH_TEST(COMPAT_XFAIL_backup_if_mismatch_not_done_posix)
+COMPAT_TEST(COMPAT_XFAIL_backup_if_mismatch_not_done_posix)
 {
     // NOTE: This appears to be a bug with GNU patch.
     //       Setting POSIXLY_CORRECT appears to work (see below), but --posix flag does not!
     no_backup_if_mismatch(patch_path, { "--posix" });
 }
 
-PATCH_TEST(backup_if_mismatch_not_done_posix_env)
+COMPAT_TEST(backup_if_mismatch_not_done_posix_env)
 {
     Patch::set_env("POSIXLY_CORRECT", "1");
     no_backup_if_mismatch(patch_path, {});
 }
 
-PATCH_TEST(backup_multiple_files_only_backs_up_first)
+COMPAT_TEST(backup_multiple_files_only_backs_up_first)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1749,7 +1749,7 @@ PATCH_TEST(backup_multiple_files_only_backs_up_first)
     EXPECT_FILE_EQ("main.cpp.orig", to_patch);
 }
 
-PATCH_TEST(backup_when_patch_is_adding_a_file)
+COMPAT_TEST(backup_when_patch_is_adding_a_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1775,7 +1775,7 @@ PATCH_TEST(backup_when_patch_is_adding_a_file)
     EXPECT_FILE_EQ("f.orig", "");
 }
 
-PATCH_TEST(backup_creates_parent_directories)
+COMPAT_TEST(backup_creates_parent_directories)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1797,7 +1797,7 @@ PATCH_TEST(backup_creates_parent_directories)
     EXPECT_FILE_EQ("backups/nested/file.orig", "");
 }
 
-PATCH_TEST(backup_prefix_only)
+COMPAT_TEST(backup_prefix_only)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1827,7 +1827,7 @@ PATCH_TEST(backup_prefix_only)
     EXPECT_FILE_EQ("x", "xyz\n");
 }
 
-PATCH_TEST(backup_suffix_only)
+COMPAT_TEST(backup_suffix_only)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1857,7 +1857,7 @@ PATCH_TEST(backup_suffix_only)
     EXPECT_FILE_EQ("x", "xyz\n");
 }
 
-PATCH_TEST(backup_prefix_and_suffix)
+COMPAT_TEST(backup_prefix_and_suffix)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1887,7 +1887,7 @@ PATCH_TEST(backup_prefix_and_suffix)
     EXPECT_FILE_EQ("x", "xyz\n");
 }
 
-PATCH_TEST(reverse_still_applies_to_first_file)
+COMPAT_TEST(reverse_still_applies_to_first_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1933,7 +1933,7 @@ PATCH_TEST(reverse_still_applies_to_first_file)
 )");
 }
 
-PATCH_TEST(reverse_option_when_reversed)
+COMPAT_TEST(reverse_option_when_reversed)
 {
     const std::string patch = R"(
 )";
@@ -1983,7 +1983,7 @@ Unreversed patch detected!  Skipping patch.
     EXPECT_FALSE(Patch::filesystem::exists("main.cpp.orig"));
 }
 
-PATCH_TEST(write_output_to_some_file)
+COMPAT_TEST(write_output_to_some_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2015,7 +2015,7 @@ PATCH_TEST(write_output_to_some_file)
     EXPECT_FILE_EQ("some-file", "a\nd\nc\n");
 }
 
-PATCH_TEST(error_when_invalid_patch_given)
+COMPAT_TEST(error_when_invalid_patch_given)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2029,7 +2029,7 @@ PATCH_TEST(error_when_invalid_patch_given)
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(error_when_nonexistent_patch_file_given)
+COMPAT_TEST(error_when_nonexistent_patch_file_given)
 {
     EXPECT_FALSE(Patch::filesystem::exists("diff.patch"));
 
@@ -2043,7 +2043,7 @@ PATCH_TEST(error_when_nonexistent_patch_file_given)
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(error_on_chdir_to_bad_directory)
+COMPAT_TEST(error_on_chdir_to_bad_directory)
 {
     Process process(patch_path, { patch_path, "-i", "diff.patch", "-d", "bad_directory", nullptr });
     EXPECT_EQ(process.stdout_data(), "");
@@ -2085,22 +2085,22 @@ static void test_basic_bad_mode_given(const char* patch_path, const char* new_mo
     EXPECT_EQ(old_perms, new_perms);
 }
 
-PATCH_TEST(test_basic_bad_mode_given_too_long)
+COMPAT_TEST(test_basic_bad_mode_given_too_long)
 {
     test_basic_bad_mode_given(patch_path, "1007555");
 }
 
-PATCH_TEST(test_basic_bad_mode_given_bad_character_ending)
+COMPAT_TEST(test_basic_bad_mode_given_bad_character_ending)
 {
     test_basic_bad_mode_given(patch_path, "10075a");
 }
 
-PATCH_TEST(test_basic_bad_mode_given_bad_character_beginning)
+COMPAT_TEST(test_basic_bad_mode_given_bad_character_beginning)
 {
     test_basic_bad_mode_given(patch_path, ";0075a");
 }
 
-PATCH_TEST(add_executable_bit)
+COMPAT_TEST(add_executable_bit)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2181,17 +2181,17 @@ static void test_read_only_file(const char* patch_path, const std::vector<const 
     EXPECT_TRUE(old_mode == new_mode);
 }
 
-PATCH_TEST(read_only_file_no_arguments)
+COMPAT_TEST(read_only_file_no_arguments)
 {
     test_read_only_file(patch_path);
 }
 
-PATCH_TEST(read_only_file_warn)
+COMPAT_TEST(read_only_file_warn)
 {
     test_read_only_file(patch_path, { "--read-only=warn" });
 }
 
-PATCH_TEST(read_only_file_ignore)
+COMPAT_TEST(read_only_file_ignore)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2234,7 +2234,7 @@ PATCH_TEST(read_only_file_ignore)
     EXPECT_TRUE(old_mode == new_mode);
 }
 
-PATCH_TEST(read_only_file_fail)
+COMPAT_TEST(read_only_file_fail)
 {
     const std::string patch = R"(--- a	2022-09-18 09:59:59.586887443 +1200
 +++ a	2022-09-18 10:00:04.410912780 +1200
@@ -2290,7 +2290,7 @@ static Patch::filesystem::perms make_file_read_only(const std::string& path)
     return permissions;
 }
 
-PATCH_TEST(malformed_patch_does_not_modify_read_only_file)
+COMPAT_TEST(malformed_patch_does_not_modify_read_only_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2319,7 +2319,7 @@ d4
     EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
 }
 
-PATCH_TEST(backup_failure_does_not_modify_read_only_file)
+COMPAT_TEST(backup_failure_does_not_modify_read_only_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2346,7 +2346,7 @@ PATCH_TEST(backup_failure_does_not_modify_read_only_file)
     EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
 }
 
-PATCH_TEST(replacement_preserves_file_mode)
+COMPAT_TEST(replacement_preserves_file_mode)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2376,7 +2376,7 @@ PATCH_TEST(replacement_preserves_file_mode)
     EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_mode);
 }
 
-PATCH_TEST(late_parse_failure_keeps_completed_files)
+COMPAT_TEST(late_parse_failure_keeps_completed_files)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2411,7 +2411,7 @@ dnew b
     EXPECT_FILE_EQ("b", "old b\n");
 }
 
-PATCH_TEST(git_swap_files)
+COMPAT_TEST(git_swap_files)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2453,7 +2453,7 @@ patching file a (renamed from b)
     EXPECT_FILE_EQ("b", a_content);
 }
 
-PATCH_TEST(unified_patch_with_corrupted_operation_line)
+COMPAT_TEST(unified_patch_with_corrupted_operation_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2483,7 +2483,7 @@ d4
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(reversed_patch_batch)
+COMPAT_TEST(reversed_patch_batch)
 {
     {
         Patch::File file("a", std::ios_base::out);
@@ -2515,7 +2515,7 @@ PATCH_TEST(reversed_patch_batch)
     EXPECT_FILE_EQ("a", "1\n2\n3\n");
 }
 
-PATCH_TEST(basic_add_symlink_file)
+COMPAT_TEST(basic_add_symlink_file)
 {
 #ifndef _WIN32
     {
@@ -2563,7 +2563,7 @@ index 0000000..2e65efe
 #endif
 }
 
-PATCH_TEST(basic_add_symlink_file_to_stdout)
+COMPAT_TEST(basic_add_symlink_file_to_stdout)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -2588,7 +2588,7 @@ index 0000000..2e65efe
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(regular_patch_refuses_to_follow_symlink)
+COMPAT_TEST(regular_patch_refuses_to_follow_symlink)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

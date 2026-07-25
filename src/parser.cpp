@@ -1131,6 +1131,29 @@ Patch parse_patch(File& file, Format format, int strip)
     return patch;
 }
 
+bool is_safe_patch_path(const std::string& path)
+{
+    if (path.empty() || path == "/dev/null")
+        return true;
+
+    if (filesystem::is_absolute(path))
+        return false;
+
+    // Reject any '..' component, including one which would resolve back inside the working directory
+    for (std::size_t begin = 0; begin < path.size();) {
+        std::size_t end = begin;
+        while (end < path.size() && !filesystem::is_seperator(path[end]))
+            ++end;
+
+        if (end - begin == 2 && path[begin] == '.' && path[begin + 1] == '.')
+            return false;
+
+        begin = end + 1;
+    }
+
+    return true;
+}
+
 std::string strip_path(const std::string& path, int amount)
 {
     // A negative strip count (the default) indicates that we use the basename of the filepath.

@@ -86,7 +86,8 @@ bool parse_normal_range(Hunk& hunk, const std::string& line);
 bool parse_ed_command(EdCommand& command, const std::string& line);
 
 std::string strip_path(const std::string& path, int amount);
-std::string parse_path(const std::string& input, int strip);
+
+bool is_safe_patch_path(const std::string& path);
 
 bool string_to_line_number(const std::string& str, LineNumber& output);
 

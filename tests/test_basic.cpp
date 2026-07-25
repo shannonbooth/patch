@@ -1538,6 +1538,127 @@ rename to b
     EXPECT_FILE_EQ("b", to_patch);
     EXPECT_FILE_EQ("b.orig", "");
     EXPECT_FALSE(Patch::filesystem::exists("a"));
+    EXPECT_FILE_EQ("a.orig", to_patch);
+}
+
+COMPAT_TEST(backup_of_removed_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- gone.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-content to lose
+)";
+        file.close();
+    }
+
+    const std::string to_patch = "content to lose\n";
+    {
+        Patch::File file("gone.txt", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p0", "-b", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file gone.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    // The file is removed, so the backup is the only copy left of its content.
+    EXPECT_FALSE(Patch::filesystem::exists("gone.txt"));
+    EXPECT_FILE_EQ("gone.txt.orig", to_patch);
+}
+
+COMPAT_TEST(backup_of_removed_file_in_subdirectory)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- sub/nested.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-content to lose
+)";
+        file.close();
+    }
+
+    const std::string to_patch = "content to lose\n";
+    {
+        Patch::filesystem::create_directory("sub");
+        Patch::File file("sub/nested.txt", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p0", "-b", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file sub/nested.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FALSE(Patch::filesystem::exists("sub/nested.txt"));
+    EXPECT_FILE_EQ("sub/nested.txt.orig", to_patch);
+}
+
+COMPAT_TEST(no_backup_of_removed_file_without_flag)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- gone.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-content to lose
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("gone.txt", std::ios_base::out);
+        file << "content to lose\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p0", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file gone.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FALSE(Patch::filesystem::exists("gone.txt"));
+    EXPECT_FALSE(Patch::filesystem::exists("gone.txt.orig"));
+}
+
+COMPAT_TEST(no_backup_of_removed_file_for_dry_run)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(--- gone.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-content to lose
+)";
+        file.close();
+    }
+
+    const std::string to_patch = "content to lose\n";
+    {
+        Patch::File file("gone.txt", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p0", "-b", "--dry-run", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("gone.txt", to_patch);
+    EXPECT_FALSE(Patch::filesystem::exists("gone.txt.orig"));
 }
 
 COMPAT_TEST(backup_on_top_of_existing_file)

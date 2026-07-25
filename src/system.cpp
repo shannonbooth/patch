@@ -282,6 +282,22 @@ TemporaryFile create_temporary_file_near(const std::string& destination, bool bi
 
 namespace filesystem {
 
+bool is_absolute(const std::string& path)
+{
+    if (path.empty())
+        return false;
+
+    if (is_seperator(path[0]))
+        return true;
+
+#ifdef _WIN32
+    // A drive letter, with or without a following separator.
+    return path.size() >= 2 && path[1] == ':';
+#else
+    return false;
+#endif
+}
+
 std::string temp_directory_path()
 {
 #ifdef _WIN32
@@ -343,9 +359,7 @@ static bool target_is_directory(const std::string& target, const std::string& li
 {
     // A symlink target is relative to the directory containing the link, so resolve it against that directory.
     std::string resolved = target;
-    const bool is_absolute = (target.size() >= 2 && target[1] == ':')
-        || (!target.empty() && (target[0] == '/' || target[0] == '\\'));
-    if (!is_absolute) {
+    if (!is_absolute(target)) {
         const auto slash = linkpath.find_last_of("/\\");
         if (slash != std::string::npos)
             resolved = linkpath.substr(0, slash + 1) + target;

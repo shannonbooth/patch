@@ -33,6 +33,8 @@ constexpr bool is_seperator(char c)
 #endif
 }
 
+bool is_absolute(const std::string& path);
+
 void symlink(const std::string& target, const std::string& linkpath);
 
 std::string basename(const std::string& path);

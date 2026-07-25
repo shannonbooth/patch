@@ -463,8 +463,9 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
         ensure_parent_directories(output_file_path);
 
     auto output_permissions = input_permissions;
-    if (patch.new_file_mode != 0)
-        output_permissions = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
+    const auto mode_permissions = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
+    if (mode_permissions != filesystem::perms::none)
+        output_permissions = mode_permissions;
 
     if (patch.format == Format::Git && patch.operation != Operation::Delete) {
         if (filesystem::is_symlink(patch.new_file_mode)) {

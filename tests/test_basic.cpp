@@ -2563,6 +2563,72 @@ index 0000000..2e65efe
 #endif
 }
 
+TEST(file_mode_symlink_predicate)
+{
+    EXPECT_TRUE(Patch::filesystem::is_symlink(0120000)); // symbolic link
+
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0160000)); // git submodule
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0100644)); // regular file
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0100755)); // executable file
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0040000)); // directory
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0140000)); // socket
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0170000)); // all type bits set
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0));       // unspecified
+
+    // The permission bits must not influence the type.
+    EXPECT_TRUE(Patch::filesystem::is_symlink(0120777));
+    EXPECT_FALSE(Patch::filesystem::is_symlink(0160777));
+}
+
+static void write_add_submodule_patch()
+{
+    Patch::File file("diff.patch", std::ios_base::out);
+
+    file << R"(diff --git a/sub b/sub
+new file mode 160000
+index 0000000..2ab5a7b
+--- /dev/null
++++ b/sub
+@@ -0,0 +1 @@
++Subproject commit 2ab5a7b1234567890123456789012345678901234
+)";
+    file.close();
+}
+
+COMPAT_TEST(git_add_submodule_is_not_a_symlink)
+{
+    write_add_submodule_patch();
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file sub\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FALSE(Patch::filesystem::is_symlink("sub"));
+    EXPECT_TRUE(Patch::filesystem::is_regular_file("sub"));
+}
+
+// Not a COMPAT_TEST: GNU patch seems to be unable to reverse this.
+PATCH_TEST(git_add_submodule_is_readable_and_reversible)
+{
+    write_add_submodule_patch();
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("sub", "Subproject commit 2ab5a7b1234567890123456789012345678901234\n");
+
+    const auto permissions = Patch::filesystem::get_permissions("sub");
+    EXPECT_TRUE((permissions & Patch::filesystem::perms::owner_read) != Patch::filesystem::perms::none);
+    EXPECT_TRUE((permissions & Patch::filesystem::perms::owner_write) != Patch::filesystem::perms::none);
+
+    Process reverse(patch_path, { patch_path, "-R", "-i", "diff.patch", nullptr });
+    EXPECT_EQ(reverse.stdout_data(), "patching file sub\n");
+    EXPECT_EQ(reverse.return_code(), 0);
+    EXPECT_FALSE(Patch::filesystem::exists("sub"));
+}
+
 COMPAT_TEST(basic_add_symlink_file_to_stdout)
 {
     {

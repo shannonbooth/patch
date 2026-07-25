@@ -6,7 +6,7 @@
 #include <patch/system.h>
 #include <patch/test.h>
 
-PATCH_TEST(basic_context_patch)
+COMPAT_TEST(basic_context_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -48,7 +48,7 @@ PATCH_TEST(basic_context_patch)
 )");
 }
 
-PATCH_TEST(basic_verbose_context_patch_with_trailing_garbage)
+COMPAT_TEST(basic_verbose_context_patch_with_trailing_garbage)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -102,7 +102,7 @@ done
 )");
 }
 
-PATCH_TEST(context_patch_with_corrupted_operation_line)
+COMPAT_TEST(context_patch_with_corrupted_operation_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -136,7 +136,7 @@ x  1
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(context_patch_missing_from_line)
+COMPAT_TEST(context_patch_missing_from_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -169,7 +169,7 @@ PATCH_TEST(context_patch_missing_from_line)
     EXPECT_EQ(process.return_code(), 2);
 }
 
-PATCH_TEST(context_patch_missing_to_line)
+COMPAT_TEST(context_patch_missing_to_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

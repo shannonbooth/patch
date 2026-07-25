@@ -4,7 +4,7 @@
 #include <patch/pty_spawn.h>
 #include <patch/test.h>
 
-PATCH_TEST(pty_reversed_patch_answer_yes)
+COMPAT_TEST(pty_reversed_patch_answer_yes)
 {
     {
         Patch::File file("a", std::ios_base::out);
@@ -35,7 +35,7 @@ Reversed (or previously applied) patch detected!  Assume -R? [n] )");
     EXPECT_EQ(term.return_code(), 0);
 }
 
-PATCH_TEST(pty_file_not_found)
+COMPAT_TEST(pty_file_not_found)
 {
     {
         Patch::File file("file", std::ios_base::out);
@@ -70,7 +70,7 @@ File to patch: patching file file
     EXPECT_EQ(term.return_code(), 0);
 }
 
-PATCH_TEST(pty_file_not_found_verbose)
+COMPAT_TEST(pty_file_not_found_verbose)
 {
     {
         Patch::File file("file", std::ios_base::out);
@@ -109,7 +109,7 @@ done
     EXPECT_EQ(term.return_code(), 0);
 }
 
-PATCH_TEST(pty_file_not_found_strip_option_given)
+COMPAT_TEST(pty_file_not_found_strip_option_given)
 {
     {
         Patch::File file("file", std::ios_base::out);
@@ -144,7 +144,7 @@ File to patch: patching file file
     EXPECT_EQ(term.return_code(), 0);
 }
 
-PATCH_TEST(pty_file_not_found_skip_patch)
+COMPAT_TEST(pty_file_not_found_skip_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -175,7 +175,7 @@ Skip this patch? [y] Skipping patch.
     EXPECT_EQ(term.return_code(), 1);
 }
 
-PATCH_TEST(pty_file_not_found_two_patches_skip_both)
+COMPAT_TEST(pty_file_not_found_two_patches_skip_both)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -224,7 +224,7 @@ Skip this patch? [y] Skipping patch.
     EXPECT_EQ(term.return_code(), 1);
 }
 
-PATCH_TEST(pty_file_cannot_apply_forwards_but_can_reversed_with_fuzz)
+COMPAT_TEST(pty_file_cannot_apply_forwards_but_can_reversed_with_fuzz)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -257,7 +257,7 @@ Reversed (or previously applied) patch detected!  Assume -R? [n] Apply anyway? [
     EXPECT_EQ(term.return_code(), 1);
 }
 
-PATCH_TEST(pty_patch_is_reversed_apply_anyway)
+COMPAT_TEST(pty_patch_is_reversed_apply_anyway)
 {
     const std::string patch = R"(--- a	2023-01-08 10:32:38.112719302 +1300
 +++ b	2023-01-08 10:32:44.400714493 +1300

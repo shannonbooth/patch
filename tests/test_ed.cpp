@@ -63,7 +63,8 @@ zero
     EXPECT_EQ(patch.ed_commands[2].operation, Patch::EdOperation::Append);
 }
 
-PATCH_TEST(ed_patch_mixed_commands)
+// GNU patch does not print the patched filename when applying an ed script.
+COMPAT_TEST(COMPAT_XFAIL_ed_patch_mixed_commands)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -91,7 +92,7 @@ A
     EXPECT_FILE_EQ("to_patch", "A\nb\nc\nE\nf\ng\n");
 }
 
-PATCH_TEST(ed_patch_is_detected_automatically)
+COMPAT_TEST(ed_patch_is_detected_automatically)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -108,7 +109,7 @@ PATCH_TEST(ed_patch_is_detected_automatically)
     EXPECT_FILE_EQ("to_patch", "a\nb\nc\nd\n");
 }
 
-PATCH_TEST(ed_patch_handles_dot_lines)
+COMPAT_TEST(ed_patch_handles_dot_lines)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -130,6 +131,8 @@ PATCH_TEST(ed_patch_handles_dot_lines)
     EXPECT_FILE_EQ("to_patch", ".\n..\n...\n");
 }
 
+// GNU patch delegates ed scripts to an external editor, and its handling of a
+// missing target differs across platforms.
 PATCH_TEST(ed_patch_creates_missing_file)
 {
     {
@@ -177,7 +180,7 @@ PATCH_TEST(ed_patch_appends_after_missing_final_newline)
     EXPECT_FILE_BINARY_EQ("to_patch", "existing\ninserted\n");
 }
 
-PATCH_TEST(ed_patch_removes_empty_file)
+COMPAT_TEST(ed_patch_removes_empty_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -194,7 +197,8 @@ PATCH_TEST(ed_patch_removes_empty_file)
     EXPECT_FALSE(Patch::filesystem::exists("to_patch"));
 }
 
-PATCH_TEST(ed_patch_invalid_address_is_atomic)
+// GNU patch produces different diagnostics.
+COMPAT_TEST(COMPAT_XFAIL_ed_patch_invalid_address_is_atomic)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -213,6 +217,8 @@ PATCH_TEST(ed_patch_invalid_address_is_atomic)
     EXPECT_FILE_EQ("to_patch", "unchanged\n");
 }
 
+// GNU patch delegates parsing to an external editor, so handling of an
+// unterminated command depends on the editor available on the host.
 PATCH_TEST(ed_patch_missing_terminator_is_atomic)
 {
     {
@@ -230,7 +236,8 @@ PATCH_TEST(ed_patch_missing_terminator_is_atomic)
     EXPECT_FILE_EQ("to_patch", "unchanged\n");
 }
 
-PATCH_TEST(ed_patch_cannot_be_reversed)
+// GNU patch does not reject the reverse option for an ed script.
+COMPAT_TEST(COMPAT_XFAIL_ed_patch_cannot_be_reversed)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

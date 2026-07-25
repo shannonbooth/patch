@@ -5,7 +5,7 @@
 #include <patch/process.h>
 #include <patch/test.h>
 
-PATCH_TEST(defines_add_one_line)
+COMPAT_TEST(defines_add_one_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -40,7 +40,7 @@ PATCH_TEST(defines_add_one_line)
 )");
 }
 
-PATCH_TEST(defines_remove_one_line)
+COMPAT_TEST(defines_remove_one_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -77,7 +77,7 @@ PATCH_TEST(defines_remove_one_line)
 )");
 }
 
-PATCH_TEST(defines_remove_add)
+COMPAT_TEST(defines_remove_add)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -118,7 +118,7 @@ PATCH_TEST(defines_remove_add)
 )");
 }
 
-PATCH_TEST(defines_add_remove)
+COMPAT_TEST(defines_add_remove)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -173,7 +173,7 @@ PATCH_TEST(defines_add_remove)
     }
 }
 
-PATCH_TEST(defines_changes_at_end_of_file)
+COMPAT_TEST(defines_changes_at_end_of_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -215,7 +215,7 @@ PATCH_TEST(defines_changes_at_end_of_file)
 )");
 }
 
-PATCH_TEST(defines_more_complex_patch)
+COMPAT_TEST(defines_more_complex_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -315,7 +315,7 @@ int main()
 )");
 }
 
-PATCH_TEST(defines_add_file_from_empty_input)
+COMPAT_TEST(defines_add_file_from_empty_input)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

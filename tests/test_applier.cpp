@@ -4,7 +4,7 @@
 #include <patch/process.h>
 #include <patch/test.h>
 
-PATCH_TEST(applier_add_oneline_patch)
+COMPAT_TEST(applier_add_oneline_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -40,7 +40,7 @@ PATCH_TEST(applier_add_oneline_patch)
 )");
 }
 
-PATCH_TEST(applier_add_oneline_normal_patch)
+COMPAT_TEST(applier_add_oneline_normal_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -70,7 +70,7 @@ PATCH_TEST(applier_add_oneline_normal_patch)
 )");
 }
 
-PATCH_TEST(applier_remove_oneline_normal_patch)
+COMPAT_TEST(applier_remove_oneline_normal_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -99,7 +99,7 @@ PATCH_TEST(applier_remove_oneline_normal_patch)
 )");
 }
 
-PATCH_TEST(applier_add_oneline_patch_no_context)
+COMPAT_TEST(applier_add_oneline_patch_no_context)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -132,7 +132,7 @@ PATCH_TEST(applier_add_oneline_patch_no_context)
 )");
 }
 
-PATCH_TEST(applier_remove_oneline_patch_two_lines_context)
+COMPAT_TEST(applier_remove_oneline_patch_two_lines_context)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -167,7 +167,7 @@ PATCH_TEST(applier_remove_oneline_patch_two_lines_context)
 )");
 }
 
-PATCH_TEST(applier_my_second1234567)
+COMPAT_TEST(applier_my_second1234567)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -213,7 +213,7 @@ PATCH_TEST(applier_my_second1234567)
 )");
 }
 
-PATCH_TEST(applier_two_lines_removed_with_no_context)
+COMPAT_TEST(applier_two_lines_removed_with_no_context)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -257,7 +257,7 @@ PATCH_TEST(applier_two_lines_removed_with_no_context)
 )");
 }
 
-PATCH_TEST(applier_two_lines_added_with_no_context)
+COMPAT_TEST(applier_two_lines_added_with_no_context)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -301,7 +301,7 @@ PATCH_TEST(applier_two_lines_added_with_no_context)
 )");
 }
 
-PATCH_TEST(applier_my_1234567)
+COMPAT_TEST(applier_my_1234567)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -343,7 +343,7 @@ PATCH_TEST(applier_my_1234567)
 )");
 }
 
-PATCH_TEST(applier_remove_oneline_patch_no_context)
+COMPAT_TEST(applier_remove_oneline_patch_no_context)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -376,7 +376,7 @@ PATCH_TEST(applier_remove_oneline_patch_no_context)
 )");
 }
 
-PATCH_TEST(applier_add_two_line_patch)
+COMPAT_TEST(applier_add_two_line_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -414,7 +414,7 @@ PATCH_TEST(applier_add_two_line_patch)
 )");
 }
 
-PATCH_TEST(applier_remove_one_line_patch)
+COMPAT_TEST(applier_remove_one_line_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -450,7 +450,7 @@ PATCH_TEST(applier_remove_one_line_patch)
 )");
 }
 
-PATCH_TEST(applier_remove_two_line_patch)
+COMPAT_TEST(applier_remove_two_line_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -488,7 +488,7 @@ PATCH_TEST(applier_remove_two_line_patch)
 )");
 }
 
-PATCH_TEST(applier_normal_diff_remove_two_lines)
+COMPAT_TEST(applier_normal_diff_remove_two_lines)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -529,7 +529,7 @@ PATCH_TEST(applier_normal_diff_remove_two_lines)
 )");
 }
 
-PATCH_TEST(applier_normal_diff_change_lines)
+COMPAT_TEST(applier_normal_diff_change_lines)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -573,7 +573,7 @@ PATCH_TEST(applier_normal_diff_change_lines)
 )");
 }
 
-PATCH_TEST(applier_add_one_remove_one_patch)
+COMPAT_TEST(applier_add_one_remove_one_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -611,7 +611,7 @@ PATCH_TEST(applier_add_one_remove_one_patch)
 )");
 }
 
-PATCH_TEST(applier_multiple_hunks)
+COMPAT_TEST(applier_multiple_hunks)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -675,7 +675,7 @@ int subtract(int x, int y)
 )");
 }
 
-PATCH_TEST(applier_multiple_hunks_without_space)
+COMPAT_TEST(applier_multiple_hunks_without_space)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -739,7 +739,7 @@ int subtract(int x, int y)
 )");
 }
 
-PATCH_TEST(applier_context_patch)
+COMPAT_TEST(applier_context_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -777,7 +777,7 @@ PATCH_TEST(applier_context_patch)
 )");
 }
 
-PATCH_TEST(applier_multi_context_patch)
+COMPAT_TEST(applier_multi_context_patch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -865,7 +865,7 @@ int main()
 )");
 }
 
-PATCH_TEST(applier_context_diff_with_changed_line)
+COMPAT_TEST(applier_context_diff_with_changed_line)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -936,7 +936,7 @@ int main()
 )");
 }
 
-PATCH_TEST(applier_context_diff_with_offset)
+COMPAT_TEST(applier_context_diff_with_offset)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -976,7 +976,7 @@ int main()
 )");
 }
 
-PATCH_TEST(applier_context_diff_with_negative_offset)
+COMPAT_TEST(applier_context_diff_with_negative_offset)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1013,7 +1013,7 @@ PATCH_TEST(applier_context_diff_with_negative_offset)
 )");
 }
 
-PATCH_TEST(applier_unified_diff_with_only_whitespace_change_ignore_whitespace)
+COMPAT_TEST(applier_unified_diff_with_only_whitespace_change_ignore_whitespace)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1050,7 +1050,7 @@ PATCH_TEST(applier_unified_diff_with_only_whitespace_change_ignore_whitespace)
 )");
 }
 
-PATCH_TEST(applier_unified_diff_ignore_whitespace)
+COMPAT_TEST(applier_unified_diff_ignore_whitespace)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1092,7 +1092,7 @@ PATCH_TEST(applier_unified_diff_ignore_whitespace)
 )");
 }
 
-PATCH_TEST(applier_unified_diff_missing_new_line_at_end_of_file)
+COMPAT_TEST(applier_unified_diff_missing_new_line_at_end_of_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1128,7 +1128,7 @@ PATCH_TEST(applier_unified_diff_missing_new_line_at_end_of_file)
 })");
 }
 
-PATCH_TEST(applier_single_line_addition_from_empty_file)
+COMPAT_TEST(applier_single_line_addition_from_empty_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1150,7 +1150,7 @@ PATCH_TEST(applier_single_line_addition_from_empty_file)
     EXPECT_FILE_EQ("test1", "new line from empty\n");
 }
 
-PATCH_TEST(applier_multi_line_addition_from_empty_file)
+COMPAT_TEST(applier_multi_line_addition_from_empty_file)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -1176,7 +1176,7 @@ PATCH_TEST(applier_multi_line_addition_from_empty_file)
 )");
 }
 
-PATCH_TEST(applier_add_file_but_file_already_exists_with_conflicts)
+COMPAT_TEST(applier_add_file_but_file_already_exists_with_conflicts)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

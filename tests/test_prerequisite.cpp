@@ -6,7 +6,7 @@
 #include <patch/pty_spawn.h>
 #include <patch/test.h>
 
-PATCH_TEST(prerequisite_is_met)
+COMPAT_TEST(prerequisite_is_met)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -54,7 +54,7 @@ PATCH_TEST(prerequisite_is_met)
 )");
 }
 
-PATCH_TEST(prerequisite_is_not_met_continue_success)
+COMPAT_TEST(prerequisite_is_not_met_continue_success)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -93,7 +93,7 @@ PATCH_TEST(prerequisite_is_not_met_continue_success)
     EXPECT_EQ(term.return_code(), 0);
 }
 
-PATCH_TEST(prerequisite_is_not_met_abort)
+COMPAT_TEST(prerequisite_is_not_met_abort)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -132,7 +132,7 @@ PATCH_TEST(prerequisite_is_not_met_abort)
     EXPECT_EQ(term.return_code(), 2);
 }
 
-PATCH_TEST(prerequisite_is_not_met_force)
+COMPAT_TEST(prerequisite_is_not_met_force)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);
@@ -171,7 +171,7 @@ PATCH_TEST(prerequisite_is_not_met_force)
     EXPECT_EQ(process.return_code(), 0);
 }
 
-PATCH_TEST(prerequisite_is_not_met_batch)
+COMPAT_TEST(prerequisite_is_not_met_batch)
 {
     {
         Patch::File file("diff.patch", std::ios_base::out);

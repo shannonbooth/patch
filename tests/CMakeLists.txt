@@ -31,29 +31,35 @@ if(GNU_PATCH)
   endif()
 endif()
 
-function(read_test_names_for_file filename test_names)
+function(read_test_names_for_file filename test_names compat_test_names)
   file(STRINGS ${filename} contents NEWLINE_CONSUME)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${filename})
   set(found_tests)
+  set(found_compat_tests)
   # FIXME: there are a bunch of scenarios where this parsing may go wrong.
-  string(REGEX MATCHALL "(PATCH_TEST|TEST)\\(([_a-zA-Z][_a-zA-Z0-9]*)\\)" tests "${contents}")
+  string(REGEX MATCHALL "(COMPAT_TEST|PATCH_TEST|TEST)\\(([_a-zA-Z][_a-zA-Z0-9]*)\\)" tests "${contents}")
   foreach(test ${tests})
-    string(REGEX MATCHALL "(PATCH_TEST|TEST)\\(([_a-zA-Z][_a-zA-Z0-9]*)\\)" dummy "${test}")
+    string(REGEX MATCH "(COMPAT_TEST|PATCH_TEST|TEST)\\(([_a-zA-Z][_a-zA-Z0-9]*)\\)" dummy "${test}")
+    set(test_type ${CMAKE_MATCH_1})
     set(test_name ${CMAKE_MATCH_2})
     list(APPEND found_tests ${test_name})
+    if(test_type STREQUAL "COMPAT_TEST")
+      list(APPEND found_compat_tests ${test_name})
+    endif()
   endforeach()
   set(${test_names} ${found_tests} PARENT_SCOPE)
+  set(${compat_test_names} ${found_compat_tests} PARENT_SCOPE)
 endfunction()
 
-function(patch_add_tests target_name patch_target test_compat_gnu_patch)
+function(patch_add_tests target_name patch_target)
   get_target_property(files ${target_name} SOURCES)
   foreach(file ${files})
-    read_test_names_for_file(${file} tests)
+    read_test_names_for_file(${file} tests compat_tests)
     foreach(test ${tests})
       add_test(NAME ${test} COMMAND ${target_name} $<TARGET_FILE:${patch_target}> ${test})
       # A test exits with a magic number 77 to report that it skipped itself.
       set_tests_properties("${test}" PROPERTIES SKIP_RETURN_CODE 77)
-      if(test_compat_gnu_patch AND GNU_PATCH)
+      if("${test}" IN_LIST compat_tests AND GNU_PATCH)
         add_test(NAME compat.${test} COMMAND ${target_name} ${GNU_PATCH} "compat.${test}")
         set_tests_properties("compat.${test}" PROPERTIES SKIP_RETURN_CODE 77)
       endif()
@@ -71,13 +77,6 @@ else()
   target_sources(patch_test PRIVATE lib/src/unix_process.cpp)
 endif()
 
-if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
-  add_executable(test_pty test_pty.cpp test_prerequisite.cpp lib/src/pty_spawn.cpp)
-  target_link_libraries(test_pty PRIVATE patch_test util)
-  target_include_directories(test_pty PRIVATE lib/src ${CMAKE_CURRENT_BINARY_DIR}/lib/src)
-  patch_add_tests(test_pty sb_patch ON)
-endif()
-
 add_executable(patch_oom
   stubs/stub_patch_oom.cpp
   ${PROJECT_SOURCE_DIR}/src/options.cpp
@@ -87,20 +86,15 @@ target_include_directories(patch_oom PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 add_executable(test_oom test_oom.cpp)
 target_link_libraries(test_oom PRIVATE patch_test)
-patch_add_tests(test_oom patch_oom OFF)
+patch_add_tests(test_oom patch_oom)
 
-add_executable(test_basic
+add_executable(patch_tests
   test_basic.cpp
   test_normal.cpp
   test_context.cpp
   test_defines.cpp
   test_applier.cpp
   test_quoting.cpp
-)
-target_link_libraries(test_basic PRIVATE patch_test)
-patch_add_tests(test_basic sb_patch ON)
-
-add_executable(test_unit
   test_cmdline.cpp
   test_determine_format.cpp
   test_ed.cpp
@@ -114,8 +108,19 @@ add_executable(test_unit
   test_reject.cpp
   test_strip.cpp
 )
-target_link_libraries(test_unit PRIVATE patch_test)
-patch_add_tests(test_unit sb_patch OFF)
+target_link_libraries(patch_tests PRIVATE patch_test)
+
+if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)
+  target_sources(patch_tests PRIVATE
+    test_pty.cpp
+    test_prerequisite.cpp
+    lib/src/pty_spawn.cpp
+  )
+  target_link_libraries(patch_tests PRIVATE util)
+  target_include_directories(patch_tests PRIVATE lib/src ${CMAKE_CURRENT_BINARY_DIR}/lib/src)
+endif()
+
+patch_add_tests(patch_tests sb_patch)
 
 add_test(NAME cmake.install_consumer
   COMMAND ${CMAKE_COMMAND}

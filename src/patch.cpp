@@ -485,29 +485,25 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
     if (mode_permissions != filesystem::perms::none)
         output_permissions = mode_permissions;
 
-    if (patch.format == Format::Git && patch.operation != Operation::Delete) {
-        if (filesystem::is_symlink(patch.new_file_mode)) {
-            // A symlink patch should contain the filename in the contents of the patched file.
-            const auto symlink_target = patched_file.read_all_as_string();
-            if (make_backup)
-                backup.make_backup_for(output_file_path);
-            filesystem::symlink(symlink_target, output_file_path);
-        } else {
-            // A later Git patch may still read a path replaced by an earlier
-            // one, as when swapping files, so defer installing the replacement.
-            auto replacement = StagedReplacement::create(output_file_path, patched_file,
-                (mode & std::ios_base::binary) != 0, output_permissions);
-            if (make_backup)
-                backup.make_backup_for(output_file_path);
-            deferred_writer.deferred_write(std::move(replacement));
-        }
-    } else {
-        auto replacement = StagedReplacement::create(output_file_path, patched_file,
-            (mode & std::ios_base::binary) != 0, output_permissions);
+    if (patch.format == Format::Git && patch.operation != Operation::Delete && filesystem::is_symlink(patch.new_file_mode)) {
+        // A symlink patch should contain the filename in the contents of the patched file.
+        const auto symlink_target = patched_file.read_all_as_string();
         if (make_backup)
             backup.make_backup_for(output_file_path);
-        replacement.commit();
+        filesystem::symlink(symlink_target, output_file_path);
+        return;
     }
+
+    auto replacement = StagedReplacement::create(output_file_path, patched_file, (mode & std::ios_base::binary) != 0, output_permissions);
+    if (make_backup)
+        backup.make_backup_for(output_file_path);
+
+    // A rename or copy may still need to read the path it is replacing (such as when two renames swap a pair of files)
+    // so only do this once the input has read.
+    if (patch.operation == Operation::Rename || patch.operation == Operation::Copy)
+        deferred_writer.deferred_write(std::move(replacement));
+    else
+        replacement.commit();
 }
 
 static int process_patches(const Options& options, DeferredWriter& deferred_writer)

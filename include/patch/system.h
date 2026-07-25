@@ -77,8 +77,9 @@ enum class perms : unsigned {
 
 inline bool is_symlink(uint32_t mode)
 {
-    constexpr uint32_t symlink_mode = 0120000;
-    return (mode & symlink_mode) == symlink_mode;
+    constexpr uint32_t file_type_mask = 0170000; // S_IFMT
+    constexpr uint32_t symlink_mode = 0120000;   // S_IFLNK
+    return (mode & file_type_mask) == symlink_mode;
 }
 
 inline perms operator&(perms left, perms right)

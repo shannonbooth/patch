@@ -476,8 +476,8 @@ static bool refuse_read_only_file(std::ostream& out, const Options& options, con
 void write_patched_result_to_file(const Patch& patch, const std::string& output_file_path, filesystem::perms input_permissions,
     std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file, Backup& backup, bool make_backup)
 {
-    // Ensure that parent directories exist if we are adding a file.
-    if (patch.operation == Operation::Add)
+    // Ensure that parent directories exist if we are potentially putting a file into a new location.
+    if (patch.operation == Operation::Add || patch.operation == Operation::Rename || patch.operation == Operation::Copy)
         ensure_parent_directories(output_file_path);
 
     auto output_permissions = input_permissions;

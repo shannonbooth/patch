@@ -971,6 +971,72 @@ rename to a.txt
     EXPECT_FILE_EQ("b.txt", "content A\n");
 }
 
+COMPAT_TEST(git_patch_renaming_into_a_directory_which_does_not_exist)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(diff --git a/old.txt b/newdir/new.txt
+rename from old.txt
+rename to newdir/new.txt
+index 1111111..2222222 100644
+--- a/old.txt
++++ b/newdir/new.txt
+@@ -1 +1 @@
+-content
++edited
+)";
+        file.close();
+    }
+
+    {
+        Patch::File file("old.txt", std::ios_base::out);
+        file << "content\n";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "--batch", "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file newdir/new.txt (renamed from old.txt)\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("newdir/new.txt", "edited\n");
+    EXPECT_FALSE(Patch::filesystem::exists("old.txt"));
+}
+
+COMPAT_TEST(git_patch_copying_into_a_directory_which_does_not_exist)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(diff --git a/x b/newdir/y
+similarity index 100%
+copy from x
+copy to newdir/y
+)";
+        file.close();
+    }
+
+    const std::string to_patch = R"(int main()
+{
+    return 0;
+}
+)";
+    {
+        Patch::File file("x", std::ios_base::out);
+        file << to_patch;
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-p1", "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.stdout_data(), "patching file newdir/y (copied from x)\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("x", to_patch);
+    EXPECT_FILE_EQ("newdir/y", to_patch);
+}
+
 COMPAT_TEST(git_patch_remove_file)
 {
     {

@@ -837,6 +837,40 @@ COMPAT_TEST(remove_file_successfully_posix_and_remove_flag)
     remove_file(patch_path, true, { "--posix", "--remove-empty-files" });
 }
 
+COMPAT_TEST(deleting_to_explicit_output_writes_an_empty_file)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- source.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-content
+)";
+    }
+
+    {
+        Patch::File file("source.txt", std::ios_base::out);
+        file << "content\n";
+    }
+
+    Patch::filesystem::create_directory("outside");
+    Patch::filesystem::create_directory("outside/deep");
+    {
+        Patch::File file("outside/deep/target.txt", std::ios_base::out);
+        file << "old content\n";
+    }
+
+    const auto output = Patch::current_path() + "/outside/deep/target.txt";
+    Process process(patch_path, { patch_path, "--batch", "-i", "diff.patch", "-o", output.c_str(), nullptr });
+
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+    EXPECT_FILE_EQ("outside/deep/target.txt", "");
+    EXPECT_TRUE(Patch::filesystem::exists("outside/deep"));
+    EXPECT_TRUE(Patch::filesystem::exists("outside"));
+    EXPECT_FILE_EQ("source.txt", "content\n");
+}
+
 COMPAT_TEST(unified_patch_that_empties_file_keeps_empty_file)
 {
     {

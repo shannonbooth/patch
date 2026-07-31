@@ -646,7 +646,8 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
 
         // Clean up the file if it looks like it was removed.
         // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
-        if (options.remove_empty_files == Options::OptionalBool::Yes
+        if (options.out_file_path.empty()
+            && options.remove_empty_files == Options::OptionalBool::Yes
             && (patch.operation == Operation::Delete || (patch.format == Format::Ed && tmp_out_file.size() == 0))) {
             if (tmp_out_file.size() == 0) {
                 if (!options.dry_run) {

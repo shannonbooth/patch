@@ -506,6 +506,174 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
         replacement.commit();
 }
 
+static bool process_parsed_patch(const Options& options, DeferredWriter& deferred_writer,
+    Backup& backup, Parser& parser, Patch& patch, const PatchHeaderInfo& info,
+    bool& should_parse_body, std::ostream& out)
+{
+    if (patch.operation == Operation::Binary) {
+        out << "File " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ": git binary diffs are not supported.\n";
+        return true;
+    }
+
+    if (options.verbose)
+        out << "Hmm...  Looks like a " << to_string(info.format) << " diff to me...\n";
+
+    const auto parse_body_if_needed = [&] {
+        if (should_parse_body) {
+            parser.parse_patch_body(patch);
+            should_parse_body = false;
+        }
+    };
+
+    reject_unsafe_paths(patch, options, out);
+
+    auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch) : options.file_to_patch;
+
+    if (file_to_patch.empty()) {
+        out << "can't find file to patch at input line " << parser.line_number()
+            << "\nPerhaps you "
+            << (options.strip_size == -1 ? "should have used the" : "used the wrong")
+            << " -p or --strip option?\n";
+    }
+
+    if (options.verbose || file_to_patch.empty())
+        parser.print_header_info(info, out);
+
+    if (file_to_patch.empty() && !options.force && !options.batch)
+        file_to_patch = prompt_for_filepath(out);
+
+    if (file_to_patch.empty()) {
+        parse_body_if_needed();
+
+        if (options.force || options.batch)
+            out << "No file to patch.  ";
+        out << "Skipping patch.\n";
+        inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
+        out << '\n';
+        return true;
+    }
+
+    const auto output_file = output_path(options, patch, file_to_patch);
+
+    std::ios::openmode mode = std::ios::out;
+    if (options.newline_output != Options::NewlineOutput::Native)
+        mode |= std::ios::binary;
+
+    File tmp_reject_file = File::create_temporary();
+    RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
+
+    if (filesystem::exists(file_to_patch) && !filesystem::is_regular_file(file_to_patch)) {
+        parse_body_if_needed();
+        out << "File " << file_to_patch << " is not a regular file --";
+        refuse_to_patch(out, mode, output_file, patch, options);
+        return true;
+    }
+
+    if (refuse_read_only_file(out, options, output_file)) {
+        parse_body_if_needed();
+        refuse_to_patch(out, mode, output_file, patch, options);
+        return true;
+    }
+
+    File input_file;
+    auto input_mode = std::ios_base::in;
+    if (options.newline_output != Options::NewlineOutput::Native)
+        input_mode |= std::ios_base::binary;
+    input_file.open(file_to_patch, input_mode);
+    if (!input_file && (errno != ENOENT || patch.operation != Operation::Add))
+        throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
+
+    const auto input_lines = file_as_lines(input_file);
+    const auto input_permissions = input_file ? input_file.get_permissions() : filesystem::perms::unknown;
+
+    if (options.force && patch.operation == Operation::Add && input_file) {
+        out << "The next patch would create the file " << file_to_patch
+            << ",\nwhich already exists!  Applying it anyway.\n";
+    }
+
+    input_file.close();
+
+    if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))
+        check_prerequisite_handling(out, options, patch.prerequisite);
+
+    out << patch_operation(options) << (filesystem::is_symlink(patch.new_file_mode) ? " symbolic link " : " file ") << format_filename(options.quoting_style, output_file);
+
+    if (patch.operation == Operation::Rename) {
+        if (file_to_patch == output_file) {
+            out << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";
+            patch.operation = Operation::Change;
+        } else {
+            out << " (renamed from " << file_to_patch << ")";
+        }
+    } else if (patch.operation == Operation::Copy) {
+        out << " (copied from " << file_to_patch << ")";
+    } else if (!options.out_file_path.empty()) {
+        out << " (read from " << file_to_patch << ")";
+    }
+    out << '\n';
+
+    parse_body_if_needed();
+
+    if (options.verbose)
+        out << "Using Plan A...\n";
+
+    File tmp_out_file = File::create_temporary();
+
+    Result result = apply_patch(tmp_out_file, reject_writer, input_lines, patch, options, out);
+    bool had_failure = result.failed_hunks != 0;
+
+    if (result.failed_hunks != 0) {
+        const char* reason = result.was_skipped ? "ignored" : "FAILED";
+        inform_hunks_failed(out, reason, patch.hunks, result.failed_hunks);
+        if (!options.dry_run) {
+            const auto reject_file = reject_path(options, output_file);
+            out << " -- saving rejects to file " << reject_file;
+
+            File file(reject_file, mode | std::ios::trunc);
+            tmp_reject_file.write_entire_contents_to(file);
+        }
+        out << '\n';
+    }
+
+    if (options.out_file_path == "-") {
+        // Nothing else to do other than write to stdout :^)
+        tmp_out_file.write_entire_contents_to(stdout);
+    } else {
+        bool write_to_file = !options.dry_run;
+
+        const bool make_backup = options.save_backup
+            || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes);
+
+        // Clean up the file if it looks like it was removed.
+        // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
+        if (options.remove_empty_files == Options::OptionalBool::Yes
+            && (patch.operation == Operation::Delete || (patch.format == Format::Ed && tmp_out_file.size() == 0))) {
+            if (tmp_out_file.size() == 0) {
+                if (!options.dry_run) {
+                    if (make_backup)
+                        backup.make_backup_for(output_file);
+                    remove_file_and_empty_parent_folders(output_file);
+                }
+                write_to_file = false;
+            } else {
+                out << "Not deleting file " << output_file << " as content differs from patch\n";
+                had_failure = true;
+            }
+        }
+
+        if (write_to_file)
+            write_patched_result_to_file(patch, output_file, input_permissions, mode, deferred_writer, tmp_out_file, backup, make_backup);
+
+        if (result.failed_hunks == 0 && write_to_file && patch.operation == Operation::Rename) {
+            if (make_backup)
+                backup.make_backup_for(file_to_patch);
+            remove_file_and_empty_parent_folders(file_to_patch);
+        }
+    }
+
+    return had_failure;
+}
+
 static int process_patches(const Options& options, DeferredWriter& deferred_writer)
 {
     if (options.show_help) {
@@ -522,8 +690,7 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
         chdir(options.patch_directory_path);
 
     // When writing the patched file to cout - write any prompts to cerr instead.
-    const bool output_to_stdout = options.out_file_path == "-";
-    auto& out = output_to_stdout ? std::cerr : std::cout;
+    auto& out = options.out_file_path == "-" ? std::cerr : std::cout;
 
     PatchFile patch_file(options);
     Backup backup(options);
@@ -551,169 +718,8 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
 
         first_patch = false;
 
-        if (patch.operation == Operation::Binary) {
-            out << "File " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ": git binary diffs are not supported.\n";
-            had_failure = true;
-            continue;
-        }
-
-        if (options.verbose)
-            out << "Hmm...  Looks like a " << to_string(info.format) << " diff to me...\n";
-
-        reject_unsafe_paths(patch, options, out);
-
-        auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch) : options.file_to_patch;
-
-        if (file_to_patch.empty()) {
-            out << "can't find file to patch at input line " << parser.line_number()
-                << "\nPerhaps you "
-                << (options.strip_size == -1 ? "should have used the" : "used the wrong")
-                << " -p or --strip option?\n";
-        }
-
-        if (options.verbose || file_to_patch.empty())
-            parser.print_header_info(info, out);
-
-        if (file_to_patch.empty() && !options.force && !options.batch)
-            file_to_patch = prompt_for_filepath(out);
-
-        if (file_to_patch.empty()) {
-            if (should_parse_body)
-                parser.parse_patch_body(patch);
-
-            if (options.force || options.batch)
-                out << "No file to patch.  ";
-            out << "Skipping patch.\n";
-            inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
-            out << '\n';
-            had_failure = true;
-            continue;
-        }
-
-        const auto output_file = output_path(options, patch, file_to_patch);
-
-        std::ios::openmode mode = std::ios::out;
-        if (options.newline_output != Options::NewlineOutput::Native)
-            mode |= std::ios::binary;
-
-        File tmp_reject_file = File::create_temporary();
-        RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
-
-        if (filesystem::exists(file_to_patch) && !filesystem::is_regular_file(file_to_patch)) {
-            if (should_parse_body)
-                parser.parse_patch_body(patch);
-            out << "File " << file_to_patch << " is not a regular file --";
-            refuse_to_patch(out, mode, output_file, patch, options);
-            had_failure = true;
-            continue;
-        }
-
-        if (refuse_read_only_file(out, options, output_file)) {
-            if (should_parse_body)
-                parser.parse_patch_body(patch);
-            refuse_to_patch(out, mode, output_file, patch, options);
-            had_failure = true;
-            continue;
-        }
-
-        File input_file;
-        auto input_mode = std::ios_base::in;
-        if (options.newline_output != Options::NewlineOutput::Native)
-            input_mode |= std::ios_base::binary;
-        input_file.open(file_to_patch, input_mode);
-        if (!input_file && (errno != ENOENT || patch.operation != Operation::Add))
-            throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
-
-        const auto input_lines = file_as_lines(input_file);
-        const auto input_permissions = input_file ? input_file.get_permissions() : filesystem::perms::unknown;
-
-        if (options.force && patch.operation == Operation::Add && input_file) {
-            out << "The next patch would create the file " << file_to_patch
-                << ",\nwhich already exists!  Applying it anyway.\n";
-        }
-
-        input_file.close();
-
-        if (!patch.prerequisite.empty() && !has_prerequisite(input_lines, patch.prerequisite))
-            check_prerequisite_handling(out, options, patch.prerequisite);
-
-        out << patch_operation(options) << (filesystem::is_symlink(patch.new_file_mode) ? " symbolic link " : " file ") << format_filename(options.quoting_style, output_file);
-
-        if (patch.operation == Operation::Rename) {
-            if (file_to_patch == output_file) {
-                out << " (already renamed from " << (options.reverse_patch ? patch.new_file_path : patch.old_file_path) << ")";
-                patch.operation = Operation::Change;
-            } else {
-                out << " (renamed from " << file_to_patch << ")";
-            }
-        } else if (patch.operation == Operation::Copy) {
-            out << " (copied from " << file_to_patch << ")";
-        } else if (!options.out_file_path.empty()) {
-            out << " (read from " << file_to_patch << ")";
-        }
-        out << '\n';
-
-        if (should_parse_body)
-            parser.parse_patch_body(patch);
-
-        if (options.verbose)
-            out << "Using Plan A...\n";
-
-        File tmp_out_file = File::create_temporary();
-
-        Result result = apply_patch(tmp_out_file, reject_writer, input_lines, patch, options, out);
-
-        if (result.failed_hunks != 0) {
-            had_failure = true;
-            const char* reason = result.was_skipped ? "ignored" : "FAILED";
-            inform_hunks_failed(out, reason, patch.hunks, result.failed_hunks);
-            if (!options.dry_run) {
-                const auto reject_file = reject_path(options, output_file);
-                out << " -- saving rejects to file " << reject_file;
-
-                File file(reject_file, mode | std::ios::trunc);
-                tmp_reject_file.write_entire_contents_to(file);
-            }
-            out << '\n';
-        }
-
-        if (output_to_stdout) {
-            // Nothing else to do other than write to stdout :^)
-            tmp_out_file.write_entire_contents_to(stdout);
-        } else {
-            bool write_to_file = !options.dry_run;
-
-            const bool make_backup = options.save_backup
-                || (!result.all_hunks_applied_perfectly && !result.was_skipped && options.backup_if_mismatch == Options::OptionalBool::Yes);
-
-            // Clean up the file if it looks like it was removed.
-            // NOTE: we check for file size for the degenerate case that the file is a removal, but has nothing left.
-            if (options.remove_empty_files == Options::OptionalBool::Yes
-                && (patch.operation == Operation::Delete || (patch.format == Format::Ed && tmp_out_file.size() == 0))) {
-                if (tmp_out_file.size() == 0) {
-                    if (!options.dry_run) {
-                        if (make_backup)
-                            backup.make_backup_for(output_file);
-                        remove_file_and_empty_parent_folders(output_file);
-                    }
-                    write_to_file = false;
-                } else {
-                    out << "Not deleting file " << output_file << " as content differs from patch\n";
-                    had_failure = true;
-                }
-            }
-
-            if (write_to_file)
-                write_patched_result_to_file(patch, output_file, input_permissions, mode, deferred_writer, tmp_out_file, backup, make_backup);
-
-            if (result.failed_hunks == 0) {
-                if (write_to_file && patch.operation == Operation::Rename) {
-                    if (make_backup)
-                        backup.make_backup_for(file_to_patch);
-                    remove_file_and_empty_parent_folders(file_to_patch);
-                }
-            }
-        }
+        had_failure |= process_parsed_patch(options, deferred_writer, backup,
+            parser, patch, info, should_parse_body, out);
     }
 
     if (options.verbose)

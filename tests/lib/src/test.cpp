@@ -17,6 +17,16 @@
 
 namespace Patch {
 
+bool file_exists(const std::string& path)
+{
+    return filesystem::exists(path);
+}
+
+bool create_directory(const std::string& path)
+{
+    return filesystem::create_directory(path);
+}
+
 enum class Outcome {
     Passed,
     Failed,

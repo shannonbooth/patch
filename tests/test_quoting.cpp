@@ -22,7 +22,7 @@ static void test_quoting(const char* patch_path, const std::string& actual_filen
 )";
     }
 
-    EXPECT_FALSE(Patch::filesystem::exists(actual_filename));
+    EXPECT_FALSE(Patch::file_exists(actual_filename));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 

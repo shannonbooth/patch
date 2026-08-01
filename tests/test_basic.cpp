@@ -2,9 +2,12 @@
 // Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <patch/file.h>
+#include <patch/options.h>
+#include <patch/patch.h>
 #include <patch/process.h>
 #include <patch/system.h>
 #include <patch/test.h>
+#include <system_error>
 
 COMPAT_TEST(basic_unified_patch)
 {
@@ -2357,17 +2360,48 @@ COMPAT_TEST(error_when_invalid_patch_given)
     EXPECT_EQ(process.return_code(), 2);
 }
 
+template<typename Function>
+static void expect_no_such_file_or_directory(Function function)
+{
+    bool caught = false;
+    const auto expected = std::make_error_code(std::errc::no_such_file_or_directory);
+    try {
+        function();
+    } catch (const std::system_error& error) {
+        caught = true;
+        EXPECT_EQ(error.code(), expected);
+    }
+    EXPECT_EQ(caught, true);
+}
+
+TEST(missing_patch_file_reports_no_such_file_or_directory)
+{
+    Patch::Options options;
+    options.patch_file_path = "diff.patch";
+    expect_no_such_file_or_directory([&] { Patch::process_patch(options); });
+}
+
+TEST(bad_patch_directory_reports_no_such_file_or_directory)
+{
+    expect_no_such_file_or_directory([] { Patch::chdir("bad_directory"); });
+}
+
+static void expect_fatal_error_with_prefix(const std::string& output, const std::string& prefix)
+{
+    EXPECT_EQ(output.substr(0, prefix.size()), prefix);
+    EXPECT_NE(output.size(), prefix.size());
+    EXPECT_NE(output.size(), prefix.size() + 1);
+    EXPECT_EQ(output.back(), '\n');
+}
+
 COMPAT_TEST(error_when_nonexistent_patch_file_given)
 {
     EXPECT_FALSE(Patch::filesystem::exists("diff.patch"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
     EXPECT_EQ(process.stdout_data(), "");
-#ifdef _WIN32
-    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** Can't open patch file diff.patch : no such file or directory\n");
-#else
-    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** Can't open patch file diff.patch : No such file or directory\n");
-#endif
+    expect_fatal_error_with_prefix(process.stderr_data(),
+        std::string(patch_path) + ": **** Can't open patch file diff.patch");
     EXPECT_EQ(process.return_code(), 2);
 }
 
@@ -2375,11 +2409,8 @@ COMPAT_TEST(error_on_chdir_to_bad_directory)
 {
     Process process(patch_path, { patch_path, "-i", "diff.patch", "-d", "bad_directory", nullptr });
     EXPECT_EQ(process.stdout_data(), "");
-#ifdef _WIN32
-    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** Can't change to directory bad_directory : no such file or directory\n");
-#else
-    EXPECT_EQ(process.stderr_data(), std::string(patch_path) + ": **** Can't change to directory bad_directory : No such file or directory\n");
-#endif
+    expect_fatal_error_with_prefix(process.stderr_data(),
+        std::string(patch_path) + ": **** Can't change to directory bad_directory");
     EXPECT_EQ(process.return_code(), 2);
 }
 

@@ -807,7 +807,7 @@ void Parser::parse_context_hunk(std::vector<PatchLine>& old_lines, LineNumber& o
 {
     std::string line;
 
-    LineNumber from_file_range_line_number = 0;
+    size_t from_file_range_line_number = 0;
 
     LineNumber old_end_line = 0;
     LineNumber new_end_line = 0;

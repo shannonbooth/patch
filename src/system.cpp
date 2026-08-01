@@ -647,7 +647,10 @@ uintmax_t file_size(FILE* file)
     if (fstat(fileno(file), &buf) != 0)
         throw std::system_error(errno, std::generic_category(), "Unable to fstat file");
 
-    return buf.st_size;
+    if (buf.st_size < 0)
+        throw std::system_error(std::make_error_code(std::errc::invalid_argument), "File has a negative size");
+
+    return static_cast<uintmax_t>(buf.st_size);
 }
 
 } // namespace filesystem

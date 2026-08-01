@@ -140,7 +140,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
         if (fds.empty())
             break;
 
-        int poll_result = ::poll(fds.data(), fds.size(), 5000);
+        int poll_result = ::poll(fds.data(), static_cast<nfds_t>(fds.size()), 5000);
         if (poll_result < 0)
             throw std::system_error(errno, std::generic_category(), "Poll failed waiting for data");
 

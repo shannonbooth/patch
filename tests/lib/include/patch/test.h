@@ -41,7 +41,8 @@ inline std::string escaped_string_for_test_output(const std::string& value)
     std::ostringstream out;
     out << '"';
 
-    for (unsigned char c : value) {
+    for (char c : value) {
+        const auto byte = static_cast<unsigned char>(c);
         switch (c) {
         case '\\':
             out << "\\\\";
@@ -59,10 +60,10 @@ inline std::string escaped_string_for_test_output(const std::string& value)
             out << "\\t";
             break;
         default:
-            if (c >= 0x20 && c < 0x7f) {
-                out << static_cast<char>(c);
+            if (byte >= 0x20 && byte < 0x7f) {
+                out << c;
             } else {
-                out << "\\x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << std::dec;
+                out << "\\x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << std::dec;
             }
             break;
         }

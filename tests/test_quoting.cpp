@@ -60,7 +60,9 @@ COMPAT_TEST(quoting_c_style_single_quote)
 
 COMPAT_TEST(quoting_c_style_double_quote)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "with\"quote", "patching file \"with\\\"quote\"\n");
 #endif
@@ -68,7 +70,9 @@ COMPAT_TEST(quoting_c_style_double_quote)
 
 COMPAT_TEST(quoting_c_style_backslash)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "with\\slash", "patching file \"with\\\\slash\"\n");
 #endif
@@ -76,7 +80,9 @@ COMPAT_TEST(quoting_c_style_backslash)
 
 COMPAT_TEST(quoting_c_style_newline)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "with\nnewline", R"("with\nnewline")", "patching file \"with\\nnewline\"\n");
 #endif
@@ -84,7 +90,9 @@ COMPAT_TEST(quoting_c_style_newline)
 
 COMPAT_TEST(quoting_c_style_tab)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     Patch::set_env("QUOTING_STYLE", "c");
     test_quoting(patch_path, "with\ttab", R"("with\ttab")", "patching file \"with\\ttab\"\n");
 #endif
@@ -104,7 +112,9 @@ COMPAT_TEST(quoting_shell_always_style_single_quote_only)
 
 COMPAT_TEST(quoting_shell_always_style_double_quote_only)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     Patch::set_env("QUOTING_STYLE", "shell-always");
     test_quoting(patch_path, "with\"quote", "patching file 'with\"quote'\n");
 #endif
@@ -112,7 +122,9 @@ COMPAT_TEST(quoting_shell_always_style_double_quote_only)
 
 COMPAT_TEST(quoting_shell_style_double_quote_only)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     Patch::set_env("QUOTING_STYLE", "shell");
     test_quoting(patch_path, "with\"quote", "patching file 'with\"quote'\n");
 #endif

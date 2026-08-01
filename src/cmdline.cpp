@@ -2,6 +2,7 @@
 // Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <patch/cmdline.h>
 #include <patch/system.h>
@@ -29,8 +30,9 @@ CmdLine::CmdLine(int argc, const char* const* argv)
     if (!wide_argv)
         throw std::bad_alloc();
 
-    narrowed_argv_str.reserve(m_argc);
-    narrowed_argv.reserve(m_argc);
+    const auto argument_count = static_cast<std::size_t>(m_argc);
+    narrowed_argv_str.reserve(argument_count);
+    narrowed_argv.reserve(argument_count);
 
     for (int i = 0; i < m_argc; ++i) {
         narrowed_argv_str.emplace_back(to_narrow(wide_argv[i]));

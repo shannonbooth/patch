@@ -9,6 +9,7 @@
 
 #ifdef _WIN32
 #    include <cstdlib>
+#    include <windows.h>
 #else
 #    include <unistd.h>
 #endif
@@ -24,6 +25,20 @@ enum class Outcome {
 void skip_test(const std::string& reason)
 {
     throw test_skipped(reason);
+}
+
+void skip_without_symlink_support()
+{
+#ifdef _WIN32
+    try {
+        filesystem::symlink("target", "symlink-support-probe");
+        filesystem::remove("symlink-support-probe");
+    } catch (const std::system_error& error) {
+        if (error.code() != std::error_code(ERROR_PRIVILEGE_NOT_HELD, std::system_category()))
+            throw;
+        skip_test("creating a symbolic link requires a privilege this environment does not grant");
+    }
+#endif
 }
 
 void unset_env(const char* name)

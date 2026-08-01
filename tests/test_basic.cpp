@@ -3084,6 +3084,8 @@ index 0000000..2e65efe
 
 COMPAT_TEST(regular_patch_refuses_to_follow_symlink)
 {
+    Patch::skip_without_symlink_support();
+
     {
         Patch::File file("diff.patch", std::ios_base::out);
         file << R"(--- a
@@ -3100,11 +3102,7 @@ COMPAT_TEST(regular_patch_refuses_to_follow_symlink)
         file << content;
     }
 
-    try {
-        Patch::filesystem::symlink("real", "a");
-    } catch (const std::system_error&) {
-        Patch::skip_test("cannot create symbolic links in this environment");
-    }
+    Patch::filesystem::symlink("real", "a");
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 

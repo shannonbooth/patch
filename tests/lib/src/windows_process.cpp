@@ -5,24 +5,24 @@
 #include <patch/system.h>
 #include <stdexcept>
 #include <system_error>
-#include <windows.h>
+#include <windows_error.h>
 
 class Pipe {
 public:
     explicit Pipe(bool inherit_for_read = true)
     {
         SECURITY_ATTRIBUTES attr;
-        attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+        attr.nLength = static_cast<DWORD>(sizeof(SECURITY_ATTRIBUTES));
         attr.bInheritHandle = true;
         attr.lpSecurityDescriptor = nullptr;
 
         if (!CreatePipe(&m_read_handle, &m_write_handle, &attr, 0))
-            throw std::system_error(GetLastError(), std::system_category(), "Failed creating stdout pipe");
+            throw Patch::last_win32_error("Failed creating stdout pipe");
 
         if (!SetHandleInformation(inherit_for_read ? m_read_handle : m_write_handle, HANDLE_FLAG_INHERIT, 0)) {
             CloseHandle(m_read_handle);
             CloseHandle(m_write_handle);
-            throw std::system_error(GetLastError(), std::system_category(), "Failed setting handle information");
+            throw Patch::last_win32_error("Failed setting handle information");
         }
     }
 
@@ -115,7 +115,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
     PROCESS_INFORMATION process_info {};
     STARTUPINFOW start_info {};
 
-    start_info.cb = sizeof(start_info);
+    start_info.cb = static_cast<DWORD>(sizeof(start_info));
     start_info.hStdOutput = stdout_pipe.write_handle();
     start_info.hStdError = stderr_pipe.write_handle();
     start_info.hStdInput = stdin_pipe.read_handle();
@@ -136,7 +136,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
         &process_info);                       // receives PROCESS_INFORMATION
 
     if (ret == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Failed creating process");
+        throw Patch::last_win32_error("Failed creating process");
 
     stdout_pipe.close_write_handle();
     stderr_pipe.close_write_handle();
@@ -167,7 +167,7 @@ Process::Process(const char* cmd, const std::vector<const char*>& args, const st
     CloseHandle(process_info.hThread);
 
     if (ret == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Failed getting process exit code");
+        throw Patch::last_win32_error("Failed getting process exit code");
 
-    m_return_code = exit_code;
+    m_return_code = static_cast<int>(exit_code);
 }

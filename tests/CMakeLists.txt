@@ -19,6 +19,7 @@ target_include_directories(patch_test
     lib/include
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/lib/src
+    ${PROJECT_SOURCE_DIR}/src
 )
 
 find_program(GNU_PATCH patch)

@@ -10,7 +10,7 @@
 #ifdef _WIN32
 #    include <cstdlib>
 #    include <direct.h>
-#    include <windows.h>
+#    include <windows_error.h>
 #else
 #    include <unistd.h>
 #endif
@@ -52,7 +52,7 @@ void skip_without_symlink_support()
         filesystem::symlink("target", "symlink-support-probe");
         filesystem::remove("symlink-support-probe");
     } catch (const std::system_error& error) {
-        if (error.code() != std::error_code(ERROR_PRIVILEGE_NOT_HELD, std::system_category()))
+        if (error.code() != win32_error_code(ERROR_PRIVILEGE_NOT_HELD))
             throw;
         skip_test("creating a symbolic link requires a privilege this environment does not grant");
     }

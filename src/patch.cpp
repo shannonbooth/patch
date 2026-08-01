@@ -419,12 +419,12 @@ public:
 
             File contents;
             auto permissions = filesystem::perms::unknown;
-            if (contents.open(file_path, std::ios_base::in | std::ios_base::binary)) {
+            try {
+                contents = File(file_path, std::ios_base::in | std::ios_base::binary);
                 permissions = contents.get_permissions();
-            } else {
-                const auto saved_errno = errno;
-                if (saved_errno != ENOENT)
-                    throw std::system_error(saved_errno, std::generic_category(), "Unable to open input file " + file_path);
+            } catch (const std::system_error& error) {
+                if (error.code() != std::errc::no_such_file_or_directory)
+                    throw;
                 contents = File::create_temporary();
             }
 
@@ -575,13 +575,17 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
         return true;
     }
 
-    File input_file;
     auto input_mode = std::ios_base::in;
     if (options.newline_output != Options::NewlineOutput::Native)
         input_mode |= std::ios_base::binary;
-    input_file.open(file_to_patch, input_mode);
-    if (!input_file && (errno != ENOENT || patch.operation != Operation::Add))
-        throw std::system_error(errno, std::generic_category(), "Unable to open input file " + file_to_patch);
+
+    File input_file;
+    try {
+        input_file = File(file_to_patch, input_mode);
+    } catch (const std::system_error& error) {
+        if (error.code() != std::errc::no_such_file_or_directory || patch.operation != Operation::Add)
+            throw;
+    }
 
     const auto input_lines = file_as_lines(input_file);
     const auto input_permissions = input_file ? input_file.get_permissions() : filesystem::perms::unknown;

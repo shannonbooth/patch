@@ -24,19 +24,19 @@ public:
 
     void write_reject_file(const Hunk& hunk);
 
-    int rejected_hunks() const { return m_rejected_hunks; }
+    size_t rejected_hunks() const { return m_rejected_hunks; }
 
 private:
     bool should_write_as_unified() const;
 
     const Patch& m_patch;
-    int m_rejected_hunks { 0 };
+    size_t m_rejected_hunks { 0 };
     File& m_reject_file;
     Options::RejectFormat m_reject_format { Options::RejectFormat::Default };
 };
 
 struct Result {
-    int failed_hunks;
+    size_t failed_hunks;
     bool was_skipped;
     bool all_hunks_applied_perfectly;
 };

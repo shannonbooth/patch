@@ -43,8 +43,6 @@ bool create_directory(const std::string& path);
 
 std::string temp_directory_path();
 
-std::string make_temp_directory();
-
 bool exists(const std::string& path);
 
 bool is_regular_file(const std::string& path);

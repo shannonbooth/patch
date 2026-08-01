@@ -9,6 +9,7 @@
 
 #ifdef _WIN32
 #    include <cstdlib>
+#    include <direct.h>
 #    include <windows.h>
 #else
 #    include <unistd.h>
@@ -25,6 +26,23 @@ enum class Outcome {
 void skip_test(const std::string& reason)
 {
     throw test_skipped(reason);
+}
+
+static std::string make_temp_directory()
+{
+#ifdef _WIN32
+    std::wstring path = L"patch-XXXXXX";
+    if (_wmktemp_s(&path[0], path.size() + 1) < 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to create temporary file name");
+    if (_wmkdir(path.c_str()) < 0)
+        throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
+    return to_narrow(path);
+#else
+    std::string path = "patch-XXXXXX";
+    if (!mkdtemp(&path[0]))
+        throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
+    return path;
+#endif
 }
 
 void skip_without_symlink_support()
@@ -103,7 +121,7 @@ private:
 
 void Test::setup()
 {
-    m_tmp_dir = Patch::filesystem::make_temp_directory();
+    m_tmp_dir = make_temp_directory();
     Patch::chdir(m_tmp_dir);
 }
 

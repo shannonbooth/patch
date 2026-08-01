@@ -328,28 +328,6 @@ std::string temp_directory_path()
 #endif
 }
 
-std::string make_temp_directory()
-{
-#ifdef _WIN32
-    std::wstring wpath = L"patch-XXXXXX";
-
-    if (_wmktemp_s(&wpath[0], wpath.size() + 1) < 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to create temporary file name");
-
-    if (_wmkdir(wpath.c_str()) < 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
-
-    return to_narrow(wpath);
-#else
-    std::string path = "patch-XXXXXX";
-
-    if (!mkdtemp(&path[0]))
-        throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
-
-    return path;
-#endif
-}
-
 #ifdef _WIN32
 #    ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
 #        define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE 0x2

@@ -286,7 +286,9 @@ static void inform_hunks_failed(std::ostream& out, const char* reason, const std
     out << ' ' << reason;
 }
 
-static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, const std::string& output_file, const Patch& patch, const Options& options)
+static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode,
+    const std::string& output_file, const Patch& patch, const Options& options,
+    const PathResolver& resolver)
 {
     out << " refusing to patch\n";
     inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
@@ -294,7 +296,7 @@ static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode, con
     if (!options.dry_run) {
         const auto reject_file = reject_path(options, output_file);
         out << " -- saving rejects to file " << reject_file;
-        File file(reject_file, mode | std::ios::trunc);
+        auto file = File::open_write(resolver.resolve(reject_file, PathOrigin::User, true), (mode & std::ios_base::binary) != 0);
 
         RejectWriter reject_writer(patch, file, options.reject_format);
         for (const auto& hunk : patch.hunks)
@@ -615,7 +617,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
     if (input_type != FileType::None && input_type != FileType::Regular) {
         parse_body_if_needed();
         out << "File " << file_to_patch << " is not a regular file --";
-        refuse_to_patch(out, mode, output_file, patch, options);
+        refuse_to_patch(out, mode, output_file, patch, options, resolver);
         return true;
     }
 
@@ -629,7 +631,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
 
     if (refuse_read_only_file(out, options, output_file, output_permissions_now)) {
         parse_body_if_needed();
-        refuse_to_patch(out, mode, output_file, patch, options);
+        refuse_to_patch(out, mode, output_file, patch, options, resolver);
         return true;
     }
 
@@ -684,7 +686,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
             const auto reject_file = reject_path(options, output_file);
             out << " -- saving rejects to file " << reject_file;
 
-            File file(reject_file, mode | std::ios::trunc);
+            auto file = File::open_write(resolver.resolve(reject_file, PathOrigin::User, true), (mode & std::ios_base::binary) != 0);
             tmp_reject_file.write_entire_contents_to(file);
         }
         out << '\n';

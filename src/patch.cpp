@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <climits>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <limits>

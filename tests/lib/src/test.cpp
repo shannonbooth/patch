@@ -2,6 +2,7 @@
 // Copyright 2022-2023 Shannon Booth <shannon.ml.booth@gmail.com>
 
 #include <chrono>
+#include <patch/directory.h>
 #include <patch/system.h>
 #include <patch/test.h>
 #include <patch/utils.h>
@@ -12,6 +13,7 @@
 #    include <direct.h>
 #    include <windows_error.h>
 #else
+#    include <climits>
 #    include <unistd.h>
 #endif
 
@@ -19,12 +21,61 @@ namespace Patch {
 
 bool file_exists(const std::string& path)
 {
-    return filesystem::exists(path);
+    try {
+        return PathResolver(".").resolve(path, PathOrigin::User).type() != FileType::None;
+    } catch (const std::system_error& error) {
+        if (error.code() == std::errc::no_such_file_or_directory
+            || error.code() == std::errc::not_a_directory) {
+            return false;
+        }
+        throw;
+    }
 }
 
 bool create_directory(const std::string& path)
 {
-    return filesystem::create_directory(path);
+    return PathResolver(".").resolve(path, PathOrigin::User).create_directory();
+}
+
+void chdir(const std::string& path)
+{
+#ifdef _WIN32
+    const auto wpath = to_wide(path);
+    int ret = ::_wchdir(wpath.c_str());
+#else
+    int ret = ::chdir(path.c_str());
+#endif
+
+    if (ret != 0)
+        throw std::system_error(errno, std::generic_category(), "Can't change to directory " + path + " ");
+}
+
+std::string current_path()
+{
+#ifdef _WIN32
+    std::wstring result;
+    result.resize(MAX_PATH);
+
+    while (true) {
+        const auto requested_size = static_cast<unsigned long>(result.size());
+
+        const auto size = GetCurrentDirectoryW(requested_size, &result[0]);
+
+        if (size == 0)
+            throw last_win32_error("Failed getting current directory");
+
+        result.resize(size);
+        if (size <= requested_size)
+            return to_narrow(result);
+    }
+#else
+    std::array<char, PATH_MAX> buf;
+
+    if (!getcwd(buf.data(), buf.size()))
+        throw std::system_error(errno, std::generic_category(), "Failed getting current directory");
+
+    return std::string(buf.data());
+#endif
 }
 
 enum class Outcome {
@@ -60,8 +111,9 @@ void skip_without_symlink_support()
 {
 #ifdef _WIN32
     try {
-        filesystem::symlink("target", "symlink-support-probe");
-        filesystem::remove("symlink-support-probe");
+        auto probe = PathResolver(".").resolve("symlink-support-probe", PathOrigin::User);
+        probe.create_symlink("target");
+        probe.remove();
     } catch (const std::system_error& error) {
         if (error.code() != win32_error_code(ERROR_PRIVILEGE_NOT_HELD))
             throw;

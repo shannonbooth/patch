@@ -745,10 +745,9 @@ COMPAT_TEST(remove_file_in_folders)
     }
 
     const std::string file_path = "a/b/c/d/e";
-    Patch::ensure_parent_directories(file_path);
-
     {
-        Patch::File file(file_path, std::ios_base::out);
+        Patch::PathResolver resolver(".");
+        auto file = Patch::File::open_write(resolver.resolve(file_path, Patch::PathOrigin::Patch, true), false);
 
         file << "1\n";
         file.close();
@@ -769,9 +768,6 @@ COMPAT_TEST(remove_file_in_folders)
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
-    EXPECT_FALSE(Patch::file_exists("a/b/c/d/e"));
-    EXPECT_FALSE(Patch::file_exists("a/b/c/d"));
-    EXPECT_FALSE(Patch::file_exists("a/b/c"));
     EXPECT_FALSE(Patch::file_exists("a/b"));
     EXPECT_TRUE(Patch::file_exists("a"));
     EXPECT_FILE_EQ("a/1", second_file_contents);
@@ -1008,6 +1004,7 @@ rename to a.txt
     EXPECT_FILE_EQ("a.txt", "content B\n");
     EXPECT_FILE_EQ("b.txt", "content A\n");
 }
+
 
 COMPAT_TEST(git_patch_renaming_into_a_directory_which_does_not_exist)
 {
@@ -1423,6 +1420,29 @@ COMPAT_TEST(chdir_unicode)
 COMPAT_TEST(chdir_good_case)
 {
     test_chdir(patch_path, "folder");
+}
+
+TEST(patch_directory_does_not_change_the_process_directory)
+{
+    Patch::create_directory("folder");
+    {
+        Patch::File patch("folder/diff.patch", std::ios_base::out);
+        patch << R"(--- /dev/null
++++ file
+@@ -0,0 +1 @@
++content
+)";
+    }
+
+    Patch::Options options;
+    options.batch = true;
+    options.patch_directory_path = "folder";
+    options.patch_file_path = "diff.patch";
+
+    const auto working_directory = Patch::current_path();
+    EXPECT_EQ(Patch::process_patch(options), 0);
+    EXPECT_EQ(Patch::current_path(), working_directory);
+    EXPECT_FILE_EQ("folder/file", "content\n");
 }
 
 COMPAT_TEST(rename_no_change)
@@ -2432,7 +2452,7 @@ static void test_basic_bad_mode_given(const char* patch_path, const char* new_mo
         file.close();
     }
 
-    const auto old_perms = Patch::filesystem::get_permissions("file");
+    const auto old_perms = Patch::PathResolver(".").resolve("file", Patch::PathOrigin::User).permissions();
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", "-u", nullptr });
     EXPECT_EQ(process.stdout_data(), "patching file file\n");
@@ -2440,7 +2460,7 @@ static void test_basic_bad_mode_given(const char* patch_path, const char* new_mo
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("file", to_patch);
 
-    const auto new_perms = Patch::filesystem::get_permissions("file");
+    const auto new_perms = Patch::PathResolver(".").resolve("file", Patch::PathOrigin::User).permissions();
 
     EXPECT_EQ(old_perms, new_perms);
 }
@@ -2487,7 +2507,7 @@ new mode 100755
     EXPECT_FILE_EQ("file", to_patch);
 
 #ifndef _WIN32
-    const auto perms = Patch::filesystem::get_permissions("file");
+    const auto perms = Patch::PathResolver(".").resolve("file", Patch::PathOrigin::User).permissions();
     EXPECT_TRUE((perms & Patch::filesystem::perms::owner_exec) != Patch::filesystem::perms::none);
     EXPECT_TRUE((perms & Patch::filesystem::perms::group_exec) != Patch::filesystem::perms::none);
     EXPECT_TRUE((perms & Patch::filesystem::perms::others_exec) != Patch::filesystem::perms::none);
@@ -2517,15 +2537,15 @@ static void test_read_only_file(const char* patch_path, const std::vector<const 
         file.close();
     }
 
-    auto mode = Patch::filesystem::get_permissions("a");
+    auto mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
     const auto ro_mask = Patch::filesystem::perms::all
         ^ (Patch::filesystem::perms::owner_write
             | Patch::filesystem::perms::group_write
             | Patch::filesystem::perms::others_write);
 
     // Make file read-only. Keep track of old mode.
-    Patch::filesystem::permissions("a", mode & ro_mask);
-    const auto old_mode = Patch::filesystem::get_permissions("a");
+    Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).set_permissions(mode & ro_mask);
+    const auto old_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
 
     std::vector<const char*> args { patch_path, "-i", "diff.patch" };
     args.insert(args.end(), extra_args.begin(), extra_args.end());
@@ -2537,7 +2557,7 @@ static void test_read_only_file(const char* patch_path, const std::vector<const 
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "1\n2\n4\n");
 
-    const auto new_mode = Patch::filesystem::get_permissions("a");
+    const auto new_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
     EXPECT_TRUE(old_mode == new_mode);
 }
 
@@ -2574,15 +2594,15 @@ COMPAT_TEST(read_only_file_ignore)
         file.close();
     }
 
-    auto mode = Patch::filesystem::get_permissions("a");
+    auto mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
     const auto ro_mask = Patch::filesystem::perms::all
         ^ (Patch::filesystem::perms::owner_write
             | Patch::filesystem::perms::group_write
             | Patch::filesystem::perms::others_write);
 
     // Make file read-only. Keep track of old mode.
-    Patch::filesystem::permissions("a", mode & ro_mask);
-    const auto old_mode = Patch::filesystem::get_permissions("a");
+    Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).set_permissions(mode & ro_mask);
+    const auto old_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", "--read-only=ignore", nullptr });
     EXPECT_EQ(process.stdout_data(), "patching file a\n");
@@ -2590,7 +2610,7 @@ COMPAT_TEST(read_only_file_ignore)
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "1\n2\n4\n");
 
-    const auto new_mode = Patch::filesystem::get_permissions("a");
+    const auto new_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
     EXPECT_TRUE(old_mode == new_mode);
 }
 
@@ -2617,15 +2637,15 @@ COMPAT_TEST(read_only_file_fail)
         file.close();
     }
 
-    auto mode = Patch::filesystem::get_permissions("a");
+    auto mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
     const auto ro_mask = Patch::filesystem::perms::all
         ^ (Patch::filesystem::perms::owner_write
             | Patch::filesystem::perms::group_write
             | Patch::filesystem::perms::others_write);
 
     // Make file read-only. Keep track of old mode.
-    Patch::filesystem::permissions("a", mode & ro_mask);
-    const auto old_mode = Patch::filesystem::get_permissions("a");
+    Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).set_permissions(mode & ro_mask);
+    const auto old_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", "--read-only", "fail", nullptr });
     EXPECT_EQ(process.stdout_data(), R"(File a is read-only; refusing to patch
@@ -2636,7 +2656,7 @@ COMPAT_TEST(read_only_file_fail)
     EXPECT_FILE_EQ("a", to_patch);
     EXPECT_FILE_EQ("a.rej", patch);
 
-    const auto new_mode = Patch::filesystem::get_permissions("a");
+    const auto new_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
     EXPECT_TRUE(old_mode == new_mode);
 }
 
@@ -2645,8 +2665,8 @@ static Patch::filesystem::perms make_file_read_only(const std::string& path)
     const auto write_permissions = Patch::filesystem::perms::owner_write
         | Patch::filesystem::perms::group_write
         | Patch::filesystem::perms::others_write;
-    const auto permissions = Patch::filesystem::get_permissions(path) & (Patch::filesystem::perms::all ^ write_permissions);
-    Patch::filesystem::permissions(path, permissions);
+    const auto permissions = Patch::PathResolver(".").resolve(path, Patch::PathOrigin::User).permissions() & (Patch::filesystem::perms::all ^ write_permissions);
+    Patch::PathResolver(".").resolve(path, Patch::PathOrigin::User).set_permissions(permissions);
     return permissions;
 }
 
@@ -2676,7 +2696,7 @@ d4
 
     EXPECT_EQ(process.return_code(), 2);
     EXPECT_FILE_EQ("a", original);
-    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
+    EXPECT_EQ(Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions(), original_permissions);
 }
 
 COMPAT_TEST(backup_failure_does_not_modify_read_only_file)
@@ -2703,7 +2723,7 @@ COMPAT_TEST(backup_failure_does_not_modify_read_only_file)
 
     EXPECT_EQ(process.return_code(), 2);
     EXPECT_FILE_EQ("a", original);
-    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_permissions);
+    EXPECT_EQ(Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions(), original_permissions);
 }
 
 COMPAT_TEST(replacement_preserves_file_mode)
@@ -2726,14 +2746,14 @@ COMPAT_TEST(replacement_preserves_file_mode)
     const auto mode = Patch::filesystem::perms::owner_read
         | Patch::filesystem::perms::owner_write
         | Patch::filesystem::perms::group_read;
-    Patch::filesystem::permissions("a", mode);
-    const auto original_mode = Patch::filesystem::get_permissions("a");
+    Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).set_permissions(mode);
+    const auto original_mode = Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions();
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "new\n");
-    EXPECT_EQ(Patch::filesystem::get_permissions("a"), original_mode);
+    EXPECT_EQ(Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).permissions(), original_mode);
 }
 
 COMPAT_TEST(late_parse_failure_keeps_completed_files)
@@ -2910,7 +2930,7 @@ index 0000000..2e65efe
 
     // Sanity check
     EXPECT_FALSE(Patch::file_exists("active"));
-    EXPECT_FALSE(Patch::filesystem::is_symlink("active"));
+    EXPECT_EQ(Patch::PathResolver(".").resolve("active", Patch::PathOrigin::User).type(), Patch::FileType::None);
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
@@ -2919,27 +2939,10 @@ index 0000000..2e65efe
     EXPECT_EQ(process.return_code(), 0);
 
     // Symlink exists and is pointing to valid file that has our contents.
-    EXPECT_TRUE(Patch::filesystem::is_symlink("active"));
+    EXPECT_EQ(Patch::PathResolver(".").resolve("active", Patch::PathOrigin::User).type(), Patch::FileType::Symlink);
     EXPECT_TRUE(Patch::file_exists("active"));
     EXPECT_FILE_EQ("active", content);
 #endif
-}
-
-TEST(file_mode_symlink_predicate)
-{
-    EXPECT_TRUE(Patch::filesystem::is_symlink(0120000)); // symbolic link
-
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0160000)); // git submodule
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0100644)); // regular file
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0100755)); // executable file
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0040000)); // directory
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0140000)); // socket
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0170000)); // all type bits set
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0));       // unspecified
-
-    // The permission bits must not influence the type.
-    EXPECT_TRUE(Patch::filesystem::is_symlink(0120777));
-    EXPECT_FALSE(Patch::filesystem::is_symlink(0160777));
 }
 
 static void write_add_submodule_patch()
@@ -3057,98 +3060,6 @@ COMPAT_TEST(patch_allows_explicit_path_outside_the_directory)
     EXPECT_FILE_EQ("outside.txt", "PATCHED\n");
 }
 
-COMPAT_TEST(git_add_submodule_is_not_a_symlink)
-{
-    write_add_submodule_patch();
-
-    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
-
-    EXPECT_EQ(process.stdout_data(), "patching file sub\n");
-    EXPECT_EQ(process.stderr_data(), "");
-    EXPECT_EQ(process.return_code(), 0);
-
-    EXPECT_FALSE(Patch::filesystem::is_symlink("sub"));
-    EXPECT_TRUE(Patch::filesystem::is_regular_file("sub"));
-}
-
-// Not a COMPAT_TEST: GNU patch seems to be unable to reverse this.
-PATCH_TEST(git_add_submodule_is_readable_and_reversible)
-{
-    write_add_submodule_patch();
-
-    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
-    EXPECT_EQ(process.return_code(), 0);
-
-    EXPECT_FILE_EQ("sub", "Subproject commit 2ab5a7b1234567890123456789012345678901234\n");
-
-    const auto permissions = Patch::filesystem::get_permissions("sub");
-    EXPECT_TRUE((permissions & Patch::filesystem::perms::owner_read) != Patch::filesystem::perms::none);
-    EXPECT_TRUE((permissions & Patch::filesystem::perms::owner_write) != Patch::filesystem::perms::none);
-
-    Process reverse(patch_path, { patch_path, "-R", "-i", "diff.patch", nullptr });
-    EXPECT_EQ(reverse.stdout_data(), "patching file sub\n");
-    EXPECT_EQ(reverse.return_code(), 0);
-    EXPECT_FALSE(Patch::file_exists("sub"));
-}
-
-COMPAT_TEST(basic_add_symlink_file_to_stdout)
-{
-    {
-        Patch::File file("diff.patch", std::ios_base::out);
-
-        file << R"(
-diff --git a/b b/b
-new file mode 120000
-index 0000000..2e65efe
---- /dev/null
-+++ b/b
-@@ -0,0 +1 @@
-+a
-\ No newline at end of file
-)";
-        file.close();
-    }
-
-    Process process(patch_path, { patch_path, "-i", "diff.patch", "-o-", nullptr });
-
-    EXPECT_EQ(process.stdout_data(), "a");
-    EXPECT_EQ(process.stderr_data(), "patching symbolic link - (read from b)\n");
-    EXPECT_EQ(process.return_code(), 0);
-}
-
-COMPAT_TEST(regular_patch_refuses_to_follow_symlink)
-{
-    Patch::skip_without_symlink_support();
-
-    {
-        Patch::File file("diff.patch", std::ios_base::out);
-        file << R"(--- a
-+++ a
-@@ -1 +1 @@
--old
-+new
-)";
-    }
-
-    const std::string content = "old\n";
-    {
-        Patch::File file("real", std::ios_base::out);
-        file << content;
-    }
-
-    Patch::filesystem::symlink("real", "a");
-
-    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
-
-    EXPECT_EQ(process.return_code(), 1);
-    EXPECT_EQ(process.stdout_data(),
-        "File a is not a regular file -- refusing to patch\n"
-        "1 out of 1 hunk ignored -- saving rejects to file a.rej\n");
-
-    EXPECT_TRUE(Patch::filesystem::is_symlink("a"));
-    EXPECT_FILE_EQ("real", content);
-}
-
 static void create_escaping_parent_link()
 {
     Patch::create_directory("outside");
@@ -3253,4 +3164,94 @@ new file mode 100644
     EXPECT_EQ(Patch::PathResolver(".").resolve("sub", Patch::PathOrigin::User).type(), Patch::FileType::Symlink);
     EXPECT_FALSE(Patch::file_exists("../outside/pwned.txt"));
     EXPECT_FILE_EQ("safe.txt", "SAFE\n");
+}
+
+COMPAT_TEST(git_add_submodule_is_not_a_symlink)
+{
+    write_add_submodule_patch();
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "patching file sub\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_EQ(Patch::PathResolver(".").resolve("sub", Patch::PathOrigin::User).type(), Patch::FileType::Regular);
+}
+
+// Not a COMPAT_TEST: GNU patch seems to be unable to reverse this.
+PATCH_TEST(git_add_submodule_is_readable_and_reversible)
+{
+    write_add_submodule_patch();
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+    EXPECT_EQ(process.return_code(), 0);
+
+    EXPECT_FILE_EQ("sub", "Subproject commit 2ab5a7b1234567890123456789012345678901234\n");
+
+    const auto permissions = Patch::PathResolver(".").resolve("sub", Patch::PathOrigin::User).permissions();
+    EXPECT_TRUE((permissions & Patch::filesystem::perms::owner_read) != Patch::filesystem::perms::none);
+    EXPECT_TRUE((permissions & Patch::filesystem::perms::owner_write) != Patch::filesystem::perms::none);
+
+    Process reverse(patch_path, { patch_path, "-R", "-i", "diff.patch", nullptr });
+    EXPECT_EQ(reverse.stdout_data(), "patching file sub\n");
+    EXPECT_EQ(reverse.return_code(), 0);
+    EXPECT_FALSE(Patch::file_exists("sub"));
+}
+
+COMPAT_TEST(basic_add_symlink_file_to_stdout)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+
+        file << R"(
+diff --git a/b b/b
+new file mode 120000
+index 0000000..2e65efe
+--- /dev/null
++++ b/b
+@@ -0,0 +1 @@
++a
+\ No newline at end of file
+)";
+        file.close();
+    }
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", "-o-", nullptr });
+
+    EXPECT_EQ(process.stdout_data(), "a");
+    EXPECT_EQ(process.stderr_data(), "patching symbolic link - (read from b)\n");
+    EXPECT_EQ(process.return_code(), 0);
+}
+
+COMPAT_TEST(regular_patch_refuses_to_follow_symlink)
+{
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(--- a
++++ a
+@@ -1 +1 @@
+-old
++new
+)";
+    }
+
+    const std::string content = "old\n";
+    {
+        Patch::File file("real", std::ios_base::out);
+        file << content;
+    }
+
+    Patch::skip_without_symlink_support();
+    Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).create_symlink("real");
+
+    Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_EQ(process.stdout_data(),
+        "File a is not a regular file -- refusing to patch\n"
+        "1 out of 1 hunk ignored -- saving rejects to file a.rej\n");
+
+    EXPECT_EQ(Patch::PathResolver(".").resolve("a", Patch::PathOrigin::User).type(), Patch::FileType::Symlink);
+    EXPECT_FILE_EQ("real", content);
 }

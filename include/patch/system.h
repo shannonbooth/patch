@@ -16,14 +16,6 @@ FILE* create_temporary_file();
 
 std::string read_tty_until_enter();
 
-void chdir(const std::string& path);
-
-std::string current_path();
-
-void remove_file_and_empty_parent_folders(std::string path);
-
-void ensure_parent_directories(const std::string& file_path);
-
 namespace filesystem {
 
 constexpr bool is_seperator(char c)
@@ -37,23 +29,9 @@ constexpr bool is_seperator(char c)
 
 bool is_absolute(const std::string& path);
 
-void symlink(const std::string& target, const std::string& linkpath);
-
 std::string basename(const std::string& path);
 
-bool create_directory(const std::string& path);
-
 std::string temp_directory_path();
-
-bool exists(const std::string& path);
-
-bool is_regular_file(const std::string& path);
-
-bool is_symlink(const std::string& path);
-
-void remove(const std::string& path);
-
-void rename(const std::string& old_path, const std::string& new_path);
 
 enum class perms : unsigned {
     none = 0,
@@ -113,10 +91,6 @@ inline perms& operator^=(perms& left, perms right)
 {
     return left = left ^ right;
 }
-
-void permissions(const std::string& path, perms permissions);
-
-perms get_permissions(const std::string& path);
 
 void permissions(FILE* file, perms permissions);
 

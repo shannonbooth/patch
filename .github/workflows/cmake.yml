@@ -54,3 +54,27 @@ jobs:
       run: cmake --build build -j2
     - name: test
       run: ctest --test-dir build --output-on-failure -C Debug -j2
+
+  mingw:
+    needs: [lint]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: >-
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+    - name: configure
+      run: cmake -G Ninja -DBUILD_TESTING=on -S . -B build
+    - name: compile
+      run: cmake --build build -j2
+    - name: test
+      run: ctest --test-dir build --output-on-failure -j2

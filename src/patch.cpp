@@ -456,9 +456,8 @@ private:
     std::vector<StagedReplacement> m_deferred_writes;
 };
 
-static bool refuse_read_only_file(std::ostream& out, const Options& options, const std::string& output_file)
+static bool refuse_read_only_file(std::ostream& out, const Options& options, const std::string& output_file, filesystem::perms permissions)
 {
-    const auto permissions = filesystem::get_permissions(output_file);
     const auto write_perm_mask = filesystem::perms::group_write | filesystem::perms::owner_write | filesystem::perms::others_write;
     const bool is_read_only = permissions != filesystem::perms::unknown
         && (permissions & write_perm_mask) == filesystem::perms::none;
@@ -569,7 +568,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
         return true;
     }
 
-    if (refuse_read_only_file(out, options, output_file)) {
+    if (refuse_read_only_file(out, options, output_file, filesystem::get_permissions(output_file))) {
         parse_body_if_needed();
         refuse_to_patch(out, mode, output_file, patch, options);
         return true;

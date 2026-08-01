@@ -124,20 +124,23 @@ std::string LineParser::parse_quoted_string()
             case '5':
             case '6':
             case '7': {
-                unsigned char result = static_cast<unsigned char>(c) - '0';
+                unsigned int result = static_cast<unsigned int>(c - '0');
 
                 for (int i = 1; i < 3; ++i) {
                     char octal_val = peek();
                     if (!is_octal(octal_val))
                         break;
 
-                    unsigned char digit_val = static_cast<unsigned char>(octal_val) - '0';
-                    result = result * 8 + digit_val;
+                    unsigned int digit_val = static_cast<unsigned int>(octal_val - '0');
+                    result = result * 8U + digit_val;
 
                     ++m_current;
                 }
 
-                output += static_cast<char>(result);
+                if (result > static_cast<unsigned int>(std::numeric_limits<unsigned char>::max()))
+                    throw std::invalid_argument("Octal escape is out of range in path " + std::string(begin, m_current));
+
+                output += static_cast<char>(static_cast<unsigned char>(result));
                 break;
             }
             default:

@@ -11,7 +11,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: install
       run: pip install pathspec
     - name: format
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository_owner == 'shannonbooth'
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - name: install gcovr
       run: sudo apt-get update -qy
         && sudo apt-get install gcovr -qy
@@ -47,7 +47,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: configure
       run: cmake -DBUILD_TESTING=on -S . -B build
     - name: compile
@@ -63,7 +63,7 @@ jobs:
         shell: msys2 {0}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - uses: msys2/setup-msys2@v2
       with:
         msystem: UCRT64

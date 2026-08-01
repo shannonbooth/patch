@@ -42,8 +42,9 @@ static std::string make_temp_directory()
 {
 #ifdef _WIN32
     std::wstring path = L"patch-XXXXXX";
-    if (_wmktemp_s(&path[0], path.size() + 1) < 0)
-        throw std::system_error(errno, std::generic_category(), "Unable to create temporary file name");
+    const auto error = _wmktemp_s(&path[0], path.size() + 1);
+    if (error != 0)
+        throw std::system_error(error, std::generic_category(), "Unable to create temporary file name");
     if (_wmkdir(path.c_str()) < 0)
         throw std::system_error(errno, std::generic_category(), "Unable to make temporary directory");
     return to_narrow(path);

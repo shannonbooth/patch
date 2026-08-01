@@ -2485,8 +2485,8 @@ new mode 100755
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("file", to_patch);
 
-    const auto perms = Patch::filesystem::get_permissions("file");
 #ifndef _WIN32
+    const auto perms = Patch::filesystem::get_permissions("file");
     EXPECT_TRUE((perms & Patch::filesystem::perms::owner_exec) != Patch::filesystem::perms::none);
     EXPECT_TRUE((perms & Patch::filesystem::perms::group_exec) != Patch::filesystem::perms::none);
     EXPECT_TRUE((perms & Patch::filesystem::perms::others_exec) != Patch::filesystem::perms::none);

@@ -7,8 +7,10 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <patch/applier.h>
 #include <patch/cmdline.h>
+#include <patch/directory.h>
 #include <patch/file.h>
 #include <patch/hunk.h>
 #include <patch/locator.h>
@@ -138,7 +140,32 @@ bool check_with_user(const std::string& question, std::ostream& out, Default def
     return is_truthy;
 }
 
-static std::string guess_filepath(const Patch& patch)
+// Null when nothing along the path is there. A directory which does not exist
+// is not an error for a caller which only wants to know what is present.
+static std::unique_ptr<ResolvedPath> try_resolve_user_path(const PathResolver& resolver,
+    const std::string& path)
+{
+    try {
+        return std::unique_ptr<ResolvedPath>(new ResolvedPath(resolver.resolve(path, PathOrigin::User)));
+    } catch (const std::system_error& error) {
+        if (error.code() == std::errc::no_such_file_or_directory
+            || error.code() == std::errc::not_a_directory) {
+            return nullptr;
+        }
+        throw;
+    }
+}
+
+static bool patch_path_exists(const PathResolver& resolver, const std::string& path)
+{
+    if (path.empty())
+        return false;
+
+    const auto resolved = try_resolve_user_path(resolver, path);
+    return resolved && resolved->type() != FileType::None;
+}
+
+static std::string guess_filepath(const Patch& patch, const PathResolver& resolver)
 {
     // POSIX specifies that after stripping using the '-p' option then the existence of both the old
     // and new files are tested. If both paths exist then patch should not be able to determine
@@ -153,13 +180,13 @@ static std::string guess_filepath(const Patch& patch)
     // For now, this implementation matches the GNU behaviour when the --posix flag is specified. In
     // the future, we may want to make our implementation match whatever the behaviour of GNU patch
     // is for this path determination.
-    if (patch.old_file_path != "/dev/null" && filesystem::exists(patch.old_file_path))
+    if (patch.old_file_path != "/dev/null" && patch_path_exists(resolver, patch.old_file_path))
         return patch.old_file_path;
 
-    if (patch.new_file_path != "/dev/null" && filesystem::exists(patch.new_file_path))
+    if (patch.new_file_path != "/dev/null" && patch_path_exists(resolver, patch.new_file_path))
         return patch.new_file_path;
 
-    if (patch.index_file_path != "/dev/null" && filesystem::exists(patch.index_file_path))
+    if (patch.index_file_path != "/dev/null" && patch_path_exists(resolver, patch.index_file_path))
         return patch.index_file_path;
 
     if (patch.operation == Operation::Add)
@@ -168,7 +195,7 @@ static std::string guess_filepath(const Patch& patch)
     return {};
 }
 
-static std::string prompt_for_filepath(std::ostream& out)
+static std::string prompt_for_filepath(std::ostream& out, const PathResolver& resolver)
 {
     while (true) {
         out << "File to patch: " << std::flush;
@@ -176,14 +203,20 @@ static std::string prompt_for_filepath(std::ostream& out)
         auto buffer = read_tty_until_enter();
 
         if (!buffer.empty()) {
-            errno = 0;
-            if (filesystem::is_regular_file(buffer))
-                return buffer;
-            auto saved_errno = errno;
+            std::error_code error;
+            try {
+                const auto type = resolver.resolve(buffer, PathOrigin::User).type();
+                if (type == FileType::Regular)
+                    return buffer;
+                if (type == FileType::None)
+                    error = std::make_error_code(std::errc::no_such_file_or_directory);
+            } catch (const std::system_error& exception) {
+                error = exception.code();
+            }
 
             out << buffer;
-            if (saved_errno != 0)
-                out << ": " << std::strerror(saved_errno);
+            if (error)
+                out << ": " << error.message();
             out << '\n';
         }
 
@@ -506,6 +539,7 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
 }
 
 static bool process_parsed_patch(const Options& options, DeferredWriter& deferred_writer,
+    const PathResolver& resolver,
     Backup& backup, Parser& parser, Patch& patch, const PatchHeaderInfo& info,
     bool& should_parse_body, std::ostream& out)
 {
@@ -526,7 +560,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
 
     reject_unsafe_paths(patch, options, out);
 
-    auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch) : options.file_to_patch;
+    auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch, resolver) : options.file_to_patch;
 
     if (file_to_patch.empty()) {
         out << "can't find file to patch at input line " << parser.line_number()
@@ -539,7 +573,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
         parser.print_header_info(info, out);
 
     if (file_to_patch.empty() && !options.force && !options.batch)
-        file_to_patch = prompt_for_filepath(out);
+        file_to_patch = prompt_for_filepath(out, resolver);
 
     if (file_to_patch.empty()) {
         parse_body_if_needed();
@@ -693,6 +727,11 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
     if (!options.patch_directory_path.empty())
         chdir(options.patch_directory_path);
 
+    // Pinned once the directory being patched is settled. Call sites move over
+    // to it in the commits which follow; the root becomes the '-d' argument
+    // once none of them resolve a path by name any more.
+    const PathResolver resolver(".");
+
     // When writing the patched file to cout - write any prompts to cerr instead.
     auto& out = options.out_file_path == "-" ? std::cerr : std::cout;
 
@@ -722,7 +761,7 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
 
         first_patch = false;
 
-        had_failure |= process_parsed_patch(options, deferred_writer, backup,
+        had_failure |= process_parsed_patch(options, deferred_writer, resolver, backup,
             parser, patch, info, should_parse_body, out);
     }
 

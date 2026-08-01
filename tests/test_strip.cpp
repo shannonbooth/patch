@@ -25,7 +25,9 @@ TEST(is_absolute_path)
 #ifdef _WIN32
     EXPECT_TRUE(Patch::filesystem::is_absolute("\\windows\\file.txt"));
     EXPECT_TRUE(Patch::filesystem::is_absolute("C:\\file.txt"));
-    EXPECT_TRUE(Patch::filesystem::is_absolute("C:file.txt"));
+    EXPECT_TRUE(Patch::filesystem::is_absolute("C:/file.txt"));
+    EXPECT_FALSE(Patch::filesystem::is_absolute("C:file.txt"));
+    EXPECT_FALSE(Patch::filesystem::is_absolute("C:"));
 #else
     EXPECT_FALSE(Patch::filesystem::is_absolute("C:\\file.txt"));
 #endif
@@ -55,6 +57,8 @@ TEST(is_safe_patch_path)
     EXPECT_FALSE(Patch::is_safe_patch_path("\\windows\\file.txt"));
     EXPECT_FALSE(Patch::is_safe_patch_path("C:\\file.txt"));
     EXPECT_FALSE(Patch::is_safe_patch_path("C:file.txt"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("file.txt:stream"));
+    EXPECT_FALSE(Patch::is_safe_patch_path("dir/file.txt:stream"));
     EXPECT_FALSE(Patch::is_safe_patch_path("dir\\..\\file.txt"));
 #endif
 }

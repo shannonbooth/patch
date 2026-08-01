@@ -298,8 +298,8 @@ bool is_absolute(const std::string& path)
         return true;
 
 #ifdef _WIN32
-    // A drive letter, with or without a following separator.
-    return path.size() >= 2 && path[1] == ':';
+    // A drive letter, with a following separator.
+    return path.size() >= 3 && path[1] == ':' && is_seperator(path[2]);
 #else
     return false;
 #endif

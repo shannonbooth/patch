@@ -1142,6 +1142,13 @@ bool is_safe_patch_path(const std::string& path)
     if (filesystem::is_absolute(path))
         return false;
 
+#ifdef _WIN32
+    // A colon never appears in a Windows file name. "C:foo" names foo relative to the current
+    // directory of drive C, and "file:stream" names an alternate data stream of "file".
+    if (path.find(':') != std::string::npos)
+        return false;
+#endif
+
     // Reject any '..' component, including one which would resolve back inside the working directory
     for (std::size_t begin = 0; begin < path.size();) {
         std::size_t end = begin;

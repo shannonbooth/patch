@@ -13,6 +13,7 @@ unset(CMAKE_REQUIRED_LIBRARIES)
 configure_file(lib/src/config.h.in lib/src/config.h)
 
 add_library(patch_test lib/src/test.cpp)
+patch_enable_warnings(patch_test)
 target_link_libraries(patch_test PUBLIC patch)
 target_include_directories(patch_test
   PUBLIC
@@ -83,9 +84,11 @@ add_executable(patch_oom
   ${PROJECT_SOURCE_DIR}/src/options.cpp
   ${PROJECT_SOURCE_DIR}/app/main.cpp
 )
+patch_enable_warnings(patch_oom)
 target_include_directories(patch_oom PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 add_executable(test_oom test_oom.cpp)
+patch_enable_warnings(test_oom)
 target_link_libraries(test_oom PRIVATE patch_test)
 patch_add_tests(test_oom patch_oom)
 
@@ -109,6 +112,7 @@ add_executable(patch_tests
   test_reject.cpp
   test_strip.cpp
 )
+patch_enable_warnings(patch_tests)
 target_link_libraries(patch_tests PRIVATE patch_test)
 
 if(HAVE_FORKPTY_PTY OR HAVE_FORKPTY_UTIL)

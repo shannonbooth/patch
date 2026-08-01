@@ -398,8 +398,8 @@ Hunk #1 FAILED at 1.
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 1);
     EXPECT_FILE_EQ("1", to_patch);
-    EXPECT_FALSE(Patch::filesystem::exists("1.rej"));
-    EXPECT_FALSE(Patch::filesystem::exists("1.orig"));
+    EXPECT_FALSE(Patch::file_exists("1.rej"));
+    EXPECT_FALSE(Patch::file_exists("1.orig"));
 }
 
 COMPAT_TEST(basic_patch_dry_run_remove_file)
@@ -482,7 +482,7 @@ COMPAT_TEST(add_file)
         file.close();
     }
 
-    EXPECT_FALSE(Patch::filesystem::exists("add"));
+    EXPECT_FALSE(Patch::file_exists("add"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
@@ -509,7 +509,7 @@ COMPAT_TEST(add_file_without_dev_null_header)
 )";
     }
 
-    EXPECT_FALSE(Patch::filesystem::exists("add"));
+    EXPECT_FALSE(Patch::file_exists("add"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
@@ -579,7 +579,7 @@ COMPAT_TEST(add_file_using_basename)
         file.close();
     }
 
-    EXPECT_FALSE(Patch::filesystem::exists("e"));
+    EXPECT_FALSE(Patch::file_exists("e"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
@@ -608,7 +608,7 @@ COMPAT_TEST(add_file_missing_folders)
         file.close();
     }
 
-    EXPECT_FALSE(Patch::filesystem::exists("a"));
+    EXPECT_FALSE(Patch::file_exists("a"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", "-p0", nullptr });
 
@@ -768,11 +768,11 @@ COMPAT_TEST(remove_file_in_folders)
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
-    EXPECT_FALSE(Patch::filesystem::exists("a/b/c/d/e"));
-    EXPECT_FALSE(Patch::filesystem::exists("a/b/c/d"));
-    EXPECT_FALSE(Patch::filesystem::exists("a/b/c"));
-    EXPECT_FALSE(Patch::filesystem::exists("a/b"));
-    EXPECT_TRUE(Patch::filesystem::exists("a"));
+    EXPECT_FALSE(Patch::file_exists("a/b/c/d/e"));
+    EXPECT_FALSE(Patch::file_exists("a/b/c/d"));
+    EXPECT_FALSE(Patch::file_exists("a/b/c"));
+    EXPECT_FALSE(Patch::file_exists("a/b"));
+    EXPECT_TRUE(Patch::file_exists("a"));
     EXPECT_FILE_EQ("a/1", second_file_contents);
 }
 
@@ -814,7 +814,7 @@ static void remove_file(const char* patch_path, bool expect_removed, const std::
     EXPECT_EQ(process.return_code(), 0);
 
     if (expect_removed)
-        EXPECT_FALSE(Patch::filesystem::exists("to_remove"));
+        EXPECT_FALSE(Patch::file_exists("to_remove"));
     else
         EXPECT_FILE_EQ("to_remove", "");
 }
@@ -856,8 +856,8 @@ COMPAT_TEST(deleting_to_explicit_output_writes_an_empty_file)
         file << "content\n";
     }
 
-    Patch::filesystem::create_directory("outside");
-    Patch::filesystem::create_directory("outside/deep");
+    Patch::create_directory("outside");
+    Patch::create_directory("outside/deep");
     {
         Patch::File file("outside/deep/target.txt", std::ios_base::out);
         file << "old content\n";
@@ -869,8 +869,8 @@ COMPAT_TEST(deleting_to_explicit_output_writes_an_empty_file)
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("outside/deep/target.txt", "");
-    EXPECT_TRUE(Patch::filesystem::exists("outside/deep"));
-    EXPECT_TRUE(Patch::filesystem::exists("outside"));
+    EXPECT_TRUE(Patch::file_exists("outside/deep"));
+    EXPECT_TRUE(Patch::file_exists("outside"));
     EXPECT_FILE_EQ("source.txt", "content\n");
 }
 
@@ -897,7 +897,7 @@ COMPAT_TEST(unified_patch_that_empties_file_keeps_empty_file)
     EXPECT_EQ(process.stdout_data(), "patching file target.txt\n");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
-    EXPECT_TRUE(Patch::filesystem::exists("target.txt"));
+    EXPECT_TRUE(Patch::file_exists("target.txt"));
     EXPECT_FILE_EQ("target.txt", "");
 }
 
@@ -1039,7 +1039,7 @@ index 1111111..2222222 100644
     EXPECT_EQ(process.return_code(), 0);
 
     EXPECT_FILE_EQ("newdir/new.txt", "edited\n");
-    EXPECT_FALSE(Patch::filesystem::exists("old.txt"));
+    EXPECT_FALSE(Patch::file_exists("old.txt"));
 }
 
 COMPAT_TEST(git_patch_copying_into_a_directory_which_does_not_exist)
@@ -1099,14 +1099,14 @@ index 01e79c3..0000000
         file.close();
     }
 
-    EXPECT_TRUE(Patch::filesystem::exists("a"));
+    EXPECT_TRUE(Patch::file_exists("a"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
     EXPECT_EQ(process.stdout_data(), "patching file a\n");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
-    EXPECT_FALSE(Patch::filesystem::exists("a"));
+    EXPECT_FALSE(Patch::file_exists("a"));
 }
 
 COMPAT_TEST(remove_file_that_has_trailing_garbage)
@@ -1181,7 +1181,7 @@ index a45905b..0000000
         file.close();
     }
 
-    EXPECT_TRUE(Patch::filesystem::create_directory("libarchive"));
+    EXPECT_TRUE(Patch::create_directory("libarchive"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
 
@@ -1385,7 +1385,7 @@ index de98044..0f7bc76 100644
 
 static void test_chdir(const char* patch_path, const std::string& folder)
 {
-    EXPECT_TRUE(Patch::filesystem::create_directory(folder));
+    EXPECT_TRUE(Patch::create_directory(folder));
 
     {
         Patch::File file(folder + "/diff.patch", std::ios_base::out);
@@ -1449,7 +1449,7 @@ rename to another_new
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("another_new", to_patch);
-    EXPECT_FALSE(Patch::filesystem::exists("orig_file"));
+    EXPECT_FALSE(Patch::file_exists("orig_file"));
 }
 
 COMPAT_TEST(reverse_rename_no_change)
@@ -1477,7 +1477,7 @@ rename to y
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("x", to_patch);
-    EXPECT_FALSE(Patch::filesystem::exists("y"));
+    EXPECT_FALSE(Patch::file_exists("y"));
 }
 
 COMPAT_TEST(rename_with_change)
@@ -1515,7 +1515,7 @@ index 71ac1b5..fc3102f 100644
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("test", "a\nb\nc\nd\nf\ng\nh\n");
-    EXPECT_FALSE(Patch::filesystem::exists("thing"));
+    EXPECT_FALSE(Patch::file_exists("thing"));
 }
 
 COMPAT_TEST(copy_no_change)
@@ -1634,7 +1634,7 @@ rename to b
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("b", to_patch);
-    EXPECT_FALSE(Patch::filesystem::exists("a"));
+    EXPECT_FALSE(Patch::file_exists("a"));
 }
 
 COMPAT_TEST(rename_already_exists_with_content)
@@ -1670,7 +1670,7 @@ index de98044..0f673f8 100644
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "a\n2\nc\n");
-    EXPECT_FALSE(Patch::filesystem::exists("b"));
+    EXPECT_FALSE(Patch::file_exists("b"));
 }
 
 COMPAT_TEST(reverse_rename_already_exists_with_content)
@@ -1706,7 +1706,7 @@ index de98044..0f673f8 100644
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("a", "a\nb\nc\n");
-    EXPECT_FALSE(Patch::filesystem::exists("b"));
+    EXPECT_FALSE(Patch::file_exists("b"));
 }
 
 COMPAT_TEST(backup_rename_patch)
@@ -1747,7 +1747,7 @@ rename to b
     EXPECT_EQ(process.return_code(), 0);
     EXPECT_FILE_EQ("b", to_patch);
     EXPECT_FILE_EQ("b.orig", "");
-    EXPECT_FALSE(Patch::filesystem::exists("a"));
+    EXPECT_FALSE(Patch::file_exists("a"));
     EXPECT_FILE_EQ("a.orig", to_patch);
 }
 
@@ -1778,7 +1778,7 @@ COMPAT_TEST(backup_of_removed_file)
     EXPECT_EQ(process.return_code(), 0);
 
     // The file is removed, so the backup is the only copy left of its content.
-    EXPECT_FALSE(Patch::filesystem::exists("gone.txt"));
+    EXPECT_FALSE(Patch::file_exists("gone.txt"));
     EXPECT_FILE_EQ("gone.txt.orig", to_patch);
 }
 
@@ -1797,7 +1797,7 @@ COMPAT_TEST(backup_of_removed_file_in_subdirectory)
 
     const std::string to_patch = "content to lose\n";
     {
-        Patch::filesystem::create_directory("sub");
+        Patch::create_directory("sub");
         Patch::File file("sub/nested.txt", std::ios_base::out);
         file << to_patch;
         file.close();
@@ -1809,7 +1809,7 @@ COMPAT_TEST(backup_of_removed_file_in_subdirectory)
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
-    EXPECT_FALSE(Patch::filesystem::exists("sub/nested.txt"));
+    EXPECT_FALSE(Patch::file_exists("sub/nested.txt"));
     EXPECT_FILE_EQ("sub/nested.txt.orig", to_patch);
 }
 
@@ -1838,8 +1838,8 @@ COMPAT_TEST(no_backup_of_removed_file_without_flag)
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
 
-    EXPECT_FALSE(Patch::filesystem::exists("gone.txt"));
-    EXPECT_FALSE(Patch::filesystem::exists("gone.txt.orig"));
+    EXPECT_FALSE(Patch::file_exists("gone.txt"));
+    EXPECT_FALSE(Patch::file_exists("gone.txt.orig"));
 }
 
 COMPAT_TEST(no_backup_of_removed_file_for_dry_run)
@@ -1868,7 +1868,7 @@ COMPAT_TEST(no_backup_of_removed_file_for_dry_run)
     EXPECT_EQ(process.return_code(), 0);
 
     EXPECT_FILE_EQ("gone.txt", to_patch);
-    EXPECT_FALSE(Patch::filesystem::exists("gone.txt.orig"));
+    EXPECT_FALSE(Patch::file_exists("gone.txt.orig"));
 }
 
 COMPAT_TEST(backup_on_top_of_existing_file)
@@ -2010,7 +2010,7 @@ static void no_backup_if_mismatch(const char* patch_path, const std::vector<cons
     EXPECT_EQ(process.return_code(), 0);
 
     EXPECT_FILE_EQ("a", "\n1\n3\n");
-    EXPECT_FALSE(Patch::filesystem::exists("a.orig"));
+    EXPECT_FALSE(Patch::file_exists("a.orig"));
 }
 
 COMPAT_TEST(backup_if_mismatch_not_done_with_flag)
@@ -2094,8 +2094,8 @@ COMPAT_TEST(backup_when_patch_is_adding_a_file)
         file.close();
     }
 
-    EXPECT_FALSE(Patch::filesystem::exists("f"));
-    EXPECT_FALSE(Patch::filesystem::exists("f.orig"));
+    EXPECT_FALSE(Patch::file_exists("f"));
+    EXPECT_FALSE(Patch::file_exists("f.orig"));
 
     Process process(patch_path, { patch_path, "-b", "-i", "diff.patch", nullptr });
     EXPECT_EQ(process.stdout_data(), "patching file f\n");
@@ -2311,7 +2311,7 @@ Unreversed patch detected!  Skipping patch.
  }
 )");
     EXPECT_FILE_EQ("main.cpp", to_patch);
-    EXPECT_FALSE(Patch::filesystem::exists("main.cpp.orig"));
+    EXPECT_FALSE(Patch::file_exists("main.cpp.orig"));
 }
 
 COMPAT_TEST(write_output_to_some_file)
@@ -2396,7 +2396,7 @@ static void expect_fatal_error_with_prefix(const std::string& output, const std:
 
 COMPAT_TEST(error_when_nonexistent_patch_file_given)
 {
-    EXPECT_FALSE(Patch::filesystem::exists("diff.patch"));
+    EXPECT_FALSE(Patch::file_exists("diff.patch"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
     EXPECT_EQ(process.stdout_data(), "");
@@ -2908,7 +2908,7 @@ index 0000000..2e65efe
     }
 
     // Sanity check
-    EXPECT_FALSE(Patch::filesystem::exists("active"));
+    EXPECT_FALSE(Patch::file_exists("active"));
     EXPECT_FALSE(Patch::filesystem::is_symlink("active"));
 
     Process process(patch_path, { patch_path, "-i", "diff.patch", nullptr });
@@ -2919,7 +2919,7 @@ index 0000000..2e65efe
 
     // Symlink exists and is pointing to valid file that has our contents.
     EXPECT_TRUE(Patch::filesystem::is_symlink("active"));
-    EXPECT_TRUE(Patch::filesystem::exists("active"));
+    EXPECT_TRUE(Patch::file_exists("active"));
     EXPECT_FILE_EQ("active", content);
 #endif
 }
@@ -2965,7 +2965,7 @@ static void write_escaping_patch(const std::string& name)
 
 static void write_outside_file()
 {
-    Patch::filesystem::create_directory("work");
+    Patch::create_directory("work");
     Patch::File file("outside.txt", std::ios_base::out);
     file << "ORIGINAL\n";
     file.close();
@@ -2999,7 +2999,7 @@ No file to patch.  Skipping patch.
 
 COMPAT_TEST(patch_refuses_name_with_dot_dot_inside_the_directory)
 {
-    Patch::filesystem::create_directory("sub");
+    Patch::create_directory("sub");
     {
         Patch::File file("target.txt", std::ios_base::out);
         file << "ORIGINAL\n";
@@ -3026,7 +3026,7 @@ No file to patch.  Skipping patch.
 
 COMPAT_TEST(patch_allows_strip_to_remove_dot_dot)
 {
-    Patch::filesystem::create_directory("foo");
+    Patch::create_directory("foo");
     {
         Patch::File file("foo/bar.txt", std::ios_base::out);
         file << "ORIGINAL\n";
@@ -3087,7 +3087,7 @@ PATCH_TEST(git_add_submodule_is_readable_and_reversible)
     Process reverse(patch_path, { patch_path, "-R", "-i", "diff.patch", nullptr });
     EXPECT_EQ(reverse.stdout_data(), "patching file sub\n");
     EXPECT_EQ(reverse.return_code(), 0);
-    EXPECT_FALSE(Patch::filesystem::exists("sub"));
+    EXPECT_FALSE(Patch::file_exists("sub"));
 }
 
 COMPAT_TEST(basic_add_symlink_file_to_stdout)

@@ -15,6 +15,10 @@
 
 namespace Patch {
 
+bool file_exists(const std::string& path);
+
+bool create_directory(const std::string& path);
+
 void unset_env(const char* name);
 
 void set_env(const char* name, const char* value);

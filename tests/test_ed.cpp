@@ -194,7 +194,7 @@ COMPAT_TEST(ed_patch_removes_empty_file)
     Process process(patch_path, { patch_path, "--ed", "-E", "-i", "diff.patch", "to_patch", nullptr });
 
     EXPECT_EQ(process.return_code(), 0);
-    EXPECT_FALSE(Patch::filesystem::exists("to_patch"));
+    EXPECT_FALSE(Patch::file_exists("to_patch"));
 }
 
 // GNU patch produces different diagnostics.

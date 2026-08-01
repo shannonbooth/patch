@@ -301,5 +301,5 @@ COMPAT_TEST(normal_patch_remove_file)
     EXPECT_EQ(process.stdout_data(), "patching file to_patch\n");
     EXPECT_EQ(process.stderr_data(), "");
     EXPECT_EQ(process.return_code(), 0);
-    EXPECT_FALSE(Patch::filesystem::exists("to_patch"));
+    EXPECT_FALSE(Patch::file_exists("to_patch"));
 }

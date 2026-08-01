@@ -567,7 +567,7 @@ void permissions(const std::string& path, perms permissions)
     if (should_be_read_only)
         attributes |= FILE_ATTRIBUTE_READONLY;
     else
-        attributes &= ~FILE_ATTRIBUTE_READONLY;
+        attributes &= ~static_cast<DWORD>(FILE_ATTRIBUTE_READONLY);
 
     if (SetFileAttributesW(native.c_str(), attributes) == 0) {
         const auto attributes_error = GetLastError();

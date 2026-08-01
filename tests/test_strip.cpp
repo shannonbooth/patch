@@ -109,6 +109,7 @@ TEST(strip_quoted_string_bad)
     EXPECT_THROW(parse_file_line("\"path/with unterminated comma", -1, path), std::invalid_argument);
     EXPECT_THROW(parse_file_line("\"secondUnterminatedCommaButAfterBackslash\\", -1, path), std::invalid_argument);
     EXPECT_THROW(parse_file_line("\"badEscapeChar\\l\"", -1, path), std::invalid_argument);
+    EXPECT_THROW(parse_file_line(R"("\400")", -1, path), std::invalid_argument);
 }
 
 TEST(strip_quoted_string_good)

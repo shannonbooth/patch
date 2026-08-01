@@ -101,6 +101,7 @@ add_executable(patch_tests
   test_quoting.cpp
   test_cmdline.cpp
   test_determine_format.cpp
+  test_directory.cpp
   test_ed.cpp
   test_file.cpp
   test_formatter.cpp

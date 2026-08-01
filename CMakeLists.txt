@@ -69,10 +69,17 @@ add_library(patch
   src/options.cpp
   src/parser.cpp
   src/patch.cpp
+  src/directory.cpp
   src/system.cpp
   src/file.cpp
 )
 patch_configure_target(patch)
+
+if(WIN32)
+  target_sources(patch PRIVATE src/directory_windows.cpp)
+else()
+  target_sources(patch PRIVATE src/directory_posix.cpp)
+endif()
 
 target_compile_features(patch PUBLIC cxx_std_11)
 

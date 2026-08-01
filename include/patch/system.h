@@ -10,6 +10,8 @@
 
 namespace Patch {
 
+class ResolvedPath;
+
 FILE* create_temporary_file();
 
 std::string read_tty_until_enter();

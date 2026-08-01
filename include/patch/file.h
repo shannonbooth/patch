@@ -68,6 +68,10 @@ public:
 
     static NamedTemporaryFile create_temporary_near(const std::string& destination, bool binary, filesystem::perms permissions);
 
+    // Both throw std::system_error when the resolved name cannot be opened.
+    static File open_read(const ResolvedPath& source, bool binary);
+    static File open_write(const ResolvedPath& destination, bool binary);
+
     void set_permissions(filesystem::perms permissions);
 
     filesystem::perms get_permissions();

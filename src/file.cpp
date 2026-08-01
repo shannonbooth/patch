@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdio>
+#include <patch/directory.h>
 #include <patch/file.h>
 #include <patch/system.h>
 #include <utility>
@@ -134,6 +135,16 @@ NamedTemporaryFile File::create_temporary_near(const std::string& destination, b
 {
     auto temporary = Patch::create_temporary_file_near(destination, binary, permissions);
     return { File(temporary.stream), std::move(temporary.path) };
+}
+
+File File::open_read(const ResolvedPath& source, bool binary)
+{
+    return File(source.open_read(binary));
+}
+
+File File::open_write(const ResolvedPath& destination, bool binary)
+{
+    return File(destination.open_write(binary));
 }
 
 void File::set_permissions(filesystem::perms permissions)

@@ -90,6 +90,8 @@ public:
 
 [[noreturn]] void skip_test(const std::string& reason);
 
+void skip_without_symlink_support();
+
 #define EXPECT_TRUE(condition)                                                                                  \
     do {                                                                                                        \
         if (!(condition)) {                                                                                     \

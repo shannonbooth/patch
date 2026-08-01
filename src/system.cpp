@@ -20,9 +20,9 @@
 #include <utility>
 
 #ifdef _WIN32
+#    include "windows_error.h"
 #    include <direct.h>
 #    include <io.h>
-#    include <windows.h>
 #    define close _close
 #    define read _read
 #    define open _open
@@ -194,7 +194,7 @@ std::string current_path()
         const auto size = GetCurrentDirectoryW(requested_size, &result[0]);
 
         if (size == 0)
-            throw std::system_error(GetLastError(), std::system_category(), "Failed getting current directory");
+            throw last_win32_error("Failed getting current directory");
 
         result.resize(size);
         if (size <= requested_size)
@@ -317,7 +317,7 @@ std::string temp_directory_path()
         const auto size = GetTempPathW(requested_size, &result[0]);
 
         if (size == 0)
-            throw std::system_error(GetLastError(), std::system_category(), "Failed getting current directory");
+            throw last_win32_error("Failed getting current directory");
 
         result.resize(size);
         if (size <= requested_size)
@@ -379,7 +379,7 @@ void symlink(const std::string& target, const std::string& linkpath)
         error = GetLastError();
     }
 
-    throw std::system_error(error, std::system_category(), "Can't create symbolic link " + target + " ");
+    throw win32_error(error, "Can't create symbolic link " + target + " ");
 #else
     int ret = ::symlink(target.c_str(), linkpath.c_str());
     if (ret != 0)
@@ -518,19 +518,23 @@ void rename(const std::string& old_path, const std::string& new_path)
         const DWORD attributes = GetFileAttributesW(native_new_path.c_str());
         if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_READONLY)) {
             const DWORD writable_attributes = attributes & ~static_cast<DWORD>(FILE_ATTRIBUTE_READONLY);
-            if (SetFileAttributesW(native_new_path.c_str(), writable_attributes) == 0)
-                throw std::system_error(GetLastError(), std::system_category(), "Unable to make file writable " + new_path);
+            if (SetFileAttributesW(native_new_path.c_str(), writable_attributes) == 0) {
+                const auto attributes_error = GetLastError();
+                throw win32_error(attributes_error, "Unable to make file writable " + new_path);
+            }
 
             if (MoveFileExW(native_old_path.c_str(), native_new_path.c_str(), MOVEFILE_REPLACE_EXISTING) != 0)
                 return;
 
             error = GetLastError();
-            if (SetFileAttributesW(native_new_path.c_str(), attributes) == 0)
-                throw std::system_error(GetLastError(), std::system_category(), "Unable to restore permissions to " + new_path);
+            if (SetFileAttributesW(native_new_path.c_str(), attributes) == 0) {
+                const auto attributes_error = GetLastError();
+                throw win32_error(attributes_error, "Unable to restore permissions to " + new_path);
+            }
         }
     }
 
-    throw std::system_error(error, std::system_category(), "Unable to rename " + old_path + " to " + new_path);
+    throw win32_error(error, "Unable to rename " + old_path + " to " + new_path);
 #else
     if (std::rename(old_path.c_str(), new_path.c_str()) != 0)
         throw std::system_error(errno, std::generic_category(), "Unable to rename " + old_path + " to " + new_path);
@@ -546,8 +550,10 @@ void permissions(const std::string& path, perms permissions)
     const auto native = to_native(path);
 
     DWORD attributes = GetFileAttributesW(native.c_str());
-    if (attributes == INVALID_FILE_ATTRIBUTES)
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to set permissions to " + path);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        const auto attributes_error = GetLastError();
+        throw win32_error(attributes_error, "Unable to set permissions to " + path);
+    }
 
     // No group/owner/all on Windows - if any are set treat as write permissions.
     const auto write_perms = perms::owner_write | perms::group_write | perms::others_write;
@@ -563,8 +569,10 @@ void permissions(const std::string& path, perms permissions)
     else
         attributes &= ~FILE_ATTRIBUTE_READONLY;
 
-    if (SetFileAttributesW(native.c_str(), attributes) == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to set permissions to " + path);
+    if (SetFileAttributesW(native.c_str(), attributes) == 0) {
+        const auto attributes_error = GetLastError();
+        throw win32_error(attributes_error, "Unable to set permissions to " + path);
+    }
 
 #else
     if (::chmod(path.c_str(), static_cast<mode_t>(permissions)) != 0)
@@ -607,7 +615,7 @@ void permissions(FILE* file, perms permissions)
 
     FILE_BASIC_INFO info;
     if (GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info)) == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to change permissions");
+        throw last_win32_error("Unable to change permissions");
 
     const auto write_permissions = perms::owner_write | perms::group_write | perms::others_write;
     if ((permissions & write_permissions) == perms::none)
@@ -616,7 +624,7 @@ void permissions(FILE* file, perms permissions)
         info.FileAttributes &= ~static_cast<DWORD>(FILE_ATTRIBUTE_READONLY);
 
     if (SetFileInformationByHandle(handle, FileBasicInfo, &info, sizeof(info)) == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to change permissions");
+        throw last_win32_error("Unable to change permissions");
 #else
     if (::fchmod(fileno(file), static_cast<mode_t>(permissions)) != 0)
         throw std::system_error(errno, std::generic_category(), "Unable to change permissions");
@@ -632,7 +640,7 @@ perms get_permissions(FILE* file)
 
     FILE_BASIC_INFO info;
     if (GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(info)) == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Unable to get permissions");
+        throw last_win32_error("Unable to get permissions");
 
     perms permissions = perms::owner_read | perms::group_read | perms::others_read;
     if (!(info.FileAttributes & FILE_ATTRIBUTE_READONLY))
@@ -671,14 +679,14 @@ std::wstring to_wide(const std::string& str)
 
     int length = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
     if (length == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Failed widening string");
+        throw last_win32_error("Failed widening string");
 
     std::wstring wide_str;
     wide_str.resize(static_cast<size_t>(length));
 
     length = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), &wide_str[0], length);
     if (length == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Failed widening string");
+        throw last_win32_error("Failed widening string");
 
     return wide_str;
 }
@@ -690,14 +698,14 @@ std::string to_narrow(const std::wstring& str)
 
     int length = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), nullptr, 0, nullptr, nullptr);
     if (length == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Failed narrowing string");
+        throw last_win32_error("Failed narrowing string");
 
     std::string narrow_str;
     narrow_str.resize(static_cast<size_t>(length));
 
     length = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), &narrow_str[0], length, nullptr, nullptr);
     if (length == 0)
-        throw std::system_error(GetLastError(), std::system_category(), "Failed narrowing string");
+        throw last_win32_error("Failed narrowing string");
 
     return narrow_str;
 }

@@ -12,6 +12,9 @@
 
 #ifdef _WIN32
 #    include <windows.h>
+
+// shellapi.h depends on types and macros declared by windows.h.
+#    include <shellapi.h>
 #endif
 
 namespace Patch {

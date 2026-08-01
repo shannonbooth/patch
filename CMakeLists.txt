@@ -25,7 +25,14 @@ option(PATCH_ENABLE_COVERAGE "Build with gcov support" OFF)
 option(PATCH_WARNINGS_AS_ERRORS "Enable strict compiler warnings and treat them as errors" OFF)
 option(BUILD_TESTING "Build the tests" OFF)
 
-function(patch_enable_warnings target_name)
+function(patch_configure_target target_name)
+  if(WIN32)
+    target_compile_definitions(${target_name} PRIVATE
+      NOMINMAX
+      WIN32_LEAN_AND_MEAN
+    )
+  endif()
+
   if(NOT PATCH_WARNINGS_AS_ERRORS)
     return()
   endif()
@@ -65,7 +72,7 @@ add_library(patch
   src/system.cpp
   src/file.cpp
 )
-patch_enable_warnings(patch)
+patch_configure_target(patch)
 
 target_compile_features(patch PUBLIC cxx_std_11)
 

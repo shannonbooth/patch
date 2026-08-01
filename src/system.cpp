@@ -79,7 +79,14 @@ std::string read_tty_until_enter()
     size_t offset = 0;
 
     while (true) {
-        auto ret = ::read(fd, &buffer[0] + offset, buffer.size() - offset);
+        const auto available_size = buffer.size() - offset;
+#ifdef _WIN32
+        const auto read_size = std::min(available_size, static_cast<size_t>(INT_MAX));
+        auto ret = ::read(fd, &buffer[0] + offset, static_cast<unsigned int>(read_size));
+#else
+        const auto read_size = available_size;
+        auto ret = ::read(fd, &buffer[0] + offset, read_size);
+#endif
         if (ret < 0) {
             int saved_errno = errno;
             ::close(fd);
@@ -88,7 +95,7 @@ std::string read_tty_until_enter()
 
         // Finish if we didn't read up until the end of our buffer, indicating input has finished, or
         // if the last character given was an enter which means that the user has submitted their answer.
-        if (buffer.size() - offset != static_cast<size_t>(ret) || buffer.back() == '\n') {
+        if (read_size != static_cast<size_t>(ret) || buffer.back() == '\n') {
             // Trim to size, any pop any trailing '\n' since that is not part of their answer.
             buffer.resize(offset + static_cast<size_t>(ret));
             if (!buffer.empty() && buffer.back() == '\n')

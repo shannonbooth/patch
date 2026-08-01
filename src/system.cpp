@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <functional>
 #include <iostream>
+#include <patch/directory.h>
 #include <patch/system.h>
 #include <random>
 #include <sys/stat.h>
@@ -269,14 +270,14 @@ FILE* create_temporary_file()
     throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file");
 }
 
-TemporaryFile create_temporary_file_near(const std::string& destination, bool binary, filesystem::perms permissions)
+TemporaryFile create_temporary_file_in(const ResolvedPath& destination, bool binary, filesystem::perms permissions)
 {
     constexpr int max_attempts = 256;
 
     for (int i = 0; i < max_attempts; ++i) {
-        auto path = destination + ".patch-" + generate_random_alphanumeric_string(6);
+        auto temporary_name = ".patch-" + generate_random_alphanumeric_string(8);
         try {
-            return { open_exclusive_file(path, binary, permissions, false), std::move(path) };
+            return { destination.create_exclusive_sibling(temporary_name, binary, permissions), std::move(temporary_name) };
         } catch (const std::system_error& error) {
             if (error.code() == std::errc::file_exists)
                 continue;
@@ -284,7 +285,7 @@ TemporaryFile create_temporary_file_near(const std::string& destination, bool bi
         }
     }
 
-    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file near " + destination);
+    throw std::system_error(EEXIST, std::generic_category(), "Failed creating temporary file for " + destination.path());
 }
 
 namespace filesystem {

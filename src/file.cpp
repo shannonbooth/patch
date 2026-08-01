@@ -131,10 +131,10 @@ File File::create_temporary_with_content(const std::string& initial_content)
     return file;
 }
 
-NamedTemporaryFile File::create_temporary_near(const std::string& destination, bool binary, filesystem::perms permissions)
+NamedTemporaryFile File::create_temporary_in(const ResolvedPath& destination, bool binary, filesystem::perms permissions)
 {
-    auto temporary = Patch::create_temporary_file_near(destination, binary, permissions);
-    return { File(temporary.stream), std::move(temporary.path) };
+    auto temporary = Patch::create_temporary_file_in(destination, binary, permissions);
+    return { File(temporary.stream), std::move(temporary.name) };
 }
 
 File File::open_read(const ResolvedPath& source, bool binary)

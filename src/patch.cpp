@@ -30,7 +30,7 @@ namespace {
 
 class StagedReplacement {
 public:
-    static StagedReplacement create(const std::string& destination, File& source, bool binary, filesystem::perms permissions)
+    static StagedReplacement create(ResolvedPath destination, File& source, bool binary, filesystem::perms permissions)
     {
         const auto private_permissions = filesystem::perms::owner_read | filesystem::perms::owner_write;
         const auto default_permissions = private_permissions
@@ -39,8 +39,8 @@ public:
         const auto creation_permissions = permissions == filesystem::perms::unknown
             ? default_permissions
             : private_permissions;
-        StagedReplacement replacement(destination,
-            File::create_temporary_near(destination, binary, creation_permissions), permissions);
+        auto temporary = File::create_temporary_in(destination, binary, creation_permissions);
+        StagedReplacement replacement(std::move(destination), std::move(temporary), permissions);
         source.write_entire_contents_to(replacement.m_file);
         return replacement;
     }
@@ -53,8 +53,8 @@ public:
         }
 
         try {
-            if (!m_temporary_path.empty())
-                filesystem::remove(m_temporary_path);
+            if (!m_temporary_name.empty())
+                m_destination.remove_sibling(m_temporary_name);
         } catch (...) {
         }
     }
@@ -66,32 +66,32 @@ public:
     StagedReplacement(StagedReplacement&& other) noexcept
         : m_file(std::move(other.m_file))
         , m_destination(std::move(other.m_destination))
-        , m_temporary_path(std::move(other.m_temporary_path))
+        , m_temporary_name(std::move(other.m_temporary_name))
         , m_permissions(other.m_permissions)
     {
-        other.m_temporary_path.clear();
+        other.m_temporary_name.clear();
     }
 
     void commit()
     {
         m_file.set_permissions(m_permissions);
         m_file.close();
-        filesystem::rename(m_temporary_path, m_destination);
-        m_temporary_path.clear();
+        m_destination.replace_with_sibling(m_temporary_name);
+        m_temporary_name.clear();
     }
 
 private:
-    StagedReplacement(std::string destination, NamedTemporaryFile temporary, filesystem::perms permissions)
+    StagedReplacement(ResolvedPath destination, NamedTemporaryFile temporary, filesystem::perms permissions)
         : m_file(std::move(temporary.file))
         , m_destination(std::move(destination))
-        , m_temporary_path(std::move(temporary.path))
+        , m_temporary_name(std::move(temporary.name))
         , m_permissions(permissions)
     {
     }
 
     File m_file;
-    std::string m_destination;
-    std::string m_temporary_path;
+    ResolvedPath m_destination;
+    std::string m_temporary_name;
     filesystem::perms m_permissions;
 };
 
@@ -441,19 +441,32 @@ public:
         return m_options.backup_prefix + file_path + m_options.backup_suffix + ".orig";
     }
 
-    void make_backup_for(const std::string& file_path)
+    void make_backup_for(const ResolvedPath& source, const PathResolver& resolver)
     {
+        const auto& file_path = source.path();
         const auto backup_file = backup_name(file_path);
 
         // Per POSIX:
         // > if multiple patches are applied to the same file, the .orig file will be written only for the first patch
         if (m_backed_up_files.emplace(backup_file).second) {
-            ensure_parent_directories(backup_file);
+            ResolvedPath destination = [&] {
+                // A suffix-only backup is a sibling of the file, so resolving
+                // the source path a second time is neither needed nor wanted.
+                const auto suffix = m_options.backup_suffix.empty() ? std::string(".orig") : m_options.backup_suffix;
+                const bool simple_suffix = m_options.backup_prefix.empty()
+                    && std::none_of(suffix.begin(), suffix.end(), filesystem::is_seperator);
+                if (simple_suffix)
+                    return source.with_suffix(suffix);
+
+                // A prefix, or a suffix holding a separator, means the user
+                // chose the backup location explicitly.
+                return resolver.resolve(backup_file, PathOrigin::User, true);
+            }();
 
             File contents;
             auto permissions = filesystem::perms::unknown;
             try {
-                contents = File(file_path, std::ios_base::in | std::ios_base::binary);
+                contents = File::open_read(source, true);
                 permissions = contents.get_permissions();
             } catch (const std::system_error& error) {
                 if (error.code() != std::errc::no_such_file_or_directory)
@@ -461,7 +474,7 @@ public:
                 contents = File::create_temporary();
             }
 
-            auto replacement = StagedReplacement::create(backup_file, contents, true, permissions);
+            auto replacement = StagedReplacement::create(std::move(destination), contents, true, permissions);
             replacement.commit();
         }
     }
@@ -505,13 +518,10 @@ static bool refuse_read_only_file(std::ostream& out, const Options& options, con
     return false;
 }
 
-void write_patched_result_to_file(const Patch& patch, const std::string& output_file_path, filesystem::perms input_permissions,
-    std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file, Backup& backup, bool make_backup)
+void write_patched_result_to_file(const Patch& patch, ResolvedPath output, filesystem::perms input_permissions,
+    std::ios::openmode mode, DeferredWriter& deferred_writer, File& patched_file, Backup& backup,
+    const PathResolver& resolver, bool make_backup)
 {
-    // Ensure that parent directories exist if we are potentially putting a file into a new location.
-    if (patch.operation == Operation::Add || patch.operation == Operation::Rename || patch.operation == Operation::Copy)
-        ensure_parent_directories(output_file_path);
-
     auto output_permissions = input_permissions;
     const auto mode_permissions = static_cast<filesystem::perms>(patch.new_file_mode) & filesystem::perms::mask;
     if (mode_permissions != filesystem::perms::none)
@@ -521,14 +531,15 @@ void write_patched_result_to_file(const Patch& patch, const std::string& output_
         // A symlink patch should contain the filename in the contents of the patched file.
         const auto symlink_target = patched_file.read_all_as_string();
         if (make_backup)
-            backup.make_backup_for(output_file_path);
-        filesystem::symlink(symlink_target, output_file_path);
+            backup.make_backup_for(output, resolver);
+        output.create_symlink(symlink_target);
         return;
     }
 
-    auto replacement = StagedReplacement::create(output_file_path, patched_file, (mode & std::ios_base::binary) != 0, output_permissions);
     if (make_backup)
-        backup.make_backup_for(output_file_path);
+        backup.make_backup_for(output, resolver);
+
+    auto replacement = StagedReplacement::create(std::move(output), patched_file, (mode & std::ios_base::binary) != 0, output_permissions);
 
     // A rename or copy may still need to read the path it is replacing (such as when two renames swap a pair of files)
     // so only do this once the input has read.
@@ -595,30 +606,37 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
     File tmp_reject_file = File::create_temporary();
     RejectWriter reject_writer(patch, tmp_reject_file, options.reject_format);
 
-    if (filesystem::exists(file_to_patch) && !filesystem::is_regular_file(file_to_patch)) {
+    // A patch which adds a file may name a directory which does not exist
+    // yet, in which case there is no input to read.
+    auto input = try_resolve_user_path(resolver, file_to_patch);
+
+    const auto input_type = input ? input->type() : FileType::None;
+
+    if (input_type != FileType::None && input_type != FileType::Regular) {
         parse_body_if_needed();
         out << "File " << file_to_patch << " is not a regular file --";
         refuse_to_patch(out, mode, output_file, patch, options);
         return true;
     }
 
-    if (refuse_read_only_file(out, options, output_file, filesystem::get_permissions(output_file))) {
+    // Nothing which is not there can be read only.
+    auto output_permissions_now = filesystem::perms::unknown;
+    if (output_file == file_to_patch && input) {
+        output_permissions_now = input->permissions();
+    } else if (const auto output = try_resolve_user_path(resolver, output_file)) {
+        output_permissions_now = output->permissions();
+    }
+
+    if (refuse_read_only_file(out, options, output_file, output_permissions_now)) {
         parse_body_if_needed();
         refuse_to_patch(out, mode, output_file, patch, options);
         return true;
     }
 
-    auto input_mode = std::ios_base::in;
-    if (options.newline_output != Options::NewlineOutput::Native)
-        input_mode |= std::ios_base::binary;
-
+    const bool binary_input = options.newline_output != Options::NewlineOutput::Native;
     File input_file;
-    try {
-        input_file = File(file_to_patch, input_mode);
-    } catch (const std::system_error& error) {
-        if (error.code() != std::errc::no_such_file_or_directory || patch.operation != Operation::Add)
-            throw;
-    }
+    if (input_type != FileType::None)
+        input_file = File::open_read(*input, binary_input);
 
     const auto input_lines = file_as_lines(input_file);
     const auto input_permissions = input_file ? input_file.get_permissions() : filesystem::perms::unknown;
@@ -688,9 +706,13 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
             && (patch.operation == Operation::Delete || (patch.format == Format::Ed && tmp_out_file.size() == 0))) {
             if (tmp_out_file.size() == 0) {
                 if (!options.dry_run) {
+                    // What is being removed is what was read, since this branch only runs
+                    // without '-o', where the output name is the input's.
+                    if (!input)
+                        input.reset(new ResolvedPath(resolver.resolve(output_file, PathOrigin::User)));
                     if (make_backup)
-                        backup.make_backup_for(output_file);
-                    remove_file_and_empty_parent_folders(output_file);
+                        backup.make_backup_for(*input, resolver);
+                    input->remove_and_empty_parents();
                 }
                 write_to_file = false;
             } else {
@@ -699,13 +721,23 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
             }
         }
 
-        if (write_to_file)
-            write_patched_result_to_file(patch, output_file, input_permissions, mode, deferred_writer, tmp_out_file, backup, make_backup);
+        if (write_to_file) {
+            // A new file, or a rename or copy, may name a directory which does not exist yet.
+            const bool create_missing = patch.operation == Operation::Add
+                || patch.operation == Operation::Rename
+                || patch.operation == Operation::Copy;
+            write_patched_result_to_file(patch, resolver.resolve(output_file, PathOrigin::User, create_missing),
+                input_permissions, mode, deferred_writer, tmp_out_file, backup, resolver, make_backup);
+        }
 
         if (result.failed_hunks == 0 && write_to_file && patch.operation == Operation::Rename) {
+            // Remove the renamed-from file through the handle it was read by,
+            // so no path change since then can redirect the removal.
+            if (!input)
+                input.reset(new ResolvedPath(resolver.resolve(file_to_patch, PathOrigin::User)));
             if (make_backup)
-                backup.make_backup_for(file_to_patch);
-            remove_file_and_empty_parent_folders(file_to_patch);
+                backup.make_backup_for(*input, resolver);
+            input->remove_and_empty_parents();
         }
     }
 

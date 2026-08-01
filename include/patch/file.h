@@ -66,7 +66,7 @@ public:
 
     static File create_temporary_with_content(const std::string& initial_content);
 
-    static NamedTemporaryFile create_temporary_near(const std::string& destination, bool binary, filesystem::perms permissions);
+    static NamedTemporaryFile create_temporary_in(const ResolvedPath& destination, bool binary, filesystem::perms permissions);
 
     // Both throw std::system_error when the resolved name cannot be opened.
     static File open_read(const ResolvedPath& source, bool binary);
@@ -142,7 +142,7 @@ private:
 
 struct NamedTemporaryFile {
     File file;
-    std::string path;
+    std::string name;
 };
 
 } // namespace Patch

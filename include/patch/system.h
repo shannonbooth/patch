@@ -128,10 +128,12 @@ uintmax_t file_size(FILE* file);
 
 struct TemporaryFile {
     FILE* stream;
-    std::string path;
+    std::string name;
 };
 
-TemporaryFile create_temporary_file_near(const std::string& destination, bool binary, filesystem::perms permissions);
+// Creates a temporary alongside 'name' in the directory so that it can be
+// renamed over it. The returned name is exactly one path component.
+TemporaryFile create_temporary_file_in(const ResolvedPath& destination, bool binary, filesystem::perms permissions);
 
 #ifdef _WIN32
 

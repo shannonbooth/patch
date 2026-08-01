@@ -2876,7 +2876,9 @@ COMPAT_TEST(reversed_patch_batch)
 
 COMPAT_TEST(basic_add_symlink_file)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    (void)patch_path;
+#else
     {
         Patch::File file("diff.patch", std::ios_base::out);
 

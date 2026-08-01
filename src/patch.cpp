@@ -239,9 +239,24 @@ static Format diff_format_from_options(const Options& options)
     return format;
 }
 
+// The patch file is named by the user, so it is not resolved through the
+// directory being patched. A relative name is taken as relative to it.
+static std::string path_in_directory(const std::string& directory, const std::string& path)
+{
+    if (filesystem::is_absolute(path) || directory == ".")
+        return path;
+
+#ifdef _WIN32
+    if (directory.size() == 2 && directory[1] == ':')
+        return directory + path;
+#endif
+
+    return directory + (filesystem::is_seperator(directory.back()) ? "" : "/") + path;
+}
+
 class PatchFile {
 public:
-    explicit PatchFile(const Options& options)
+    PatchFile(const Options& options, const std::string& root)
     {
         if (options.patch_file_path.empty() || options.patch_file_path == "-") {
             m_patch_file = File::create_temporary(stdin);
@@ -250,7 +265,8 @@ public:
             if (options.newline_output != Options::NewlineOutput::Native)
                 mode |= std::ios::binary;
 
-            m_patch_file.open(options.patch_file_path, mode);
+            const auto path = path_in_directory(root, options.patch_file_path);
+            m_patch_file.open(path, mode);
             if (!m_patch_file)
                 throw std::system_error(errno, std::generic_category(), "Can't open patch file " + options.patch_file_path + " ");
         }
@@ -773,18 +789,21 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
         return 0;
     }
 
-    if (!options.patch_directory_path.empty())
-        chdir(options.patch_directory_path);
-
-    // Pinned once the directory being patched is settled. Call sites move over
-    // to it in the commits which follow; the root becomes the '-d' argument
-    // once none of them resolve a path by name any more.
-    const PathResolver resolver(".");
+    const auto root = options.patch_directory_path.empty() ? "." : options.patch_directory_path;
+    const auto resolver = [&] {
+        try {
+            return PathResolver(root);
+        } catch (const std::system_error& error) {
+            if (!options.patch_directory_path.empty())
+                throw std::system_error(error.code(), "Can't change to directory " + options.patch_directory_path + " ");
+            throw;
+        }
+    }();
 
     // When writing the patched file to cout - write any prompts to cerr instead.
     auto& out = options.out_file_path == "-" ? std::cerr : std::cout;
 
-    PatchFile patch_file(options);
+    PatchFile patch_file(options, root);
     Backup backup(options);
 
     const auto format = diff_format_from_options(options);

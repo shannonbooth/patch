@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <type_traits>
 
 namespace Patch {
@@ -28,6 +29,11 @@ template<class T, typename std::enable_if<std::is_enum<T> {}>::type* = nullptr>
 void test_error_format(const T& a)
 {
     std::cerr << static_cast<typename std::underlying_type<T>::type>(a);
+}
+
+inline void test_error_format(const std::error_code& error)
+{
+    std::cerr << error.category().name() << ':' << error.value() << " (" << error.message() << ')';
 }
 
 inline std::string escaped_string_for_test_output(const std::string& value)

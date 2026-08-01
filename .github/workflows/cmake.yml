@@ -27,7 +27,7 @@ jobs:
       run: sudo apt-get update -qy
         && sudo apt-get install gcovr -qy
     - name: configure
-      run: cmake -DBUILD_TESTING=on -DPATCH_ENABLE_COVERAGE=yes -S . -B build
+      run: cmake -DBUILD_TESTING=on -DPATCH_ENABLE_COVERAGE=yes -DPATCH_WARNINGS_AS_ERRORS=on -S . -B build
     - name: compile
       run: cmake --build build -j2
     - name: test
@@ -49,7 +49,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: configure
-      run: cmake -DBUILD_TESTING=on -S . -B build
+      run: cmake -DBUILD_TESTING=on -DPATCH_WARNINGS_AS_ERRORS=on -S . -B build
     - name: compile
       run: cmake --build build -j2
     - name: test
@@ -73,7 +73,7 @@ jobs:
           mingw-w64-ucrt-x86_64-cmake
           mingw-w64-ucrt-x86_64-ninja
     - name: configure
-      run: cmake -G Ninja -DBUILD_TESTING=on -S . -B build
+      run: cmake -G Ninja -DBUILD_TESTING=on -DPATCH_WARNINGS_AS_ERRORS=on -S . -B build
     - name: compile
       run: cmake --build build -j2
     - name: test

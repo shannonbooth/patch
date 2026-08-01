@@ -22,7 +22,33 @@ include(GNUInstallDirs)
 include(coverage)
 
 option(PATCH_ENABLE_COVERAGE "Build with gcov support" OFF)
+option(PATCH_WARNINGS_AS_ERRORS "Enable strict compiler warnings and treat them as errors" OFF)
 option(BUILD_TESTING "Build the tests" OFF)
+
+function(patch_enable_warnings target_name)
+  if(NOT PATCH_WARNINGS_AS_ERRORS)
+    return()
+  endif()
+
+  if(MSVC)
+    target_compile_options(${target_name} PRIVATE /W4 /WX)
+    target_compile_definitions(${target_name} PRIVATE
+      _CRT_NONSTDC_NO_WARNINGS
+      _CRT_SECURE_NO_WARNINGS
+    )
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU)$")
+    target_compile_options(${target_name} PRIVATE
+      -Wall
+      -Wextra
+      -Wpedantic
+      -Wconversion
+      -Wsign-conversion
+      -Werror
+    )
+  else()
+    message(FATAL_ERROR "PATCH_WARNINGS_AS_ERRORS does not support ${CMAKE_CXX_COMPILER_ID}")
+  endif()
+endfunction()
 
 if(PATCH_ENABLE_COVERAGE)
   add_coverage_flags()
@@ -39,6 +65,7 @@ add_library(patch
   src/system.cpp
   src/file.cpp
 )
+patch_enable_warnings(patch)
 
 target_compile_features(patch PUBLIC cxx_std_11)
 

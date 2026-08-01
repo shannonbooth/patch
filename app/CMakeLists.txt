@@ -2,7 +2,7 @@
 # Copyright 2022 Shannon Booth <shannon.ml.booth@gmail.com>
 
 add_executable(sb_patch main.cpp)
-patch_enable_warnings(sb_patch)
+patch_configure_target(sb_patch)
 target_link_libraries(sb_patch PRIVATE patch::patch)
 
 install(TARGETS sb_patch

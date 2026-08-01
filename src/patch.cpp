@@ -142,11 +142,11 @@ bool check_with_user(const std::string& question, std::ostream& out, Default def
 
 // Null when nothing along the path is there. A directory which does not exist
 // is not an error for a caller which only wants to know what is present.
-static std::unique_ptr<ResolvedPath> try_resolve_user_path(const PathResolver& resolver,
-    const std::string& path)
+static std::unique_ptr<ResolvedPath> try_resolve_path(const PathResolver& resolver,
+    const std::string& path, PathOrigin origin)
 {
     try {
-        return std::unique_ptr<ResolvedPath>(new ResolvedPath(resolver.resolve(path, PathOrigin::User)));
+        return std::unique_ptr<ResolvedPath>(new ResolvedPath(resolver.resolve(path, origin)));
     } catch (const std::system_error& error) {
         if (error.code() == std::errc::no_such_file_or_directory
             || error.code() == std::errc::not_a_directory) {
@@ -161,7 +161,7 @@ static bool patch_path_exists(const PathResolver& resolver, const std::string& p
     if (path.empty())
         return false;
 
-    const auto resolved = try_resolve_user_path(resolver, path);
+    const auto resolved = try_resolve_path(resolver, path, PathOrigin::Patch);
     return resolved && resolved->type() != FileType::None;
 }
 
@@ -287,8 +287,8 @@ static void inform_hunks_failed(std::ostream& out, const char* reason, const std
 }
 
 static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode,
-    const std::string& output_file, const Patch& patch, const Options& options,
-    const PathResolver& resolver)
+    const std::string& output_file, PathOrigin output_origin, const Patch& patch,
+    const Options& options, const PathResolver& resolver)
 {
     out << " refusing to patch\n";
     inform_hunks_failed(out, "ignored", patch.hunks, patch.hunks.size());
@@ -296,7 +296,8 @@ static void refuse_to_patch(std::ostream& out, std::ios_base::openmode mode,
     if (!options.dry_run) {
         const auto reject_file = reject_path(options, output_file);
         out << " -- saving rejects to file " << reject_file;
-        auto file = File::open_write(resolver.resolve(reject_file, PathOrigin::User, true), (mode & std::ios_base::binary) != 0);
+        const auto reject_origin = options.reject_file_path.empty() ? output_origin : PathOrigin::User;
+        auto file = File::open_write(resolver.resolve(reject_file, reject_origin, true), (mode & std::ios_base::binary) != 0);
 
         RejectWriter reject_writer(patch, file, options.reject_format);
         for (const auto& hunk : patch.hunks)
@@ -573,7 +574,8 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
 
     reject_unsafe_paths(patch, options, out);
 
-    auto file_to_patch = options.file_to_patch.empty() ? guess_filepath(patch, resolver) : options.file_to_patch;
+    bool input_named_by_user = !options.file_to_patch.empty();
+    auto file_to_patch = input_named_by_user ? options.file_to_patch : guess_filepath(patch, resolver);
 
     if (file_to_patch.empty()) {
         out << "can't find file to patch at input line " << parser.line_number()
@@ -585,8 +587,10 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
     if (options.verbose || file_to_patch.empty())
         parser.print_header_info(info, out);
 
-    if (file_to_patch.empty() && !options.force && !options.batch)
+    if (file_to_patch.empty() && !options.force && !options.batch) {
         file_to_patch = prompt_for_filepath(out, resolver);
+        input_named_by_user = !file_to_patch.empty();
+    }
 
     if (file_to_patch.empty()) {
         parse_body_if_needed();
@@ -601,6 +605,16 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
 
     const auto output_file = output_path(options, patch, file_to_patch);
 
+    // A name the user gave is theirs to choose; one taken from the patch is
+    // not. '-o' is always the user's, and a rename or copy destination always
+    // comes from the patch even when the source was named by the user.
+    const auto input_origin = input_named_by_user ? PathOrigin::User : PathOrigin::Patch;
+    auto output_origin = input_origin;
+    if (!options.out_file_path.empty())
+        output_origin = PathOrigin::User;
+    else if (patch.operation == Operation::Rename || patch.operation == Operation::Copy)
+        output_origin = PathOrigin::Patch;
+
     std::ios::openmode mode = std::ios::out;
     if (options.newline_output != Options::NewlineOutput::Native)
         mode |= std::ios::binary;
@@ -610,14 +624,14 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
 
     // A patch which adds a file may name a directory which does not exist
     // yet, in which case there is no input to read.
-    auto input = try_resolve_user_path(resolver, file_to_patch);
+    auto input = try_resolve_path(resolver, file_to_patch, input_origin);
 
     const auto input_type = input ? input->type() : FileType::None;
 
     if (input_type != FileType::None && input_type != FileType::Regular) {
         parse_body_if_needed();
         out << "File " << file_to_patch << " is not a regular file --";
-        refuse_to_patch(out, mode, output_file, patch, options, resolver);
+        refuse_to_patch(out, mode, output_file, output_origin, patch, options, resolver);
         return true;
     }
 
@@ -625,13 +639,13 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
     auto output_permissions_now = filesystem::perms::unknown;
     if (output_file == file_to_patch && input) {
         output_permissions_now = input->permissions();
-    } else if (const auto output = try_resolve_user_path(resolver, output_file)) {
+    } else if (const auto output = try_resolve_path(resolver, output_file, output_origin)) {
         output_permissions_now = output->permissions();
     }
 
     if (refuse_read_only_file(out, options, output_file, output_permissions_now)) {
         parse_body_if_needed();
-        refuse_to_patch(out, mode, output_file, patch, options, resolver);
+        refuse_to_patch(out, mode, output_file, output_origin, patch, options, resolver);
         return true;
     }
 
@@ -686,7 +700,8 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
             const auto reject_file = reject_path(options, output_file);
             out << " -- saving rejects to file " << reject_file;
 
-            auto file = File::open_write(resolver.resolve(reject_file, PathOrigin::User, true), (mode & std::ios_base::binary) != 0);
+            const auto reject_origin = options.reject_file_path.empty() ? output_origin : PathOrigin::User;
+            auto file = File::open_write(resolver.resolve(reject_file, reject_origin, true), (mode & std::ios_base::binary) != 0);
             tmp_reject_file.write_entire_contents_to(file);
         }
         out << '\n';
@@ -711,7 +726,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
                     // What is being removed is what was read, since this branch only runs
                     // without '-o', where the output name is the input's.
                     if (!input)
-                        input.reset(new ResolvedPath(resolver.resolve(output_file, PathOrigin::User)));
+                        input.reset(new ResolvedPath(resolver.resolve(output_file, output_origin)));
                     if (make_backup)
                         backup.make_backup_for(*input, resolver);
                     input->remove_and_empty_parents();
@@ -728,7 +743,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
             const bool create_missing = patch.operation == Operation::Add
                 || patch.operation == Operation::Rename
                 || patch.operation == Operation::Copy;
-            write_patched_result_to_file(patch, resolver.resolve(output_file, PathOrigin::User, create_missing),
+            write_patched_result_to_file(patch, resolver.resolve(output_file, output_origin, create_missing),
                 input_permissions, mode, deferred_writer, tmp_out_file, backup, resolver, make_backup);
         }
 
@@ -736,7 +751,7 @@ static bool process_parsed_patch(const Options& options, DeferredWriter& deferre
             // Remove the renamed-from file through the handle it was read by,
             // so no path change since then can redirect the removal.
             if (!input)
-                input.reset(new ResolvedPath(resolver.resolve(file_to_patch, PathOrigin::User)));
+                input.reset(new ResolvedPath(resolver.resolve(file_to_patch, input_origin)));
             if (make_backup)
                 backup.make_backup_for(*input, resolver);
             input->remove_and_empty_parents();
@@ -795,8 +810,15 @@ static int process_patches(const Options& options, DeferredWriter& deferred_writ
 
         first_patch = false;
 
-        had_failure |= process_parsed_patch(options, deferred_writer, resolver, backup,
-            parser, patch, info, should_parse_body, out);
+        try {
+            had_failure |= process_parsed_patch(options, deferred_writer, resolver, backup,
+                parser, patch, info, should_parse_body, out);
+        } catch (const UnsafePatchPath& error) {
+            if (should_parse_body)
+                parser.parse_patch_body(patch);
+            out << "Invalid file name " << error.path() << " -- skipping patch\n";
+            had_failure = true;
+        }
     }
 
     if (options.verbose)

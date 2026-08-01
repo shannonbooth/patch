@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2022-2026 Shannon Booth <shannon.ml.booth@gmail.com>
 
+#include <patch/directory.h>
 #include <patch/file.h>
 #include <patch/options.h>
 #include <patch/patch.h>
@@ -3146,4 +3147,110 @@ COMPAT_TEST(regular_patch_refuses_to_follow_symlink)
 
     EXPECT_TRUE(Patch::filesystem::is_symlink("a"));
     EXPECT_FILE_EQ("real", content);
+}
+
+static void create_escaping_parent_link()
+{
+    Patch::create_directory("outside");
+    Patch::create_directory("work");
+    Patch::chdir("work");
+
+    Patch::skip_without_symlink_support();
+    Patch::PathResolver(".").resolve("escape", Patch::PathOrigin::User).create_symlink("../outside");
+}
+
+COMPAT_TEST(patch_refuses_a_preexisting_parent_link_which_escapes)
+{
+    create_escaping_parent_link();
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/escape/pwned.txt b/escape/pwned.txt
+new file mode 100644
+--- /dev/null
++++ b/escape/pwned.txt
+@@ -0,0 +1 @@
++PWNED
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(),
+        "Invalid file name escape/pwned.txt -- skipping patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_FALSE(Patch::file_exists("../outside/pwned.txt"));
+}
+
+PATCH_TEST(patch_does_not_reuse_an_explicit_input_for_a_patch_rename_destination)
+{
+    create_escaping_parent_link();
+
+    {
+        Patch::File source("source.txt", std::ios_base::out);
+        source << "content\n";
+    }
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/source.txt b/escape/pwned.txt
+similarity index 100%
+rename from source.txt
+rename to escape/pwned.txt
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-p1", "-i", "diff.patch", "source.txt", nullptr });
+
+    EXPECT_EQ(process.stdout_data(),
+        "Invalid file name escape/pwned.txt -- skipping patch\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_FILE_EQ("source.txt", "content\n");
+    EXPECT_FALSE(Patch::file_exists("../outside/pwned.txt"));
+}
+
+COMPAT_TEST(patch_created_link_cannot_escape_and_the_stream_continues)
+{
+    Patch::create_directory("outside");
+    Patch::create_directory("work");
+    Patch::chdir("work");
+
+    Patch::skip_without_symlink_support();
+
+    {
+        Patch::File file("diff.patch", std::ios_base::out);
+        file << R"(diff --git a/sub b/sub
+new file mode 120000
+--- /dev/null
++++ b/sub
+@@ -0,0 +1 @@
++../outside
+\ No newline at end of file
+diff --git a/sub/pwned.txt b/sub/pwned.txt
+new file mode 100644
+--- /dev/null
++++ b/sub/pwned.txt
+@@ -0,0 +1 @@
++PWNED
+diff --git a/safe.txt b/safe.txt
+new file mode 100644
+--- /dev/null
++++ b/safe.txt
+@@ -0,0 +1 @@
++SAFE
+)";
+    }
+
+    Process process(patch_path, { patch_path, "-p1", "-i", "diff.patch", nullptr });
+
+    EXPECT_EQ(process.stdout_data(),
+        "patching symbolic link sub\n"
+        "Invalid file name sub/pwned.txt -- skipping patch\n"
+        "patching file safe.txt\n");
+    EXPECT_EQ(process.stderr_data(), "");
+    EXPECT_EQ(process.return_code(), 1);
+    EXPECT_EQ(Patch::PathResolver(".").resolve("sub", Patch::PathOrigin::User).type(), Patch::FileType::Symlink);
+    EXPECT_FALSE(Patch::file_exists("../outside/pwned.txt"));
+    EXPECT_FILE_EQ("safe.txt", "SAFE\n");
 }
